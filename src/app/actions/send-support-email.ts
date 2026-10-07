@@ -1,6 +1,6 @@
 'use server';
 
-import * as Brevo from '@getbrevo/brevo';
+import { sendBrevoEmail } from '@/lib/brevo';
 import { supportFormSchema } from '@/lib/support-schema';
 
 // Everything the visitor typed goes into an HTML email, so it must be escaped:
@@ -71,14 +71,14 @@ export async function sendSupportEmail(formData: unknown, token: string) {
     return { success: false, message: 'Server is not configured for sending emails.' };
   }
 
-  const apiInstance = new Brevo.TransactionalEmailsApi();
-  apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
-
-  const sendSmtpEmail = new Brevo.SendSmtpEmail();
-
-  // category is one of a fixed list (see support-schema.ts), so it is safe here.
-  sendSmtpEmail.subject = `Cuppi Support Request: ${category}`;
-  sendSmtpEmail.htmlContent = `
+  try {
+    await sendBrevoEmail(apiKey, {
+      sender: { name: 'Cuppi Support Form', email: fromEmail },
+      to: [{ email: toEmail }],
+      replyTo: { email, name },
+      // category is one of a fixed list (see support-schema.ts), so it is safe here.
+      subject: `Cuppi Support Request: ${category}`,
+      htmlContent: `
     <html>
       <body>
         <h2>New Support Request from Cuppi App</h2>
@@ -90,13 +90,9 @@ export async function sendSupportEmail(formData: unknown, token: string) {
         <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
       </body>
     </html>
-  `;
-  sendSmtpEmail.sender = { name: 'Cuppi Support Form', email: fromEmail };
-  sendSmtpEmail.to = [{ email: toEmail }];
-  sendSmtpEmail.replyTo = { email: email, name: name };
+  `,
+    });
 
-  try {
-    await apiInstance.sendTransacEmail(sendSmtpEmail);
     return { success: true, message: 'Your message has been sent successfully!' };
   } catch (error) {
     console.error('Brevo API Error:', error);
