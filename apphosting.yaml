@@ -5,3 +5,14 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+
+env:
+  # Public reCAPTCHA site key (it ships in the client bundle). NEXT_PUBLIC_*
+  # values are inlined at build time, so this must be available to BUILD or the
+  # beta-signup widget renders with an undefined key. The live site was built
+  # with this value before the repository was connected to App Hosting.
+  - variable: NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+    value: 6LdCC2YsAAAAACMizoGSIrJ39pxxA-rxSf4G9npv
+    availability:
+      - BUILD
+      - RUNTIME
