@@ -1,4 +1,5 @@
 'use client';
+import { sanitizeHtml } from '@/lib/sanitize-html';
 
 import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
@@ -98,7 +99,7 @@ export default function AppDetailsPage() {
                 </h1>
                 <div
                   className="text-lg leading-8 text-foreground/80"
-                  dangerouslySetInnerHTML={{ __html: app.description }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(app.description) }}
                 />
                  <div className="space-y-4 text-foreground/80">
                   <div className="flex items-center gap-2"><strong>Status:</strong> <Badge variant={app.availability === 'Available' ? 'default' : 'secondary'}>{app.availability}</Badge></div>

@@ -49,6 +49,6 @@ export default async function TermsPage() {
   );
 }
 
-export function Loading() {
+function Loading() {
   return <LegalPageSkeleton />;
 }

@@ -33,7 +33,7 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
               const originalFetch = window.fetch;
               (window as any)._firebaseFetchPatched = true;
 
-              const patchedFetch = async (...args: any[]) => {
+              const patchedFetch = async (...args: Parameters<typeof fetch>) => {
                 const [input] = args;
                 let url: string | undefined;
 

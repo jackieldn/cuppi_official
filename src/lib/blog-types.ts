@@ -1,4 +1,12 @@
-import type { Image } from 'sanity'
+// Shape of a Sanity image field as the API returns it. (The `sanity` package,
+// which this used to import from, is not a dependency of this site.)
+type Image = {
+  _type?: 'image';
+  asset?: { _ref?: string; _type?: string };
+  alt?: string;
+  hotspot?: unknown;
+  crop?: unknown;
+};
 
 export type CosyCornerPost = {
   _id: string;

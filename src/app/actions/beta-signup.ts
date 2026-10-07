@@ -5,19 +5,16 @@ import { BetaSignupInputSchema, SignupFormValues } from '@/lib/beta-signup-schem
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function submitBetaSignup(data: SignupFormValues, token: string) {
-  console.log("Starting submitBetaSignup action...");
   
   // 1. Validate Input
-  console.log("Validating input data...");
   const parseResult = BetaSignupInputSchema.safeParse(data);
   if (!parseResult.success) {
-    console.error("Input validation failed:", parseResult.error);
+    console.error("Beta signup: input validation failed.");
     return { success: false, message: "Invalid input data." };
   }
 
   const { email, interestedFeatures } = parseResult.data;
   const normalizedEmail = email.toLowerCase();
-  console.log("Input validation successful for email:", normalizedEmail);
 
   if (!token) {
     console.error("Missing CAPTCHA token.");
@@ -25,7 +22,6 @@ export async function submitBetaSignup(data: SignupFormValues, token: string) {
   }
 
   // 2. Verify reCAPTCHA token
-  console.log("Verifying reCAPTCHA token...");
   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
   if (!secretKey) {
     console.error("RECAPTCHA_SECRET_KEY is not set.");
@@ -46,7 +42,6 @@ export async function submitBetaSignup(data: SignupFormValues, token: string) {
     });
 
     const captchaValidation = await response.json() as { success: boolean; 'error-codes'?: string[] };
-    console.log("reCAPTCHA verification result:", captchaValidation);
 
     if (!captchaValidation.success) {
       console.error("reCAPTCHA verification failed:", captchaValidation["error-codes"]);
@@ -64,7 +59,6 @@ export async function submitBetaSignup(data: SignupFormValues, token: string) {
   }
 
   // 3. Save signup data to Firestore
-  console.log("Initializing Firebase...");
   try {
     // Check for existing email
     const existingSignup = await firestore.collection("beta_signups")
@@ -73,14 +67,14 @@ export async function submitBetaSignup(data: SignupFormValues, token: string) {
       .get();
 
     if (!existingSignup.empty) {
-      console.log("Email already exists:", normalizedEmail);
+      // Same answer as a new signup, so the form cannot be used to check
+      // whether someone's address is on the list.
       return {
         success: true,
-        message: "Great news! You are already on the list. We will notify you as soon as the beta testing is open. 😊",
+        message: "You're on the list! 🎉",
       };
     }
 
-    console.log("Firebase initialized. Saving signup data to Firestore...");
     
     const signupData = {
       email: normalizedEmail,
@@ -88,8 +82,7 @@ export async function submitBetaSignup(data: SignupFormValues, token: string) {
       createdAt: FieldValue.serverTimestamp(),
     };
 
-    const docRef = await firestore.collection("beta_signups").add(signupData);
-    console.log("Signup data saved successfully. Document ID:", docRef.id);
+    await firestore.collection("beta_signups").add(signupData);
 
     return {
       success: true,

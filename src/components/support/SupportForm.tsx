@@ -2,7 +2,6 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -18,26 +17,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { sendSupportEmail } from '@/app/actions/send-support-email';
+import { supportFormSchema, SUPPORT_CATEGORIES, type SupportFormValues } from '@/lib/support-schema';
 import React, { useState, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 
-const supportFormSchema = z.object({
-  name: z.string().min(1, 'Name is required.'),
-  email: z.string().email('Invalid email address.'),
-  category: z.string().min(1, 'Please select a category.'),
-  message: z.string().min(10, 'Message must be at least 10 characters.'),
-});
-
-type SupportFormValues = z.infer<typeof supportFormSchema>;
-
-const supportCategories = [
-  'General Inquiry',
-  'Bug Report',
-  'Feature Request',
-  'Account Issue',
-  'Billing',
-  'Other',
-];
+const supportCategories = SUPPORT_CATEGORIES;
 
 export function SupportForm() {
   const { toast } = useToast();
@@ -50,7 +34,8 @@ export function SupportForm() {
     defaultValues: {
       name: '',
       email: '',
-      category: '',
+      // Empty until the visitor picks one; the schema rejects it until then.
+      category: '' as SupportFormValues['category'],
       message: '',
     },
   });
