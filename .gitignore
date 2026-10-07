@@ -46,3 +46,6 @@ firestore-debug.log
 
 functions/node_modules/
 functions/lib/
+
+# logs
+*.log

@@ -16,3 +16,12 @@ env:
     availability:
       - BUILD
       - RUNTIME
+
+  # jackiepoot.co.uk (the portfolio) is only needed while job hunting. Set this
+  # to "false" and redeploy to swap the portfolio for a "Back soon" page
+  # (/admin stays reachable). Cuppi is unaffected. See src/lib/sites.ts.
+  - variable: PORTFOLIO_ENABLED
+    value: "true"
+    availability:
+      - BUILD
+      - RUNTIME
