@@ -45,7 +45,19 @@ away; `/admin` still works. Set it back to `"true"` to restore the site.
 
 ## Content
 
-- Cuppi blog, FAQ and legal pages: Sanity (project `0uvqbyjc`).
+- Cuppi home page, blog, FAQ and legal pages: Sanity (project `0uvqbyjc`).
+  - The home page is the single "Home page" document: a top banner plus an
+    ordered list of sections (swipeable cards, or one large image). Edit,
+    reorder, add or remove sections in the Studio; the site picks up published
+    changes within about a minute. If the document is missing or incomplete the
+    site shows the copy in `src/lib/home-page-fallback.ts`, so it never goes
+    blank.
+  - The Studio is not in this repo (`HomeOS_CSM/studio-homeos-faq` on Jack's
+    machine). Its schema for the home page is `schemaTypes/homePage.ts` and
+    `schemaTypes/objects/`. To create the first document from today's content:
+    `node --experimental-transform-types --no-warnings scripts/home-page-seed.mjs home-page.ndjson`,
+    then from the Studio folder `npx sanity dataset import home-page.ndjson production --missing`
+    (`--missing` never overwrites an existing document).
 - Portfolio projects, snaps, about and apps: Firestore, edited at `/admin` on
   jackiepoot.co.uk.
 - `/.well-known/apple-app-site-association` (the iOS app's universal links) is
