@@ -15,7 +15,7 @@ import { CuppiHeader } from '@/components/cuppi/header';
 export const revalidate = 60; // Re-fetch post every 60 seconds
 
 type Props = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 const POST_QUERY = `*[_type == "cosyCorner" && slug.current == $slug][0] {
@@ -75,7 +75,8 @@ async function getPost(slug: string) {
 
 // Function to generate metadata for SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const post = await getPost(params.slug);
+  const { slug } = await params;
+  const post = await getPost(slug);
 
   if (!post) {
     return {
@@ -106,7 +107,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 
 export default async function CosyCornerPostPage({ params }: Props) {
-  const post = await getPost(params.slug);
+  const { slug } = await params;
+  const post = await getPost(slug);
 
   if (!post) {
     notFound();

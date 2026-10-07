@@ -60,6 +60,6 @@ export default async function PrivacyPage() {
 }
 
 // Add a loading component for a better user experience during ISR revalidation
-export function Loading() {
+function Loading() {
   return <LegalPageSkeleton />;
 }

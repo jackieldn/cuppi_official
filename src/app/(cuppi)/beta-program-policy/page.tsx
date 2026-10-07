@@ -49,6 +49,6 @@ export default async function BetaProgramPolicyPage() {
   );
 }
 
-export function Loading() {
+function Loading() {
   return <LegalPageSkeleton />;
 }

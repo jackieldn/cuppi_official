@@ -1,4 +1,5 @@
 'use client';
+import { sanitizeHtml } from '@/lib/sanitize-html';
 import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -173,7 +174,7 @@ export default function ProjectPage() {
                 {project.overview && (
                   <div
                     className="text-lg leading-8 text-foreground/80"
-                    dangerouslySetInnerHTML={{ __html: project.overview }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(project.overview) }}
                   />
                 )}
                 <div className="space-y-4 text-foreground/80">

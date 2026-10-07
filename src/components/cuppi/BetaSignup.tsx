@@ -21,6 +21,7 @@ import {
 import React, { useState, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { BetaSignupInputSchema, SignupFormValues } from '@/lib/beta-signup-schema';
+import { submitBetaSignup } from '@/app/actions/beta-signup';
 import Link from 'next/link';
 import { useAnalytics } from '@/firebase';
 import { logEvent } from 'firebase/analytics';
@@ -32,7 +33,7 @@ const features = [
   { id: "birthdays", label: "Birthdays" },
   { id: "receipts_scanning", label: "Receipts scanning" },
   { id: "bin_day_reminders", label: "Bin Day reminders" },
-];
+] as const;
 
 export function BetaSignup() {
   const iconUrl = "https://firebasestorage.googleapis.com/v0/b/studio-5700093446-89b93.firebasestorage.app/o/homeos_landing%2Fapp_section%2Ffooter%2FHomeOS-devIcon-iOS-Default-1024x1024%401x%20copy.webp?alt=media&token=82afd99c-a6db-4066-ab65-69289be9161f";
@@ -41,9 +42,6 @@ export function BetaSignup() {
   const recaptchaRef = useRef<ReCAPTCHA>(null);
   const [isVerified, setIsVerified] = useState(false);
   const analytics = useAnalytics();
-  
-  // This should point to your deployed Cloud Function URL
-  const functionUrl = 'https://submitbetasignup-m5o37pqq5a-uc.a.run.app';
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(BetaSignupInputSchema),
@@ -65,13 +63,7 @@ export function BetaSignup() {
     }
 
     try {
-      const response = await fetch(functionUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...data, gRecaptchaToken }),
-      });
-
-      const result = await response.json();
+      const result = await submitBetaSignup(data, gRecaptchaToken);
 
       if (result.success) {
         if (analytics) {

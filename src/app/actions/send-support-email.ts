@@ -1,14 +1,18 @@
 'use server';
 
-import { z } from 'zod';
 import * as Brevo from '@getbrevo/brevo';
+import { supportFormSchema } from '@/lib/support-schema';
 
-const supportFormSchema = z.object({
-  name: z.string().min(1, 'Name is required.'),
-  email: z.string().email('Invalid email address.'),
-  category: z.string().min(1, 'Please select a category.'),
-  message: z.string().min(10, 'Message must be at least 10 characters.'),
-});
+// Everything the visitor typed goes into an HTML email, so it must be escaped:
+// otherwise they could inject links, images or markup into your inbox.
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 export async function sendSupportEmail(formData: unknown, token: string) {
   // 1. Validate form data
@@ -72,17 +76,18 @@ export async function sendSupportEmail(formData: unknown, token: string) {
 
   const sendSmtpEmail = new Brevo.SendSmtpEmail();
 
+  // category is one of a fixed list (see support-schema.ts), so it is safe here.
   sendSmtpEmail.subject = `Cuppi Support Request: ${category}`;
   sendSmtpEmail.htmlContent = `
     <html>
       <body>
         <h2>New Support Request from Cuppi App</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Category:</strong> ${category}</p>
+        <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+        <p><strong>Category:</strong> ${escapeHtml(category)}</p>
         <hr />
         <p><strong>Message:</strong></p>
-        <p style="white-space: pre-wrap;">${message}</p>
+        <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
       </body>
     </html>
   `;
