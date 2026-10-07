@@ -3,6 +3,13 @@ import type {NextConfig} from 'next';
 const nextConfig: NextConfig = {
   /* config options here */
   output: "standalone",
+  // Apple fetches the AASA file from exactly this path, with no redirect. App
+  // Router cannot route a dot-prefixed folder, so serve it from /aasa.
+  async rewrites() {
+    return [
+      { source: '/.well-known/apple-app-site-association', destination: '/aasa' },
+    ];
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
