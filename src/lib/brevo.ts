@@ -28,7 +28,8 @@ export class BrevoError extends Error {
 export async function sendBrevoEmail(
   apiKey: string,
   email: BrevoEmail,
-  baseUrl = 'https://api.brevo.com',
+  // Overridable so tests can point at a local fake instead of the real API.
+  { baseUrl = 'https://api.brevo.com', timeoutMs = 10_000 }: { baseUrl?: string; timeoutMs?: number } = {},
 ): Promise<void> {
   const response = await fetch(`${baseUrl}/v3/smtp/email`, {
     method: 'POST',
@@ -39,7 +40,7 @@ export async function sendBrevoEmail(
     },
     body: JSON.stringify(email),
     // Don't leave a visitor waiting on a hung connection.
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
   if (response.ok) return; // 201 Created, body is { messageId }
