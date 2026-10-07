@@ -16,3 +16,26 @@ env:
     availability:
       - BUILD
       - RUNTIME
+
+  # Support form (src/app/actions/send-support-email.ts). Server-side only, so
+  # RUNTIME. The secrets live in Secret Manager; create them with
+  #   firebase apphosting:secrets:set <NAME> --project studio-5700093446-89b93
+  # before merging a change to this file, or the rollout fails.
+  - variable: RECAPTCHA_SECRET_KEY
+    secret: RECAPTCHA_SECRET_KEY
+    availability:
+      - RUNTIME
+  - variable: BREVO_API_KEY
+    secret: BREVO_API_KEY
+    availability:
+      - RUNTIME
+  # Where support messages are delivered. Kept out of the public repository.
+  - variable: SUPPORT_EMAIL_TO
+    secret: SUPPORT_EMAIL_TO
+    availability:
+      - RUNTIME
+  # Must be a sender verified in Brevo. Already public on the site.
+  - variable: SUPPORT_EMAIL_FROM
+    value: support@cuppi.co.uk
+    availability:
+      - RUNTIME
