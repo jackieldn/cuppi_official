@@ -1,0 +1,587 @@
+{
+  "entities": {
+    "SupportRequest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Support Request",
+      "type": "object",
+      "description": "Represents a support request submitted through the contact form.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the person submitting the request."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address for contact."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the support request."
+        },
+        "message": {
+          "type": "string",
+          "description": "The detailed support message from the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the request was submitted."
+        }
+      },
+      "required": [
+        "name",
+        "email",
+        "category",
+        "message",
+        "createdAt"
+      ]
+    },
+    "Project": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Project",
+      "type": "object",
+      "description": "Represents a project in the portfolio.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Project entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the project."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the project."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the project's image.",
+          "format": "uri"
+        },
+        "blurredImageUrl": {
+          "type": "string",
+          "description": "URL of a blurred version of the project's image, for use when the project is password protected.",
+          "format": "uri"
+        },
+        "galleryImages": {
+          "type": "array",
+          "description": "An array of URLs for the project's gallery images.",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "videoUrls": {
+          "type": "array",
+          "description": "An array of URLs for the project's videos (if applicable).",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "featured": {
+          "type": "boolean",
+          "description": "Indicates whether the project is featured on the homepage."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags to categorize the project",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deliveryDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The date the project was delivered."
+        },
+        "privacy": {
+          "type": "object",
+          "description": "Privacy settings for the project.",
+          "properties": {
+            "isPasswordProtected": {
+              "type": "boolean",
+              "description": "If true, the project requires a password to view."
+            },
+            "password": {
+              "type": "string",
+              "description": "The password for the project, if protected."
+            }
+          }
+        },
+        "noAi": {
+          "type": "boolean",
+          "description": "Flag to indicate if the project was made without Generative AI."
+        },
+        "aiDisclaimer": {
+          "type": "string",
+          "description": "An optional disclaimer about the use of AI in the project."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "imageUrl",
+        "featured"
+      ]
+    },
+    "Snap": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Snap",
+      "type": "object",
+      "description": "Represents a single image in the Snaps gallery.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Snap."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the snap image.",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the snap was created."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Categorization tags for the snap.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "order": {
+          "type": "number",
+          "description": "A number for manual sorting order."
+        },
+        "width": {
+          "type": "number",
+          "description": "The width of the image in pixels."
+        },
+        "height": {
+          "type": "number",
+          "description": "The height of the image in pixels."
+        }
+      },
+      "required": [
+        "id",
+        "imageUrl",
+        "createdAt",
+        "width",
+        "height"
+      ]
+    },
+    "HobbyImage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Hobby Image",
+      "type": "object",
+      "description": "Represents a single image in the Free Time gallery.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Hobby Image."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the hobby image.",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the image was created."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Categorization tags for the image.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "order": {
+          "type": "number",
+          "description": "A number for manual sorting order."
+        },
+        "width": {
+          "type": "number",
+          "description": "The width of the image in pixels."
+        },
+        "height": {
+          "type": "number",
+          "description": "The height of the image in pixels."
+        }
+      },
+      "required": [
+        "id",
+        "imageUrl",
+        "createdAt",
+        "width",
+        "height"
+      ]
+    },
+    "AboutProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "About Profile",
+      "type": "object",
+      "description": "Stores the main information for the About Me page.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "aboutText": { "type": "string" },
+        "profilePictureUrl": { "type": "string", "format": "uri" }
+      },
+      "required": ["id", "name", "aboutText", "profilePictureUrl"]
+    },
+    "TechnicalSkill": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Technical Skill",
+      "type": "object",
+      "description": "Represents a single technical skill.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "level": { "type": "number", "minimum": 1, "maximum": 5 },
+        "iconUrl": { "type": "string", "format": "uri" },
+        "order": { "type": "number" }
+      },
+      "required": ["id", "name", "level", "iconUrl"]
+    },
+    "WorkExperience": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Work Experience",
+      "type": "object",
+      "description": "Represents a single entry in the work experience timeline.",
+      "properties": {
+        "id": { "type": "string" },
+        "companyName": { "type": "string" },
+        "position": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "isCurrent": { "type": "boolean" },
+        "description": { "type": "string" },
+        "logoUrl": { "type": "string", "format": "uri" },
+        "order": { "type": "number" }
+      },
+      "required": ["id", "companyName", "position", "startDate"]
+    },
+    "Fact": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Fact",
+      "type": "object",
+      "description": "Represents a single fact for the About page.",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "order": { "type": "number" }
+      },
+      "required": ["id", "title", "description"]
+    },
+    "Testimonial": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Testimonial",
+      "type": "object",
+      "description": "Represents a single testimonial for the About page.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "company": { "type": "string" },
+        "text": { "type": "string" },
+        "order": { "type": "number" },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The date the testimonial was given."
+        }
+      },
+      "required": ["id", "name", "text"]
+    },
+    "ChatbotKnowledge": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Chatbot Knowledge",
+      "type": "object",
+      "description": "Represents a single piece of knowledge for the AI chatbot.",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "description": "The topic of this knowledge entry (e.g., About Me, Skills)." },
+        "content": { "type": "string", "description": "The detailed information for the chatbot to use." }
+      },
+      "required": ["id", "title", "content"]
+    },
+    "App": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "App",
+      "type": "object",
+      "description": "Represents an application or website project.",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "description": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "platforms": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["Web", "iOS", "Android", "MacOS", "Windows"] }
+        },
+        "availability": {
+          "type": "string",
+          "enum": ["Available", "In Development", "Beta", "Retired"]
+        },
+        "releaseDate": { "type": "string", "format": "date" },
+        "link": { "type": "string", "format": "uri" },
+        "galleryImages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": { "type": "string", "format": "uri" },
+              "width": { "type": "number" },
+              "height": { "type": "number" }
+            },
+            "required": ["url", "width", "height"]
+          }
+        },
+        "coverImage": {
+            "type": "object",
+            "properties": {
+              "url": { "type": "string", "format": "uri" },
+              "width": { "type": "number" },
+              "height": { "type": "number" }
+            },
+            "required": ["url", "width", "height"]
+        },
+        "updateHistory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "date": { "type": "string", "format": "date" },
+              "version": { "type": "string" },
+              "description": { "type": "string" }
+            },
+            "required": ["id", "date", "description"]
+          }
+        }
+      },
+      "required": ["id", "title", "slug", "description", "platforms", "availability", "releaseDate", "link"]
+    },
+    "LegalDocument": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Legal Document",
+      "type": "object",
+      "description": "Represents a legal document like Terms of Service or Privacy Policy.",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "content": { "type": "string" }
+      },
+      "required": ["id", "title", "slug", "content"]
+    },
+    "role_admin": {
+      "title": "Admin Role",
+      "type": "object",
+      "description": "A document indicating a user has admin privileges. The document itself can be empty.",
+      "properties": {}
+    },
+    "BetaSignup": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Beta Signup",
+      "type": "object",
+      "description": "Represents an early access signup for the beta.",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "interestedFeatures": {
+          "type": "array",
+          "description": "A list of features the user is interested in.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the signup was created."
+        }
+      },
+      "required": [
+        "email",
+        "interestedFeatures",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/projects/{projectId}",
+        "definition": {
+          "entityName": "Project",
+          "schema": {
+            "$ref": "#/backend/entities/Project"
+          },
+          "description": "Collection of projects.",
+          "params": [
+            {
+              "name": "projectId",
+              "description": "Unique identifier for the project."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "role_admin",
+          "schema": {
+            "$ref": "#/backend/entities/role_admin"
+          },
+          "description": "Documents in this collection represent admin users.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase UID of the admin user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/snaps/{snapId}",
+        "definition": {
+          "entityName": "Snap",
+          "schema": {
+            "$ref": "#/backend/entities/Snap"
+          },
+          "description": "Collection of snaps for the 'Best of Snaps' gallery.",
+          "params": [
+            {
+              "name": "snapId",
+              "description": "Unique identifier for the snap."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/hobby_images/{hobbyImageId}",
+        "definition": {
+          "entityName": "HobbyImage",
+          "schema": {
+            "$ref": "#/backend/entities/HobbyImage"
+          },
+          "description": "Collection of images for the 'Free Time' gallery.",
+          "params": [
+            {
+              "name": "hobbyImageId",
+              "description": "Unique identifier for the hobby image."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/about_profile/{profileId}",
+        "definition": {
+          "entityName": "AboutProfile",
+          "schema": { "$ref": "#/backend/entities/AboutProfile" },
+          "description": "Stores the main profile information for the About page. Should only contain a single document.",
+           "params": [{ "name": "profileId", "description": "Unique identifier for the profile document." }]
+        }
+      },
+      {
+        "path": "/technical_skills/{skillId}",
+        "definition": {
+          "entityName": "TechnicalSkill",
+          "schema": { "$ref": "#/backend/entities/TechnicalSkill" },
+          "description": "Collection of technical skills.",
+           "params": [{ "name": "skillId", "description": "Unique identifier for the skill." }]
+        }
+      },
+      {
+        "path": "/work_experience/{experienceId}",
+        "definition": {
+          "entityName": "WorkExperience",
+          "schema": { "$ref": "#/backend/entities/WorkExperience" },
+          "description": "Collection of work experience entries.",
+          "params": [{ "name": "experienceId", "description": "Unique identifier for the work experience." }]
+        }
+      },
+      {
+        "path": "/facts/{factId}",
+        "definition": {
+          "entityName": "Fact",
+          "schema": { "$ref": "#/backend/entities/Fact" },
+          "description": "Collection of facts for the About page.",
+           "params": [{ "name": "factId", "description": "Unique identifier for the fact." }]
+        }
+      },
+      {
+        "path": "/testimonials/{testimonialId}",
+        "definition": {
+          "entityName": "Testimonial",
+          "schema": { "$ref": "#/backend/entities/Testimonial" },
+          "description": "Collection of testimonials for the About page.",
+          "params": [{ "name": "testimonialId", "description": "Unique identifier for the testimonial." }]
+        }
+      },
+      {
+        "path": "/chatbot_knowledge/{knowledgeId}",
+        "definition": {
+          "entityName": "ChatbotKnowledge",
+          "schema": { "$ref": "#/backend/entities/ChatbotKnowledge" },
+          "description": "Collection of knowledge entries for the AI chatbot.",
+          "params": [{ "name": "knowledgeId", "description": "Unique identifier for the knowledge entry." }]
+        }
+      },
+      {
+        "path": "/apps/{appId}",
+        "definition": {
+          "entityName": "App",
+          "schema": { "$ref": "#/backend/entities/App" },
+          "description": "Collection of apps and websites.",
+          "params": [{ "name": "appId", "description": "Unique identifier for the app." }]
+        }
+      },
+      {
+        "path": "/legal_documents/{documentId}",
+        "definition": {
+          "entityName": "LegalDocument",
+          "schema": { "$ref": "#/backend/entities/LegalDocument" },
+          "description": "Stores legal documents like Terms of Service and Privacy Policy.",
+          "params": [{ "name": "documentId", "description": "Unique identifier for the legal document." }]
+        }
+      },
+      {
+        "path": "/beta_signups/{signupId}",
+        "definition": {
+          "entityName": "BetaSignup",
+          "schema": {
+            "$ref": "#/backend/entities/BetaSignup"
+          },
+          "description": "Collection of beta signups.",
+          "params": [
+            {
+              "name": "signupId",
+              "description": "Unique identifier for the signup."
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

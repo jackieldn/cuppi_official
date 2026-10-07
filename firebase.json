@@ -1,0 +1,21 @@
+{
+  "hosting": {
+    "source": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "frameworksBackend": {
+      "region": "us-east4"
+    }
+  },
+  "storage": {
+    "rules": "storage.rules",
+    "cors": "storage.cors.json"
+  },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs22"
+  }
+}

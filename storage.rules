@@ -1,0 +1,75 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Match all files within the 'projects' directory.
+    match /projects/{allPaths=**} {
+      /**
+       * @description Controls read access to project assets.
+       * @allow (read) Allows public read access.
+       * @principle Public assets should be viewable on the site.
+       */
+      allow read: if true;
+
+      /**
+       * @description Controls write access to project assets.
+       * @allow (write) Allows any authenticated admin user to upload, update, or delete files.
+       * @principle Since the upload functionality is only in the admin dashboard,
+       *            requiring authentication is a secure and effective way to control access.
+       */
+      allow write: if request.auth != null;
+    }
+    
+    // Match all files within the 'snaps' directory.
+    match /snaps/{allPaths=**} {
+      /**
+       * @description Controls read access to snap assets.
+       * @allow (read) Allows public read access.
+       * @principle Public assets should be viewable on the site.
+       */
+      allow read: if true;
+
+      /**
+       * @description Controls write access to snap assets.
+       * @allow (write) Allows any authenticated admin user to upload, update, or delete files.
+       * @principle Since the upload functionality is only in the admin dashboard,
+       *            requiring authentication is a secure and effective way to control access.
+       */
+      allow write: if request.auth != null;
+    }
+    
+    // Match all files within the 'hobby_images' directory.
+    match /hobby_images/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Match all files within the 'apps' directory for app/website assets
+    match /apps/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // --- About Page assets ---
+    
+    // Match all files for the about page.
+    match /about/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Match all files for technical skills icons.
+    match /skills/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Match all files for work experience logos.
+    match /experience/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

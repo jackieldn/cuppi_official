@@ -1,0 +1,124 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-showreel",
+      "description": "Abstract motion graphics still",
+      "imageUrl": "https://images.unsplash.com/photo-1745778640291-f364d3eee2aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtb3Rpb24lMjBncmFwaGljc3xlbnwwfHx8fDE3NjI5ODY5NDV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "motion graphics"
+    },
+    {
+      "id": "featured-1",
+      "description": "Abstract animation project",
+      "imageUrl": "https://images.unsplash.com/photo-1663941842420-8f8e27ccf882?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhYnN0cmFjdCUyMGFuaW1hdGlvbnxlbnwwfHx8fDE3NjMwNDY5NDV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract animation"
+    },
+    {
+      "id": "featured-2",
+      "description": "Digital art project",
+      "imageUrl": "https://images.unsplash.com/photo-1656686628168-e534ae2c51d5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8ZGlnaXRhbCUyMGFydHxlbnwwfHx8fDE3NjMwMzg2MjJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "digital art"
+    },
+    {
+      "id": "featured-3",
+      "description": "3D rendering project",
+      "imageUrl": "https://images.unsplash.com/photo-1627637819794-fba32f82be16?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHwzZCUyMHJlbmRlcnxlbnwwfHx8fDE3NjMwMTA3MDZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "3d render"
+    },
+    {
+      "id": "featured-4",
+      "description": "Logo animation project",
+      "imageUrl": "https://images.unsplash.com/photo-1640441281085-9e2000f3d693?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxsb2dvJTIwYW5pbWF0aW9ufGVufDB8fHx8MTc2MzA1MzIwNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "logo animation"
+    },
+    {
+      "id": "featured-5",
+      "description": "UI interaction design",
+      "imageUrl": "https://images.unsplash.com/photo-1758611974287-8ca7147860a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx1aSUyMGludGVyYWN0aW9ufGVufDB8fHx8MTc2MzA1MzIwNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "ui interaction"
+    },
+    {
+      "id": "about-me",
+      "description": "Portrait of a designer",
+      "imageUrl": "https://images.unsplash.com/photo-1654765436518-0656f072eb22?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxkZXNpZ25lciUyMHBvcnRyYWl0fGVufDB8fHx8MTc2MzAxNTcwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "designer portrait"
+    },
+    {
+      "id": "showreel-bg",
+      "description": "Abstract video background",
+      "imageUrl": "https://images.unsplash.com/photo-1611162616475-46b635cb6868?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx2aWRlbyUyMHBsYXllcnxlbnwwfHx8fDE3NjI5NjExNDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "video player"
+    },
+    {
+      "id": "work-1",
+      "description": "Holly illustration",
+      "imageUrl": "https://images.unsplash.com/photo-1693068605029-8e88868c1fcd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8d2F0ZXJjb2xvciUyMGlsbHVzdHJhdGlvbnxlbnwwfHx8fDE3NjMwNDQ4OTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "watercolor illustration"
+    },
+    {
+      "id": "work-2",
+      "description": "Sassy Create cars",
+      "imageUrl": "https://images.unsplash.com/photo-1612545667889-b061512d0dfa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjYXIlMjBwaG90b2dyYXBoeXxlbnwwfHx8fDE3NjMwNTQ1MDh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car photography"
+    },
+    {
+      "id": "work-3",
+      "description": "Audible David Copperfield",
+      "imageUrl": "https://images.unsplash.com/photo-1621351183012-e2f9972dd9bf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxib29rJTIwY292ZXJ8ZW58MHx8fHwxNzYzMDA3NjU0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "book cover"
+    },
+    {
+      "id": "work-4",
+      "description": "Biomarin Annual Meeting",
+      "imageUrl": "https://images.unsplash.com/photo-1743774237909-f5953218ad57?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxldmVudCUyMGdyYXBoaWNzfGVufDB8fHx8MTc2MzA1NDUwOHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "event graphics"
+    },
+    {
+      "id": "work-5",
+      "description": "Sassy Create presenter",
+      "imageUrl": "https://images.unsplash.com/photo-1557053910-d9eadeed1c58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdHVkaW8lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjMwNTQ1MDh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "studio portrait"
+    },
+    {
+      "id": "work-6",
+      "description": "MotoGP on TNT Sports",
+      "imageUrl": "https://images.unsplash.com/photo-1760037028636-6f42428aeeee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzcG9ydHMlMjBsb2dvfGVufDB8fHx8MTc2MzA0NDIzM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sports logo"
+    },
+    {
+      "id": "work-7",
+      "description": "International Cricket",
+      "imageUrl": "https://images.unsplash.com/photo-1691921673576-07c6032e6306?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzcG9ydHMlMjBicmFuZGluZ3xlbnwwfHx8fDE3NjMwNTQ1MDh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sports branding"
+    },
+    {
+      "id": "work-8",
+      "description": "London Teabox",
+      "imageUrl": "https://images.unsplash.com/photo-1755606159507-a98b20d06578?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cHJvZHVjdCUyMHBhY2thZ2luZ3xlbnwwfHx8fDE3NjMwNTQ1MDh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "product packaging"
+    },
+    {
+      "id": "work-9",
+      "description": "George Best True Genius",
+      "imageUrl": "https://images.unsplash.com/photo-1616530940355-351fabd9524b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtb3ZpZSUyMHBvc3RlcnxlbnwwfHx8fDE3NjMwNDA4NDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "movie poster"
+    },
+    {
+      "id": "work-10",
+      "description": "Animland",
+      "imageUrl": "https://images.unsplash.com/photo-1562639916-627ffe5f9539?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YW5pbWF0aW9uJTIwYnJhbmRpbmd8ZW58MHx8fHwxNzYzMDU0NTA4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "animation branding"
+    },
+    {
+      "id": "work-11",
+      "description": "Rugby Tonight on BT Sport",
+      "imageUrl": "https://images.unsplash.com/photo-1758798486129-01193b330307?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxzcG9ydHMlMjBzaG93fGVufDB8fHx8MTc2MzA1NDUwOHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sports show"
+    },
+    {
+      "id": "work-12",
+      "description": "Ours on BT Sport",
+      "imageUrl": "https://images.unsplash.com/photo-1574388628641-13da2704d6d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjaW5lbWF0aWMlMjBzdGlsbHxlbnwwfHx8fDE3NjMwNDcwNDh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cinematic still"
+    }
+  ]
+}

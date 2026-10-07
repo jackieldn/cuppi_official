@@ -1,0 +1,15 @@
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "https://localhost:3000",
+      "http://localhost:9002",
+      "http://127.0.0.1:9002",
+      "http://localhost:3000",
+      "https://cuppi.co.uk",
+      "https://motionverse--studio-5700093446-89b93.us-east4.hosted.app"
+    ],
+    "method": ["GET"],
+    "maxAgeSeconds": 3600
+  }
+]

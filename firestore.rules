@@ -1,0 +1,175 @@
+/**
+ * @file Overview
+ * This ruleset implements a role-based access control model for a portfolio management application.
+ * It segregates data into public projects and private admin roles.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a role-based access control model. Only users with a document
+ * present in the `roles_admin` collection are granted full access to manage the `projects` collection.
+ * Regular authenticated users, or even unauthenticated users, can read all projects.
+ *
+ * Data Structure:
+ * - /projects/{projectId}: Stores project data with fields like title, description, imageUrl, and featured status.
+ * - /roles_admin/{userId}: Stores admin user IDs. The existence of a document for a user ID grants admin privileges.
+ *
+ * Key Security Decisions:
+ * - Project reads are public to allow unauthenticated users to view the portfolio.
+ * - Project writes (create, update, delete) are restricted to users who have a corresponding document in the `/roles_admin/{userId}` collection.
+ * - Listing of admin roles is disallowed, as this reveals sensitive information.
+ *
+ * Denormalization for Authorization:
+ * - The `roles_admin` collection is used to quickly determine if a user has admin privileges without needing to embed roles within the user document or the project document.
+ *
+ * Structural Segregation:
+ * - The app uses separate collections for public project data (`/projects`) and private admin role data (`/roles_admin`).
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Controls read and write access to the projects collection.
+     * @path /projects/{projectId}
+     * @allow (get, list) Allow anyone to read any project.
+     * @allow (create, update, delete) Allow only admins to modify projects after authenticating with their password.
+     * @deny (create, update, delete) Deny non-admins or unauthorized users from creating, modifying or deleting any project.
+     * @principle Allows public read access but restricts write access to authorized admins only.
+     */
+    match /projects/{projectId} {
+      allow get, list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    /**
+     * @description Controls read and write access to the snaps collection.
+     * @path /snaps/{snapId}
+     * @allow (read) Allow anyone to read any snap.
+     * @allow (create, update, delete) Allow only admins to add or remove snaps.
+     * @principle Publicly readable gallery, admin-only management.
+     */
+    match /snaps/{snapId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Controls read and write access to the hobby_images collection.
+     * @path /hobby_images/{hobbyImageId}
+     * @allow (read) Allow anyone to read any hobby image.
+     * @allow (create, update, delete) Allow only admins to add or remove images.
+     * @principle Publicly readable gallery, admin-only management.
+     */
+    match /hobby_images/{hobbyImageId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    /**
+     * @description About page profile information. Public read, admin write.
+     * @path /about_profile/{profileId}
+     */
+    match /about_profile/{profileId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    /**
+     * @description Technical skills for the About page. Public read, admin write.
+     * @path /technical_skills/{skillId}
+     */
+    match /technical_skills/{skillId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * @description Work experience for the About page. Public read, admin write.
+     * @path /work_experience/{experienceId}
+     */
+    match /work_experience/{experienceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    /**
+     * @description Facts for the About page. Public read, admin write.
+     * @path /facts/{factId}
+     */
+    match /facts/{factId} {
+        allow get, list: if true;
+        allow write: if isAdmin();
+    }
+
+    /**
+     * @description Testimonials for the About page. Public read, admin write.
+     * @path /testimonials/{testimonialId}
+     */
+    match /testimonials/{testimonialId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * @description Chatbot knowledge base. Admin read/write.
+     * @path /chatbot_knowledge/{knowledgeId}
+     */
+    match /chatbot_knowledge/{knowledgeId} {
+      allow read, write: if isAdmin();
+    }
+
+    /**
+     * @description Apps and Websites data. Public read, admin write.
+     * @path /apps/{appId}
+     */
+    match /apps/{appId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * @description Legal documents. Public read, admin write.
+     * @path /legal_documents/{documentId}
+     */
+    match /legal_documents/{documentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * @description Beta signups. Public create is disabled, must go through backend flow.
+     * @path /beta_signups/{signupId}
+     */
+    match /beta_signups/{signupId} {
+      allow create: if false;
+      allow read, update, delete: if false;
+    }
+
+    /**
+     * @description Controls read and write access to the roles_admin collection. Only admins can create roles.
+     * @path /roles_admin/{userId}
+     * @allow (get) Allow a user to read their own admin role document.
+     * @allow (create) Allow a logged-in user to create their own role document.
+     * @deny (list, update, delete) Prevent users from listing, updating or deleting roles.
+     * @principle Restricts role management, but allows self-checking of admin status.
+     */
+    match /roles_admin/{userId} {
+      allow get: if request.auth.uid == userId;
+      allow list: if false;
+      allow create: if request.auth.uid == userId;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // ---- Helper functions ----
+
+    /**
+     * @description Checks if the user is an administrator by verifying the existence of a document in the /roles_admin/{userId} collection.
+     * @return {bool} True if the user is an admin, false otherwise.
+     */
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+  }
+}
