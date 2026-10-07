@@ -22,6 +22,21 @@ npm run dev
 - Cuppi: http://localhost:3000
 - Portfolio: http://jackiepoot.localhost:3000 (browsers resolve `*.localhost` themselves)
 
+## Checks
+
+GitHub runs these on every pull request (`.github/workflows/ci.yml`):
+
+```bash
+npm run typecheck   # TypeScript
+npm test            # unit tests: HTML sanitiser, form schemas, Brevo helper
+npm run build       # production build, with type checking on
+npm run test:rules  # Firestore + Storage rules in the emulator (needs Java and the Firebase CLI)
+```
+
+`npm audit --omit=dev --audit-level=critical` also runs, and again every Monday.
+The rules tests guard the important security property: a signed-in stranger
+cannot make themselves an admin, and only admins can change data or files.
+
 ## Switching the portfolio off
 
 Set `PORTFOLIO_ENABLED` to `"false"` in `apphosting.yaml` and redeploy.
