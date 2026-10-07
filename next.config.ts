@@ -10,6 +10,20 @@ const nextConfig: NextConfig = {
       { source: '/.well-known/apple-app-site-association', destination: '/aasa' },
     ];
   },
+  // The old /cuppi and /homeos sections were emptied out and left as blank
+  // pages. Send anything still linking to them to the real pages.
+  async redirects() {
+    const legacy = ['cuppi', 'homeos'];
+    const pages = ['faq', 'privacy', 'terms', 'beta-program-policy'];
+    return legacy.flatMap((prefix) => [
+      { source: `/${prefix}`, destination: '/', permanent: true },
+      ...pages.map((page) => ({
+        source: `/${prefix}/${page}`,
+        destination: `/${page}`,
+        permanent: true,
+      })),
+    ]);
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

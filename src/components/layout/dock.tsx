@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 
 const dockItems = [
-  { href: "/portfolio", icon: Home, label: "Portfolio" },
+  { href: "/", icon: Home, label: "Home" },
   { href: "/works", icon: LayoutGrid, label: "Work" },
   { href: "/snaps", icon: Palette, label: "Snaps" },
   { href: "/free-time", icon: Smile, label: "Free time" },
@@ -42,7 +42,7 @@ export function Dock() {
     return {};
   };
 
-  if (!isClient || pathname.startsWith('/cuppi') || pathname === '/') {
+  if (!isClient || pathname.startsWith('/admin')) {
     return null;
   }
 

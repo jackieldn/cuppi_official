@@ -1,7 +1,20 @@
 import { MetadataRoute } from 'next';
- 
-export default function robots(): MetadataRoute.Robots {
-  const baseUrl = 'https://cuppi.co.uk';
+import { headers } from 'next/headers';
+import { SITE_ORIGINS, hostFromHeaders, portfolioEnabled, siteForHost } from '@/lib/sites';
+
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const site = siteForHost(hostFromHeaders(await headers()));
+  const baseUrl = SITE_ORIGINS[site];
+
+  if (site === 'portfolio') {
+    return {
+      // While the portfolio is switched off there is nothing to crawl.
+      rules: portfolioEnabled()
+        ? { userAgent: '*', allow: '/', disallow: '/admin' }
+        : { userAgent: '*', disallow: '/' },
+      sitemap: `${baseUrl}/sitemap.xml`,
+    };
+  }
 
   return {
     rules: {

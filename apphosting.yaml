@@ -17,6 +17,15 @@ env:
       - BUILD
       - RUNTIME
 
+  # jackiepoot.co.uk (the portfolio) is only needed while job hunting. Set this
+  # to "false" and redeploy to swap the portfolio for a "Back soon" page
+  # (/admin stays reachable). Cuppi is unaffected. See src/lib/sites.ts.
+  - variable: PORTFOLIO_ENABLED
+    value: "true"
+    availability:
+      - BUILD
+      - RUNTIME
+
   # Support form (src/app/actions/send-support-email.ts). Server-side only, so
   # RUNTIME. The secrets live in Secret Manager; create them with
   #   firebase apphosting:secrets:set <NAME> --project studio-5700093446-89b93
