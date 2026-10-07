@@ -4,6 +4,15 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
+    // True when the signed-in user has a record in Firestore's roles_admin
+    // collection (the same check firestore.rules uses). This cross-service
+    // lookup needs the Firebase Rules service agent to have Firestore access;
+    // `firebase deploy` offers to grant it the first time.
+    function isAdmin() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/roles_admin/$(request.auth.uid));
+    }
+
     // Match all files within the 'projects' directory.
     match /projects/{allPaths=**} {
       /**
@@ -15,11 +24,10 @@ service firebase.storage {
 
       /**
        * @description Controls write access to project assets.
-       * @allow (write) Allows any authenticated admin user to upload, update, or delete files.
-       * @principle Since the upload functionality is only in the admin dashboard,
-       *            requiring authentication is a secure and effective way to control access.
+       * @allow (write) Allows admins (a roles_admin record exists) to upload, update, or delete files.
+       * @principle Being signed in is not enough: only admins can change files.
        */
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
     // Match all files within the 'snaps' directory.
@@ -33,23 +41,22 @@ service firebase.storage {
 
       /**
        * @description Controls write access to snap assets.
-       * @allow (write) Allows any authenticated admin user to upload, update, or delete files.
-       * @principle Since the upload functionality is only in the admin dashboard,
-       *            requiring authentication is a secure and effective way to control access.
+       * @allow (write) Allows admins (a roles_admin record exists) to upload, update, or delete files.
+       * @principle Being signed in is not enough: only admins can change files.
        */
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
     // Match all files within the 'hobby_images' directory.
     match /hobby_images/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     // Match all files within the 'apps' directory for app/website assets
     match /apps/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     // --- About Page assets ---
@@ -57,19 +64,19 @@ service firebase.storage {
     // Match all files for the about page.
     match /about/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
     // Match all files for technical skills icons.
     match /skills/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     // Match all files for work experience logos.
     match /experience/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
   }
 }

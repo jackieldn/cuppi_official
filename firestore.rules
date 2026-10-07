@@ -147,7 +147,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Controls read and write access to the roles_admin collection. Only admins can create roles.
+     * @description Controls access to the roles_admin collection. A user can read only their own record; nobody can write from a client. Add admins in the Firebase console.
      * @path /roles_admin/{userId}
      * @allow (get) Allow a user to read their own admin role document.
      * @allow (create) Allow a logged-in user to create their own role document.
@@ -157,7 +157,10 @@ service cloud.firestore {
     match /roles_admin/{userId} {
       allow get: if request.auth.uid == userId;
       allow list: if false;
-      allow create: if request.auth.uid == userId;
+      // Admins are added by hand (Firebase console or Admin SDK), never by clients.
+      // Letting a signed-in user create their own record would let them promote
+      // themselves to admin.
+      allow create: if false;
       allow update: if false;
       allow delete: if false;
     }

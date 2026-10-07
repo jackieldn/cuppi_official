@@ -11,8 +11,13 @@ export const SITE_ORIGINS: Record<Site, string> = {
   portfolio: 'https://jackiepoot.co.uk',
 };
 
+// Exact matches only: a request carrying a look-alike Host such as
+// `jackiepoot.evil.com` or `localhost.evil.com` is treated as plain Cuppi.
+const PORTFOLIO_HOST = /^(www\.)?jackiepoot\.co\.uk$|^jackiepoot\.localhost(:\d+)?$/;
+const LOCAL_HOST = /^([a-z0-9-]+\.)*localhost(:\d+)?$/;
+
 export function siteForHost(host: string | null | undefined): Site {
-  return (host ?? '').toLowerCase().includes('jackiepoot') ? 'portfolio' : 'cuppi';
+  return PORTFOLIO_HOST.test((host ?? '').toLowerCase()) ? 'portfolio' : 'cuppi';
 }
 
 // Behind Firebase's CDN the original hostname arrives in x-forwarded-host.
@@ -25,7 +30,7 @@ export function hostFromHeaders(headers: Headers): string {
 // Everywhere else, cross-site redirects go to the real production origins.
 export function originForSite(site: Site, currentHost: string, protocol: string): string {
   const host = currentHost.toLowerCase();
-  if (host.includes('localhost')) {
+  if (LOCAL_HOST.test(host)) {
     const base = host.replace(/^jackiepoot\./, '');
     return `${protocol}//${site === 'portfolio' ? `jackiepoot.${base}` : base}`;
   }

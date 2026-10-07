@@ -10,6 +10,9 @@
       "region": "us-east4"
     }
   },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "storage": {
     "rules": "storage.rules",
     "cors": "storage.cors.json"

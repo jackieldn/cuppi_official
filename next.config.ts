@@ -3,6 +3,28 @@ import type {NextConfig} from 'next';
 const nextConfig: NextConfig = {
   /* config options here */
   output: "standalone",
+  poweredByHeader: false,
+  // Baseline security headers for both sites. A full script-src CSP needs a
+  // nonce setup (reCAPTCHA, Firebase, Sanity), so only the directives that are
+  // safe without one are enforced here.
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
+          },
+        ],
+      },
+    ];
+  },
   // Apple fetches the AASA file from exactly this path, with no redirect. App
   // Router cannot route a dot-prefixed folder, so serve it from /aasa.
   async rewrites() {
@@ -31,13 +53,10 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    // next/image fetches and re-encodes these on demand, so keep the list to
+    // sources we control. Allowing all of firebasestorage.googleapis.com would
+    // let anyone have the optimizer fetch files from their own bucket.
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
@@ -45,22 +64,16 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https' ,
-        hostname: 'picsum.photos',
-        port: '',
-        pathname: '/**',
-      },
-      {
         protocol: 'https',
         hostname: 'firebasestorage.googleapis.com',
         port: '',
-        pathname: '/**',
+        pathname: '/v0/b/studio-5700093446-89b93.firebasestorage.app/**',
       },
       {
         protocol: 'https',
         hostname: 'cdn.sanity.io',
         port: '',
-        pathname: '/**',
+        pathname: '/images/0uvqbyjc/**',
       },
     ],
   },
