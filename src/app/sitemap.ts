@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { sanityClient } from '@/lib/sanity-client';
 import { CosyCornerPost } from '@/lib/blog-types';
 import { SITE_ORIGINS, hostFromHeaders, portfolioEnabled, siteForHost } from '@/lib/sites';
+import { getFaqModel } from '@/lib/faq';
 
 async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = SITE_ORIGINS.cuppi;
@@ -21,7 +22,6 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = [
     '/',
     '/blog',
-    '/faq',
     '/support',
     '/terms',
     '/privacy',
@@ -35,7 +35,26 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '/' ? 1.0 : 0.5,
   }));
 
-  return [...staticUrls, ...postUrls];
+  // The FAQ hub and one page per topic, dated by when their answers last changed.
+  // A Sanity hiccup here should not take the rest of the sitemap down.
+  let faqUrls: MetadataRoute.Sitemap = [];
+  try {
+    const faq = await getFaqModel();
+    faqUrls = [
+      { url: `${baseUrl}/faq`, lastModified: faq.updatedAt ? new Date(faq.updatedAt) : undefined, changeFrequency: 'weekly' as 'weekly', priority: 0.7 },
+      ...faq.sections.map(section => ({
+        url: `${baseUrl}/faq/${section.id}`,
+        lastModified: section.updatedAt ? new Date(section.updatedAt) : undefined,
+        changeFrequency: 'weekly' as 'weekly',
+        priority: 0.6,
+      })),
+    ];
+  } catch (error) {
+    console.error('Could not add the FAQ pages to the sitemap:', error);
+    faqUrls = [{ url: `${baseUrl}/faq`, changeFrequency: 'weekly' as 'weekly', priority: 0.7 }];
+  }
+
+  return [...staticUrls, ...faqUrls, ...postUrls];
 }
 
 async function portfolioSitemap(): Promise<MetadataRoute.Sitemap> {
