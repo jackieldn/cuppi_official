@@ -103,6 +103,26 @@
 }
 
 @layer utilities {
+  /* FAQ: briefly highlights the answer a link points to. */
+  @keyframes faq-flash {
+    0%, 35% {
+      background-color: hsl(var(--secondary));
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  .faq-flash {
+    animation: faq-flash 1.8s ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .faq-flash {
+      animation: none;
+    }
+  }
+
   @keyframes icon-bounce {
     0% {
       transform: translateY(0) scale(1);

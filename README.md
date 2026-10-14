@@ -28,7 +28,7 @@ GitHub runs these on every pull request (`.github/workflows/ci.yml`):
 
 ```bash
 npm run typecheck   # TypeScript
-npm test            # unit tests: HTML sanitiser, form schemas, Brevo helper
+npm test            # unit tests: HTML sanitiser, form schemas, Brevo helper, FAQ model and search
 npm run build       # production build, with type checking on
 npm run test:rules  # Firestore + Storage rules in the emulator (needs Java and the Firebase CLI)
 ```
@@ -58,6 +58,24 @@ away; `/admin` still works. Set it back to `"true"` to restore the site.
     `node --experimental-transform-types --no-warnings scripts/home-page-seed.mjs home-page.ndjson`,
     then from the Studio folder `npx sanity dataset import home-page.ndjson production --missing`
     (`--missing` never overwrites an existing document).
+  - The FAQ is the "faq" documents, shown as a help centre: `/faq` (search and
+    topic cards) and one page per topic, `/faq/<topic>`, with every answer in
+    the page's HTML so crawlers and AI assistants can read it. Each answer has a
+    permalink, `/faq/<topic>#<question-slug>`. Search runs in the browser over
+    `/faq/search-index.json` and falls back to `/faq/search?q=…` with no
+    JavaScript. Which Sanity categories share a topic page is
+    `src/lib/faq-config.ts`; the reading order and sub-topics of the existing
+    answers are `src/lib/faq-layout.ts`, keyed by document id so rewording a
+    question never loses its place. A category nobody has mapped gets its own
+    page automatically, and a new answer appears after the listed ones.
+  - Optional fields for the Studio's FAQ schema (the site works without them):
+    `topic` (text, the sub-topic), `slug` (locks the link to an answer so
+    rewording the question never breaks it), `featured` (boolean, "Popular
+    questions" on `/faq`).
+  - A YouTube block in an answer is embedded and plays on the page, with a plain
+    "Watch on YouTube" link under it. Vertical videos (Shorts) get a portrait
+    frame; the shape is read from YouTube's thumbnail and falls back to 16:9.
+    Answers that are only "coming soon" are not shown.
 - Portfolio projects, snaps, about and apps: Firestore, edited at `/admin` on
   jackiepoot.co.uk.
 - `/.well-known/apple-app-site-association` (the iOS app's universal links) is

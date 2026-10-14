@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { urlFor } from '@/lib/sanity-client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { YouTubeEmbed } from '@/components/youtube-embed';
 
 const SimpleTableComponent = ({ value }: { value: { rows: { cells: string[] }[] } }) => {
   if (!value?.rows || value.rows.length === 0) {
@@ -109,15 +110,34 @@ const components: PortableTextComponents = {
       );
     },
     simpleTable: SimpleTableComponent,
+    youtube: ({ value }) => <YouTubeEmbed url={value?.url} />,
   }
+};
+
+// Answers sit under a question that is already an <h3>, so headings inside them
+// become <h4>, and lists hang outside the text like they do in the app.
+const answerComponents: PortableTextComponents = {
+  ...components,
+  block: {
+    h1: ({ children }) => <h4 className="font-headline text-lg font-bold mt-5 mb-2">{children}</h4>,
+    h2: ({ children }) => <h4 className="font-headline text-lg font-bold mt-5 mb-2">{children}</h4>,
+    h3: ({ children }) => <h4 className="font-headline text-lg font-bold mt-5 mb-2">{children}</h4>,
+    blockquote: ({ children }) => <blockquote className="border-l-4 border-primary pl-4 italic my-3">{children}</blockquote>,
+    normal: ({ children }) => <p className="mb-3">{children}</p>,
+  },
+  list: {
+    bullet: ({ children }) => <ul className="list-disc pl-6 mb-3 space-y-1.5">{children}</ul>,
+    number: ({ children }) => <ol className="list-decimal pl-6 mb-3 space-y-1.5">{children}</ol>,
+  },
 };
 
 /**
  * A wrapper around Sanity's PortableText component that applies
  * project-specific rendering rules.
- * @param {{ value: any }} props - The Portable Text data to render.
+ * @param value - The Portable Text data to render.
+ * @param variant - "answer" for FAQ answers (compact, headings become h4).
  */
-export function PortableText({ value }: { value: any }) {
+export function PortableText({ value, variant = 'default' }: { value: any; variant?: 'default' | 'answer' }) {
   if (!value) return null;
-  return <PortableTextComponent value={value} components={components} />;
+  return <PortableTextComponent value={value} components={variant === 'answer' ? answerComponents : components} />;
 }
