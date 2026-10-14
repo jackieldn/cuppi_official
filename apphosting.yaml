@@ -43,6 +43,13 @@ env:
     secret: SUPPORT_EMAIL_TO
     availability:
       - RUNTIME
+  # Keys the hash that identifies a visitor on FAQ "Was this helpful?" votes, so
+  # the stored ids cannot be turned back into IP addresses. Any long random value:
+  #   openssl rand -hex 32 | firebase apphosting:secrets:set FAQ_FEEDBACK_SALT --project studio-5700093446-89b93 --data-file -
+  - variable: FAQ_FEEDBACK_SALT
+    secret: FAQ_FEEDBACK_SALT
+    availability:
+      - RUNTIME
   # Must be a sender verified in Brevo. Already public on the site.
   - variable: SUPPORT_EMAIL_FROM
     value: support@cuppi.co.uk

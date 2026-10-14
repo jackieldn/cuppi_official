@@ -22,6 +22,9 @@ before(async () => {
     await setDoc(doc(ctx.firestore(), 'roles_admin/admin'), { createdAt: 1 });
     await setDoc(doc(ctx.firestore(), 'projects/p1'), { title: 'x' });
     await setDoc(doc(ctx.firestore(), 'beta_signups/s1'), { email: 'a@b.c' });
+    await setDoc(doc(ctx.firestore(), 'faq_feedback/a1'), { up: 1, down: 0 });
+    await setDoc(doc(ctx.firestore(), 'faq_feedback_votes/a1_v1'), { helpful: true });
+    await setDoc(doc(ctx.firestore(), 'faq_feedback_limits/site_x'), { count: 1 });
     await uploadString(ref(ctx.storage(), 'projects/existing.txt'), 'hi');
   });
   anon = env.unauthenticatedContext();
@@ -63,6 +66,32 @@ describe('Firestore rules', () => {
   test('signup emails are never readable from a client', async () => {
     await assertFails(getDoc(doc(admin.firestore(), 'beta_signups/s1')));
     await assertFails(getDoc(doc(anon.firestore(), 'beta_signups/s1')));
+  });
+});
+
+describe('FAQ feedback rules', () => {
+  const collections = [
+    ['faq_feedback', 'a1'],
+    ['faq_feedback_votes', 'a1_v1'],
+    ['faq_feedback_limits', 'site_x'],
+  ];
+
+  test('nobody can read votes, totals or limits from a client, not even an admin', async () => {
+    for (const [name, id] of collections) {
+      for (const ctx of [anon, stranger, admin]) {
+        await assertFails(getDoc(doc(ctx.firestore(), `${name}/${id}`)));
+        await assertFails(getDocs(collection(ctx.firestore(), name)));
+      }
+    }
+  });
+
+  test('nobody can write, forge or reset votes, totals or limits from a client, not even an admin', async () => {
+    for (const [name, id] of collections) {
+      for (const ctx of [anon, stranger, admin]) {
+        await assertFails(setDoc(doc(ctx.firestore(), `${name}/${id}`), { up: 9999 }));
+        await assertFails(setDoc(doc(ctx.firestore(), `${name}/brand-new`), { up: 1 }));
+      }
+    }
   });
 });
 

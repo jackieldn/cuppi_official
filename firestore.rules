@@ -147,6 +147,23 @@ service cloud.firestore {
     }
 
     /**
+     * @description "Was this helpful?" votes on FAQ answers. Written only by the
+     * server (src/app/actions/faq-feedback.ts, Admin SDK, which ignores these rules)
+     * and read in the Firebase console. Clients can never read or write them, so
+     * votes cannot be forged, counted or scraped from the browser.
+     * @path /faq_feedback/{answerId}, /faq_feedback_votes/{voteId}, /faq_feedback_limits/{limitId}
+     */
+    match /faq_feedback/{answerId} {
+      allow read, write: if false;
+    }
+    match /faq_feedback_votes/{voteId} {
+      allow read, write: if false;
+    }
+    match /faq_feedback_limits/{limitId} {
+      allow read, write: if false;
+    }
+
+    /**
      * @description Controls access to the roles_admin collection. A user can read only their own record; nobody can write from a client. Add admins in the Firebase console.
      * @path /roles_admin/{userId}
      * @allow (get) Allow a user to read their own admin role document.

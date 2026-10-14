@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { ChevronDown, Link2 } from 'lucide-react';
+import { FaqFeedback } from '@/components/faq/faq-feedback';
 import { PortableText } from '@/components/portable-text';
 import type { FaqEntry } from '@/lib/faq-model';
 
@@ -26,7 +27,8 @@ export function FaqEntryItem({ entry }: { entry: FaqEntry }) {
         <div className="max-w-prose text-base leading-relaxed">
           <PortableText value={entry.answer} variant="answer" />
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+        <FaqFeedback answerId={entry.id} />
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
           <a
             href={`#${entry.slug}`}
             data-faq-permalink

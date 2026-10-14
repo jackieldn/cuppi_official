@@ -76,6 +76,21 @@ away; `/admin` still works. Set it back to `"true"` to restore the site.
     "Watch on YouTube" link under it. Vertical videos (Shorts) get a portrait
     frame; the shape is read from YouTube's thumbnail and falls back to 16:9.
     Answers that are only "coming soon" are not shown.
+  - Each FAQ answer has a "Was this helpful?" thumbs up/down. Votes go through a
+    server action (`src/app/actions/faq-feedback.ts`) into Firestore; clients
+    can never read or write those collections (`firestore.rules`). Read the
+    results in the Firebase console, collection `faq_feedback`: one document per
+    answer with `up`, `down`, `total` and `helpfulPct` (sort by `down` to find
+    answers to rewrite). Votes are never shown on the site and never change
+    what it shows. Protection: only real answer ids are accepted, one vote per
+    visitor per answer (a changed mind replaces the vote), a per-visitor,
+    per-answer and site-wide hourly limit that asks for a reCAPTCHA and then
+    refuses, and a hidden honeypot field. A visitor is a keyed hash of IP and
+    user agent that changes monthly; no raw IP is stored. One-off setup: create
+    the `FAQ_FEEDBACK_SALT` secret (command in `apphosting.yaml`) before the
+    rollout, and enable a Firestore TTL policy so hourly counters clean
+    themselves up:
+    `gcloud firestore fields ttls update expireAt --collection-group=faq_feedback_limits --enable-ttl --project studio-5700093446-89b93`
 - Portfolio projects, snaps, about and apps: Firestore, edited at `/admin` on
   jackiepoot.co.uk.
 - `/.well-known/apple-app-site-association` (the iOS app's universal links) is
