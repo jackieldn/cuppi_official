@@ -12,6 +12,8 @@
 export const SECURITY_CONTACT = 'support@cuppi.co.uk';
 export const SECURITY_POLICY_URL = 'https://cuppi.co.uk/security';
 export const SECURITY_TXT_URL = 'https://cuppi.co.uk/.well-known/security.txt';
+// The site also answers on www (the app links there), so both are canonical.
+export const SECURITY_TXT_CANONICAL = [SECURITY_TXT_URL, 'https://www.cuppi.co.uk/.well-known/security.txt'];
 export const SECURITY_TXT_EXPIRES = '2027-10-22T00:00:00.000Z';
 
 export function securityTxt(): string {
@@ -22,7 +24,7 @@ export function securityTxt(): string {
     `Expires: ${SECURITY_TXT_EXPIRES}`,
     `Policy: ${SECURITY_POLICY_URL}`,
     'Preferred-Languages: en',
-    `Canonical: ${SECURITY_TXT_URL}`,
+    ...SECURITY_TXT_CANONICAL.map((url) => `Canonical: ${url}`),
     '',
   ].join('\n');
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   securityTxt,
   SECURITY_TXT_EXPIRES,
-  SECURITY_TXT_URL,
+  SECURITY_TXT_CANONICAL,
   SECURITY_POLICY_URL,
 } from '../../src/lib/security-txt.ts';
 
@@ -25,7 +25,7 @@ test('has the fields RFC 9116 requires, once each where it says so', () => {
   assert.ok(f.Contact?.length >= 1, 'Contact is required');
   for (const c of f.Contact) assert.match(c, /^(mailto:|https:\/\/)/);
   assert.equal(f.Expires?.length, 1, 'Expires is required, exactly once');
-  assert.deepEqual(f.Canonical, [SECURITY_TXT_URL]);
+  assert.deepEqual(f.Canonical, SECURITY_TXT_CANONICAL);
   assert.deepEqual(f.Policy, [SECURITY_POLICY_URL]);
 });
 
