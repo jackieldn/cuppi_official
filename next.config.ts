@@ -27,9 +27,11 @@ const nextConfig: NextConfig = {
   },
   // Apple fetches the AASA file from exactly this path, with no redirect. App
   // Router cannot route a dot-prefixed folder, so serve it from /aasa.
+  // security.txt (RFC 9116) is served the same way, from /security-txt.
   async rewrites() {
     return [
       { source: '/.well-known/apple-app-site-association', destination: '/aasa' },
+      { source: '/.well-known/security.txt', destination: '/security-txt' },
     ];
   },
   // The old /cuppi and /homeos sections were emptied out and left as blank

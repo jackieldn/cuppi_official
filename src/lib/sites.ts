@@ -50,6 +50,8 @@ export const CUPPI_PATHS = [
   'beta-program-policy',
   'invite',
   'aasa',
+  'security',
+  'security-txt',
 ];
 
 export const PORTFOLIO_PATHS = [

@@ -25,7 +25,8 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
     '/support',
     '/terms',
     '/privacy',
-    '/family-safety'
+    '/family-safety',
+    '/security'
   ];
 
   const staticUrls = staticRoutes.map(route => ({

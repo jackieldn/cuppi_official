@@ -14,6 +14,7 @@ import {
 //   jackiepoot.co.uk the portfolio, with / shown as the portfolio home.
 //                    Cuppi paths are redirected to cuppi.co.uk.
 const AASA_PATH = '/.well-known/apple-app-site-association';
+const SECURITY_TXT_PATH = '/.well-known/security.txt';
 
 export function middleware(request: NextRequest) {
   const { pathname, search, protocol } = request.nextUrl;
@@ -31,8 +32,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // The app's universal-link file belongs to cuppi.co.uk alone.
-  if (pathname === AASA_PATH) return new NextResponse(null, { status: 404 });
+  // The app's universal-link file and its security.txt belong to cuppi.co.uk
+  // alone. security.txt names its own canonical URL, so serving Cuppi's copy
+  // on the portfolio's domain would publish a file that contradicts itself.
+  if (pathname === AASA_PATH || pathname === SECURITY_TXT_PATH) {
+    return new NextResponse(null, { status: 404 });
+  }
 
   if (CUPPI_PATHS.includes(first)) return redirectTo('cuppi', pathname);
 
