@@ -32,6 +32,7 @@ export function CuppiFooter() {
                     <Link href="/privacy" className="text-sm text-neutral-500 hover:text-black transition-colors">Privacy</Link>
                     <Link href="/faq" className="text-sm text-neutral-500 hover:text-black transition-colors">FAQ</Link>
                     <Link href="/family-safety" className="text-sm text-neutral-500 hover:text-black transition-colors">Family Safety</Link>
+                    <Link href="/security" className="text-sm text-neutral-500 hover:text-black transition-colors">Security</Link>
                 </div>
                 <div className="flex items-center gap-x-4 sm:gap-x-5">
                     <Link href="https://www.facebook.com/cuppiapp/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-neutral-500 hover:opacity-80 transition-opacity">
