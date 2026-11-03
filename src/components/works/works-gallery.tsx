@@ -145,7 +145,7 @@ export function WorksGallery({ initialProjects, isLoading }: WorksGalleryProps) 
             <div ref={sortBoxRef} className="relative flex items-center gap-2 rounded-full border p-1">
                 <div
                   aria-hidden="true"
-                  className={cn("pointer-events-none absolute bottom-1 top-1 rounded-full bg-secondary", pill ? "opacity-100" : "opacity-0")}
+                  className={cn("pointer-events-none absolute bottom-1 top-1 rounded-full bg-accent", pill ? "opacity-100" : "opacity-0")}
                   style={{
                     left: pill?.left ?? 0,
                     width: pill?.width ?? 0,
@@ -161,7 +161,7 @@ export function WorksGallery({ initialProjects, isLoading }: WorksGalleryProps) 
                     onClick={() => changeSort(order)}
                     className={cn(
                       "relative z-10 rounded-full bg-transparent transition-colors hover:bg-transparent",
-                      sortOrder === order ? "text-secondary-foreground" : "text-muted-foreground hover:text-foreground"
+                      sortOrder === order ? "text-accent-foreground" : "text-muted-foreground hover:text-foreground"
                     )}
                   >
                     {order === "newest" ? "Newest First" : "Oldest First"}

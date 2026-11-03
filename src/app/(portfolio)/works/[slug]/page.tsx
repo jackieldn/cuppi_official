@@ -15,7 +15,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { clearFlight, landFlight, startReturnFlight, useFlight } from '@/lib/card-flight';
 import { hideBand, showBand } from '@/lib/title-band';
-import { CoverGlow } from '@/components/works/cover-glow';
+import { CoverGlow, CoverSweeps } from '@/components/works/cover-glow';
 import { useFetchCollection } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { NoAiIcon } from "@/components/icons/no-ai-icon";
 import { cn, getResizedImageUrl } from "@/lib/utils";
+import { SHINE_STYLE, TILT_TRANSFORM, useCursorTilt } from "@/lib/use-cursor-tilt";
 
 // Tags and gallery outlines cycle through the portfolio palette.
 const TAG_COLOURS = [
@@ -66,6 +67,9 @@ export default function ProjectPage() {
   // Coming from a works card: its copy is waiting to fly onto this cover. Hold the
   // real cover back until it has landed, then let the flight glide in.
   const coverRef = useRef<HTMLDivElement>(null);
+  // Same cursor tilt and shine as the cards on the works page.
+  const { tiltRef, onPointerMove: handleCoverPointerMove, onPointerLeave: handleCoverPointerLeave } =
+    useCursorTilt<HTMLDivElement>(coverRef);
   const flight = useFlight();
   const awaitingFlight = flight?.slug === slug;
   // Arrived by flight: the cover is handed over by the flying copy. Otherwise (direct
@@ -149,7 +153,7 @@ export default function ProjectPage() {
     return () => window.removeEventListener('popstate', onPopState, { capture: true });
   }, [slug]);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit =(e: React.FormEvent) => {
     e.preventDefault();
     if (project?.privacy?.password === password) {
       setIsUnlocked(true);
@@ -260,14 +264,45 @@ export default function ProjectPage() {
                   )}
                 >
                   {glowRun && glowSrc && <CoverGlow src={glowSrc} />}
-                  <Image
-                    src={getResizedImageUrl(project.imageUrl, '800x800')}
-                    alt={project.description || ''}
-                    fill
-                    priority
-                    className="object-cover rounded-2xl"
-                    data-ai-hint="project cover"
-                  />
+                  {/* Same cursor tilt and shine as the cards on the works page. The wrapper
+                      above doesn't tilt, so the flight still measures the true cover box. */}
+                  <div
+                    ref={tiltRef}
+                    onPointerMove={handleCoverPointerMove}
+                    onPointerLeave={handleCoverPointerLeave}
+                    className="absolute inset-0"
+                    style={{
+                      transform: TILT_TRANSFORM,
+                      transition: "transform 220ms ease-out",
+                    }}
+                  >
+                    {/* The picture and shine are clipped to the rounded corners; the glow isn't. */}
+                    <div className="absolute inset-0 overflow-hidden rounded-2xl">
+                    <Image
+                      src={getResizedImageUrl(project.imageUrl, '800x800')}
+                      alt={project.description || ''}
+                      fill
+                      priority
+                      className="object-cover rounded-2xl"
+                      // Rests at scale 1 (the flight hands over to it unzoomed); while hovered it
+                      // zooms a touch and counter-moves against the tilt so it sits behind the card.
+                      style={{
+                        transform: "scale(calc(1 + var(--lift, 0) * 0.04)) translate(calc(var(--px, 0) * -6px), calc(var(--py, 0) * -6px))",
+                        transition: "transform 220ms ease-out",
+                      }}
+                      data-ai-hint="project cover"
+                    />
+                    {/* Shine: a soft highlight that tracks the cursor, strongest while hovered. */}
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0"
+                      style={SHINE_STYLE}
+                    />
+                    </div>
+                    {/* The stronger highlights sweep along the picture's bottom edge: glowing on it
+                        and spilling out below, tilting with it. */}
+                    {glowRun && glowSrc && <CoverSweeps src={glowSrc} />}
+                  </div>
                 </div>
               )}
               <div className="space-y-6">

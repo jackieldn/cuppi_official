@@ -106,7 +106,7 @@ export function Dock() {
           */}
           <div
             aria-hidden="true"
-            className="absolute inset-0 rounded-[19px] border border-palette-lagoon/60 bg-palette-lagoon/30 backdrop-blur-lg"
+            className="absolute inset-0 rounded-[38px] border border-palette-lagoon/60 bg-palette-lagoon/30 backdrop-blur-lg"
           />
           {dockItems.map((item) => (
             <Tooltip key={item.label}>
@@ -121,7 +121,9 @@ export function Dock() {
                     // The after: strip is an invisible hit area below the tile. It lifts with
                     // it, so the spot the tile just left still counts as hovered (otherwise
                     // the tile drops, loses the cursor, lifts again and jiggles).
-                    "group relative flex size-[58px] items-center justify-center rounded-[14px] backdrop-blur-md after:absolute after:inset-x-0 after:top-full after:h-4 after:content-[''] transition-transform duration-200 ease-in-out hover:-translate-y-2.5 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
+                    // will-change keeps the tile on its own compositor layer at rest too, so it
+                    // isn't re-rasterised (and nudged sideways) each time it lifts or lands.
+                    "group relative flex size-[58px] items-center justify-center rounded-[28px] backdrop-blur-md will-change-transform after:absolute after:inset-x-0 after:top-full after:h-4 after:content-[''] transition-transform duration-200 ease-in-out hover:-translate-y-2.5 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
                     isActive(item.href)
                       ? "bg-palette-lagoon text-palette-ink"
                       : "bg-background/60 text-foreground hover:bg-primary hover:text-primary-foreground"
