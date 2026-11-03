@@ -30,6 +30,7 @@ export default function ProjectPage() {
   const firestore = useFirestore();
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [password, setPassword] = useState('');
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const params = useParams();
   const slug = params.slug as string;
@@ -128,12 +129,15 @@ export default function ProjectPage() {
   const galleryImages = project.galleryImages || [];
   const videoUrls = project.videoUrls || [];
 
-  const galleryImageObjects = galleryImages.map((url, i) => ({
+  // Skip entries whose file no longer exists so they don't render as broken boxes.
+  const galleryImageObjects = galleryImages
+    .map((url, i) => ({
       id: `${project.id}-gallery-${i}`,
       imageUrl: url,
       description: project.title,
       imageHint: "project gallery"
-  }))
+    }))
+    .filter((image) => !failedImages.has(image.imageUrl))
 
   const deliveryDate = [project.deliveryMonth, project.deliveryYear].filter(Boolean).join(", ");
 
@@ -220,6 +224,7 @@ export default function ProjectPage() {
                               fill
                               className="object-cover transition-transform duration-300 group-hover:scale-105"
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              onError={() => setFailedImages((prev) => new Set(prev).add(image.imageUrl))}
                               data-ai-hint={image.imageHint}
                             />
                           </div>
