@@ -12,6 +12,7 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Separator } from '../ui/separator';
+import { Reveal } from '../ui/reveal';
 import { format } from 'date-fns';
 
 interface TestimonialsSectionProps {
@@ -40,7 +41,8 @@ const TestimonialItem = ({ testimonial }: { testimonial: Testimonial }) => {
 
 
   return (
-    <Card className="flex flex-col rounded-2xl shadow-lg">
+    <Reveal stagger={120} className="flex">
+    <Card className="flex w-full flex-col rounded-2xl shadow-lg">
       <CardContent className="flex-1 p-6">
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
           <blockquote className="text-lg italic text-foreground/90 whitespace-pre-line">
@@ -72,6 +74,7 @@ const TestimonialItem = ({ testimonial }: { testimonial: Testimonial }) => {
         )}
       </CardFooter>
     </Card>
+    </Reveal>
   );
 };
 
@@ -89,11 +92,11 @@ export function TestimonialsSection({ testimonials }: TestimonialsSectionProps) 
   return (
     <section id="testimonials" className="scroll-mt-20">
       <Separator className="my-16" />
-      <div className="container mx-auto px-4 text-center">
+      <Reveal className="container mx-auto px-4 text-center">
         <h2 className="font-headline text-5xl font-bold tracking-tight text-foreground sm:text-6xl mb-16">
           Testimonials
         </h2>
-      </div>
+      </Reveal>
       <div className="max-w-6xl mx-auto">
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

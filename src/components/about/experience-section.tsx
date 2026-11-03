@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
+import { Reveal } from '../ui/reveal';
 import {
   Collapsible,
   CollapsibleContent,
@@ -17,7 +18,8 @@ interface ExperienceSectionProps {
 }
 
 const ExperienceItem = ({ exp, isLastItem }: { exp: WorkExperience, isLastItem: boolean }) => (
-    <div className="relative pl-16 pb-12">
+    // Items that scroll into view together fade up one after another.
+    <Reveal stagger={200} className="relative pl-16 pb-12">
         {/* Timeline Dot */}
         <div className="absolute left-6 -translate-x-1/2 w-4 h-4 bg-primary rounded-full ring-8 ring-background z-10" />
 
@@ -53,7 +55,7 @@ const ExperienceItem = ({ exp, isLastItem }: { exp: WorkExperience, isLastItem: 
             </div>
             </div>
         </div>
-    </div>
+    </Reveal>
 );
 
 

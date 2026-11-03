@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn, getResizedImageUrl } from "@/lib/utils";
 import { Button } from "../ui/button";
+import { Reveal } from "../ui/reveal";
 import { ChevronLeft, ChevronRight, Palette } from "lucide-react";
 
 type HobbyImage = {
@@ -118,7 +119,7 @@ export function FreeTimeGallery({ initialImages }: FreeTimeGalleryProps) {
   return (
     <section className="py-24 sm:py-32">
       <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-3xl">
+        <Reveal className="mx-auto max-w-3xl">
            <div className="flex items-center gap-4 mb-4">
              <Palette className="h-10 w-10 text-accent" />
              <h1 className="font-headline text-5xl font-bold tracking-tight text-accent sm:text-6xl">
@@ -130,9 +131,9 @@ export function FreeTimeGallery({ initialImages }: FreeTimeGalleryProps) {
               It's not just animations for me. I also love experimenting with real-life-touchable-things or just scribbling and drawing comics.
             </p>
           </div>
-        </div>
+        </Reveal>
 
-        <div className="flex justify-center items-center flex-wrap gap-4 mt-16">
+        <Reveal stagger={150} className="flex justify-center items-center flex-wrap gap-4 mt-16">
             <div className="flex flex-wrap justify-center gap-2">
               {filterTags.map((tag) => (
                 <Button
@@ -147,7 +148,7 @@ export function FreeTimeGallery({ initialImages }: FreeTimeGalleryProps) {
                 </Button>
               ))}
             </div>
-        </div>
+        </Reveal>
 
         <div 
           className="mx-auto mt-12 grid grid-cols-1 sm:grid-cols-6 gap-4"
@@ -160,13 +161,15 @@ export function FreeTimeGallery({ initialImages }: FreeTimeGalleryProps) {
               </div>
             ))}
           {!showSkeletons && filteredAndSortedImages.map((image, index) => (
-              <div 
+              // The grid item carries the column span; the tile inside keeps the hover styling.
+              <Reveal
                 key={image.id}
+                stagger={90}
+                className={layoutPattern[index % layoutPattern.length]}
+              >
+              <div
                 onClick={() => setSelectedImageIndex(index)}
-                className={cn(
-                  "group relative block cursor-pointer overflow-hidden rounded-2xl shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl hover:ring-4 hover:ring-accent",
-                   layoutPattern[index % layoutPattern.length]
-                )}
+                className="group relative block h-full cursor-pointer overflow-hidden rounded-2xl shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl hover:ring-4 hover:ring-accent"
               >
                   <div className="absolute inset-0">
                     <Image
@@ -179,6 +182,7 @@ export function FreeTimeGallery({ initialImages }: FreeTimeGalleryProps) {
                     />
                   </div>
               </div>
+              </Reveal>
           ))}
         </div>
       </div>
