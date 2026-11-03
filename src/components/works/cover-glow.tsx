@@ -1,22 +1,26 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 
 /**
- * Ambient glow under the project cover, the same trick as the home-page video: a
- * blurred copy of the picture itself behind it, so the light that spills out is the
- * picture's own colours, continuous with its bottom edge.
+ * Ambient glow for the project cover, in two parts, the same trick as the home-page
+ * video: a blurred copy of the picture itself, so the light is the picture's own colours.
  *
- * The copy is mirrored (flipped vertically and bottom-aligned) so the row just below
- * the cover is the picture's bottom row. Brighter copies then sweep along it, one at a
- * time or a few overlapping, each launched at a random moment with a random direction
- * (left to right or right to left), speed, width and strength.
+ * CoverGlow is the base: a pulsing glow that spills out below the cover. The copy is
+ * mirrored (flipped vertically and bottom-aligned) so the row just below the cover is
+ * the picture's bottom row. Place it inside the cover's `relative` box, BEFORE the
+ * picture, so it paints behind it.
+ *
+ * CoverSweeps is the stronger, smaller part: brighter highlights that sweep along the
+ * picture's bottom edge, one at a time or a few overlapping, each launched at a random
+ * moment with a random direction (left to right or right to left), speed, width and
+ * strength. They glow on the picture, fading up from its bottom edge, and spill out
+ * below it. The picture's bottom edge is mirrored, so the light is continuous across
+ * it. Place it inside the cover's tilting box, AFTER the (clipped) picture.
  *
  * A CSS mask clips whatever it is applied to at that element's box, blur spill
- * included. So the masks sit on wrapper boxes much bigger than the blurred pictures
- * inside them (MARGIN_X / MARGIN_TOP), and never on a blurred element itself.
- *
- * Place inside the cover's `relative` box, BEFORE the picture, so it paints behind it.
+ * included. So the base glow's masks sit on wrapper boxes much bigger than the blurred
+ * pictures inside them (MARGIN_X / MARGIN_TOP), and never on a blurred element itself.
  */
 const GLOW_H = '3.5rem'; // how far the pictures reach below the cover's bottom edge
 const MARGIN_X = '5rem'; // wrapper extends this far past the cover's sides
@@ -45,15 +49,31 @@ interface Sweep {
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const MAX_SWEEPS = 3;
 
-const fadeAcross = `linear-gradient(90deg, transparent ${MARGIN_X}, black 50%, transparent calc(100% - ${MARGIN_X}))`;
-const fadeDown = `linear-gradient(to bottom, black calc(${MARGIN_TOP} + 0.2rem), transparent calc(${MARGIN_TOP} + 3rem))`;
+const SWEEP_OVER = '1rem'; // how far up into the picture the strong glow reaches
+const SWEEP_SPILL = '0.75rem'; // how far below the picture it fades out
+const SWEEP_MARGIN = '3.5rem'; // room above and below for the blur, so masks never cut it off
+
+// Heights in the sweep box, which runs from SWEEP_MARGIN above the glow's top to well below it.
+const sweepEdge = `calc(${SWEEP_OVER} + ${SWEEP_MARGIN})`; // y of the picture's bottom edge
+const sweepFadeAcross = `linear-gradient(90deg, transparent ${MARGIN_X}, rgba(0, 0, 0, 0.8) 50%, transparent calc(100% - ${MARGIN_X}))`;
+const sweepFadeV = `linear-gradient(to bottom, transparent ${SWEEP_MARGIN}, black ${sweepEdge}, transparent calc(${sweepEdge} + ${SWEEP_SPILL}))`;
+
+const sweepLayer = {
+  position: 'absolute',
+  left: MARGIN_X,
+  width: `calc(100% - 2 * ${MARGIN_X})`,
+  objectPosition: 'bottom',
+} as const;
 
 /**
- * One brighter pass. Each effect has its own wrapper so the masks (which multiply) and
- * the blur never share an element: the 0-100-0 fade across the cover, then the downward
- * fade, then the moving window. The window is animated with the Web Animations API from
- * fully off one end to fully off the other; for a window of width w (as a fraction), a
+ * One brighter pass. Each effect has its own wrapper so the masks (which multiply)
+ * never share an element: the 0-80-0 fade across the cover, then the vertical fade,
+ * then the moving window. The window is animated with the Web Animations API from fully
+ * off one end to fully off the other; for a window of width w (as a fraction), a
  * mask-position of -w/(1-w) * 100% is just off the left end.
+ *
+ * The picture is drawn twice, blurred together as one: its bottom rows as they are
+ * (the glow on the picture), and the same rows flipped below the edge (the spill).
  */
 function GlowSweep({ src, sweep, onDone }: { src: string; sweep: Sweep; onDone: (id: number) => void }) {
   const mover = useRef<HTMLDivElement>(null);
@@ -78,9 +98,9 @@ function GlowSweep({ src, sweep, onDone }: { src: string; sweep: Sweep; onDone: 
   return (
     <div
       className="absolute inset-0"
-      style={{ WebkitMaskImage: fadeAcross, maskImage: fadeAcross, opacity: sweep.strength }}
+      style={{ WebkitMaskImage: sweepFadeAcross, maskImage: sweepFadeAcross, opacity: sweep.strength }}
     >
-      <div className="absolute inset-0" style={{ WebkitMaskImage: fadeDown, maskImage: fadeDown }}>
+      <div className="absolute inset-0" style={{ WebkitMaskImage: sweepFadeV, maskImage: sweepFadeV }}>
         <div
           ref={mover}
           className="absolute inset-0"
@@ -96,22 +116,32 @@ function GlowSweep({ src, sweep, onDone }: { src: string; sweep: Sweep; onDone: 
             maskPosition: `${from}% 0`,
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt=""
-            draggable={false}
-            className="object-cover blur-[17px] brightness-110 saturate-[2.8]"
-            style={{ ...picture, height: '40px' }}
-          />
+          <div className="absolute inset-0 blur-[24.5px] brightness-110 saturate-[2.8]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt=""
+              draggable={false}
+              className="object-cover"
+              style={{ ...sweepLayer, top: SWEEP_MARGIN, height: SWEEP_OVER }}
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt=""
+              draggable={false}
+              className="object-cover"
+              style={{ ...sweepLayer, top: sweepEdge, height: `calc(${SWEEP_SPILL} + 0.25rem)`, transform: 'scaleY(-1)' }}
+            />
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-export function CoverGlow({ src }: { src: string }) {
-  // A stream of sweeps at random moments. Up to MAX_SWEEPS can overlap.
+/** The stream of highlights at the picture's bottom edge. Up to MAX_SWEEPS can overlap. */
+export function CoverSweeps({ src }: { src: string }) {
   const [sweeps, setSweeps] = useState<Sweep[]>([]);
   const nextId = useRef(0);
   useEffect(() => {
@@ -127,7 +157,7 @@ export function CoverGlow({ src }: { src: string }) {
               {
                 id: nextId.current++,
                 dir: Math.random() < 0.5 ? 'ltr' : 'rtl',
-                ms: rand(2800, 7000),
+                ms: rand(5600, 14000),
                 width: rand(0.28, 0.55),
                 strength: rand(0.65, 1),
               },
@@ -143,6 +173,35 @@ export function CoverGlow({ src }: { src: string }) {
   }, []);
   const removeSweep = (id: number) => setSweeps((current) => current.filter((x) => x.id !== id));
 
+  return (
+    // A zero-height line along the picture's bottom edge; the sweep box hangs off it.
+    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-0 motion-reduce:hidden">
+      <div
+        className="absolute opacity-0 animate-[glow-in_1.4s_ease-out_forwards]"
+        style={{
+          left: `-${MARGIN_X}`,
+          right: `-${MARGIN_X}`,
+          top: `calc(-1 * ${sweepEdge})`,
+          height: `calc(${sweepEdge} + 7rem)`,
+          // Screened onto the picture so the light is its own colours; off the picture it
+          // has nothing to blend with and simply shows.
+          mixBlendMode: 'screen',
+        }}
+      >
+        {/* Each pass is drawn twice, in step, which doubles its light: opacity alone tops out at 100%. */}
+        {sweeps.map((sweep) => (
+          <Fragment key={sweep.id}>
+            <GlowSweep src={src} sweep={sweep} onDone={removeSweep} />
+            <GlowSweep src={src} sweep={sweep} onDone={removeSweep} />
+          </Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** The base glow: pulses below the cover, behind the picture. */
+export function CoverGlow({ src }: { src: string }) {
   return (
     <div
       aria-hidden="true"
@@ -182,9 +241,6 @@ export function CoverGlow({ src }: { src: string }) {
             style={{ ...picture, left: MARGIN_X, top: MARGIN_TOP }}
           />
         </div>
-        {sweeps.map((sweep) => (
-          <GlowSweep key={sweep.id} src={src} sweep={sweep} onDone={removeSweep} />
-        ))}
       </div>
     </div>
   );

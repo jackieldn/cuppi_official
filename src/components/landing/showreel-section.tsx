@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { Reveal } from '@/components/ui/reveal';
 
 export function ShowreelSection() {
   const videoUrl = "https://firebasestorage.googleapis.com/v0/b/studio-5700093446-89b93.firebasestorage.app/o/projects%2F1763125307049_JACK%20SHOWREEL%2023%20MEDIUM_1.mp4?alt=media&token=ddc8d3fb-4144-4d2a-b538-6405fdda9a15";
@@ -16,15 +17,15 @@ export function ShowreelSection() {
       )}
     >
       <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className={cn(
               "font-headline text-4xl font-bold tracking-tight sm:text-5xl transition-colors duration-2000 ease-in-out",
               isPlaying ? 'text-white' : 'text-foreground'
           )}>
             Showreel
           </h2>
-        </div>
-        <div className="relative mx-auto mt-16 aspect-video w-full max-w-5xl overflow-hidden rounded-2xl shadow-2xl">
+        </Reveal>
+        <Reveal className="relative mx-auto mt-16 aspect-video w-full max-w-5xl overflow-hidden rounded-2xl shadow-2xl">
           <video
             src={videoUrl}
             controls
@@ -34,7 +35,7 @@ export function ShowreelSection() {
             onEnded={() => setIsPlaying(false)}
             className="h-full w-full bg-black"
           />
-        </div>
+        </Reveal>
       </div>
     </section>
   );

@@ -1,6 +1,7 @@
 'use client';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Reveal } from "@/components/ui/reveal";
 import { Fragment, useEffect, useRef, useState, type RefObject } from "react";
 import { cn } from "@/lib/utils";
 import { useFlip, useIsomorphicLayoutEffect } from "@/lib/use-flip";
@@ -163,7 +164,8 @@ export function HeroSection() {
         <div className="flex flex-col items-center gap-12 lg:flex-row">
           {/* The slot is what widens. At rest it's the video (24rem) plus half the old spare space
               beside it, which halves the distance to the text (never wider than the old column). */}
-          <div
+          <Reveal
+            stagger={140}
             className={cn(
               "w-full lg:shrink-0 lg:transition-[width] lg:duration-500 lg:ease-[cubic-bezier(0.33,1,0.68,1)]",
               expanded ? "lg:w-[min(48rem,62%)]" : "lg:w-[min(calc(40%-1.8rem),calc(24rem+max(0px,20%-14.4rem)))]"
@@ -182,7 +184,8 @@ export function HeroSection() {
               <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-2xl lg:aspect-auto lg:h-full">
                <video
                   ref={videoRef}
-                  src={videoUrl}
+                  // #t= is a media fragment: the first play starts 5s in (loops restart from 0).
+                  src={`${videoUrl}#t=5`}
                   autoPlay
                   loop
                   muted
@@ -212,7 +215,7 @@ export function HeroSection() {
                </div>
               </div>
             </div>
-          </div>
+          </Reveal>
           {/* Fixed widths (the space left beside the slot above), so the text reflows once. */}
           <div
             ref={textRef}
@@ -221,6 +224,7 @@ export function HeroSection() {
               textNarrow ? "lg:w-[calc(100%-min(48rem,62%)-3rem)]" : "lg:w-[calc(100%-min(calc(40%-1.8rem),calc(24rem+max(0px,20%-14.4rem)))-3rem)]"
             )}
           >
+            <Reveal stagger={140}>
             <h1
               className={cn(
                 "font-headline text-4xl font-bold tracking-tight text-foreground sm:text-5xl",
@@ -237,9 +241,13 @@ export function HeroSection() {
                 </span>
               </span>
             </h1>
+            </Reveal>
+            <Reveal stagger={140}>
             <p className="mt-6 text-lg leading-8 text-foreground/80 md:text-xl">
               <Words text="with a huge amount of curiosity and motivation to create functional and pretty things." />
             </p>
+            </Reveal>
+            <Reveal stagger={140}>
             <div data-flip="move" className="mt-10 flex items-center justify-center gap-x-6 lg:justify-start">
               <Button
                 asChild
@@ -261,6 +269,7 @@ export function HeroSection() {
                 <Link href="#showreel" tabIndex={expanded ? -1 : 0}>Watch Showreel</Link>
               </Button>
             </div>
+            </Reveal>
           </div>
         </div>
       </div>
