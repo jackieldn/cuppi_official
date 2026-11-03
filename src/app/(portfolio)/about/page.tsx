@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import { useFetchCollection, useFirestore } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
-import { Skeleton } from '@/components/ui/skeleton';
 import { AboutProfile, TechnicalSkill, WorkExperience, Fact, Testimonial } from '@/lib/about-types';
 import { ProfileSection } from '@/components/about/profile-section';
 import { SkillsSection } from '@/components/about/skills-section';
@@ -93,13 +92,7 @@ export default function AboutPage() {
       </header>
 
       <main className="container mx-auto px-4 pb-16 sm:pb-24">
-        {isLoading ? (
-          <div className="space-y-24">
-            <Skeleton className="h-96 w-full" />
-            <Skeleton className="h-64 w-full" />
-            <Skeleton className="h-96 w-full" />
-          </div>
-        ) : (
+        {!isLoading && (
           <>
             <div className="space-y-16">
               {profile && (
