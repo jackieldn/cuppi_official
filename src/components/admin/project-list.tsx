@@ -12,6 +12,13 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { ProjectForm } from './project-form';
 import { useState, useMemo } from 'react';
 import { Project } from '@/lib/projects';
@@ -21,6 +28,7 @@ import { Lock } from 'lucide-react';
 export function ProjectList() {
   const firestore = useFirestore();
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const projectsQuery = useMemo(() => {
     if (!firestore) return null;
@@ -31,7 +39,17 @@ export function ProjectList() {
 
   const handleEditClick = (project: Project) => {
     setEditingProject(project);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setIsFormOpen(true);
+  };
+
+  const handleAddClick = () => {
+    setEditingProject(null);
+    setIsFormOpen(true);
+  };
+
+  const handleFormFinished = () => {
+    setIsFormOpen(false);
+    setEditingProject(null);
   };
 
   const handleToggleFeatured = (project: Project) => {
@@ -54,17 +72,28 @@ export function ProjectList() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="font-headline text-2xl font-bold mb-4">
-          {editingProject ? 'Edit Project' : 'Add New Project'}
-        </h2>
-        <ProjectForm
-          project={editingProject}
-          onFinished={() => setEditingProject(null)}
-        />
-      </div>
+      <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) handleFormFinished(); }}>
+        <DialogContent
+          className="max-w-4xl max-h-[90vh] overflow-y-auto"
+          // Clicking outside would silently throw away an in-progress edit.
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="font-headline text-2xl">
+              {editingProject ? 'Edit Project' : 'Add New Project'}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {editingProject ? `Edit ${editingProject.title}` : 'Add a new project'}
+            </DialogDescription>
+          </DialogHeader>
+          <ProjectForm project={editingProject} onFinished={handleFormFinished} />
+        </DialogContent>
+      </Dialog>
 
-      <h2 className="font-headline text-2xl font-bold">Existing Projects</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-headline text-2xl font-bold">Existing Projects</h2>
+        <Button onClick={handleAddClick}>Add Project</Button>
+      </div>
       <div className="border rounded-lg">
         <Table>
           <TableHeader>

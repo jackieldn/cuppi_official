@@ -39,6 +39,39 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+  /*
+    Portfolio theme (jackiepoot.co.uk only; the Cuppi site keeps :root above).
+    Palette: #0b2027 ink, #40798c ocean, #70a9a1 lagoon, #cfd7c7 sage, #f6f1d1 cream.
+    The orange accent is kept. Set on <body> so portalled dialogs inherit it too.
+  */
+  .theme-portfolio {
+    color-scheme: dark;
+    --font-headline: Sora;
+    --background: 195 56% 10%;
+    --foreground: 52 67% 89%;
+    --card: 195 50% 13%;
+    --card-foreground: 52 67% 89%;
+    --popover: 195 50% 12%;
+    --popover-foreground: 52 67% 89%;
+    --primary: 195 37% 40%;
+    --primary-foreground: 52 67% 89%;
+    --secondary: 195 40% 18%;
+    --secondary-foreground: 90 17% 81%;
+    --muted: 195 35% 17%;
+    --muted-foreground: 172 25% 62%;
+    --accent: 36 100% 50%;
+    --accent-foreground: 195 56% 10%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 52 67% 89%;
+    --border: 195 37% 40%;
+    --input: 195 37% 40%;
+    --ring: 172 25% 55%;
+    --chart-1: 195 37% 40%;
+    --chart-2: 172 25% 55%;
+    --chart-3: 90 17% 81%;
+    --chart-4: 52 67% 89%;
+    --chart-5: 36 100% 50%;
+  }
   .dark {
     --background: 228 10% 10%;
     --foreground: 233 30% 90%;
@@ -123,17 +156,29 @@
     }
   }
 
+  /*
+    Dock bounce: decelerate on the way up, accelerate on the way down (gravity),
+    then a small rebound and a rest so it loops smoothly.
+  */
   @keyframes icon-bounce {
     0% {
-      transform: translateY(0) scale(1);
-      animation-timing-function: cubic-bezier(0.2, 0, 1, 0.5);
+      transform: translateY(0);
+      animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
     }
-    40% {
-      transform: translateY(-30px) scale(1.1);
-      animation-timing-function: cubic-bezier(0.6, -0.28, 0.735, 0.045);
+    35% {
+      transform: translateY(-28px);
+      animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0);
     }
-    100% {
-      transform: translateY(0) scale(1);
+    62% {
+      transform: translateY(0);
+      animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+    }
+    74% {
+      transform: translateY(-7px);
+      animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0);
+    }
+    86%, 100% {
+      transform: translateY(0);
     }
   }
 
@@ -161,6 +206,65 @@
       opacity: 0;
       filter: blur(5px);
       color: hsl(var(--accent));
+    }
+  }
+
+  /*
+    Skill level bars (about page). Each filled segment grows from the left, one
+    after another, starting 0.85s after its card began fading up (that fade is
+    0.6s, so this is a beat after it has finished). --reveal-delay comes from
+    the Reveal wrapper and --i is the segment's index.
+  */
+  @keyframes skill-fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /*
+    Ambient glow under a project's cover (CoverGlow). glow-in fades it in once and
+    glow-pulse breathes the base glow; the moving highlights are animated in the
+    component itself, since their direction, speed and size are random.
+  */
+  @keyframes glow-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Slow breathing of the base glow: 80% -> 100% -> 80% opacity over its 5s cycle. */
+  @keyframes glow-pulse {
+    0%,
+    100% {
+      opacity: 0.8;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .skill-segment {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  [data-revealed] .skill-segment {
+    animation: skill-fill 0.35s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+    animation-delay: calc(var(--reveal-delay, 0ms) + 0.85s + var(--i, 0) * 0.1s);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skill-segment {
+      transform: none;
+    }
+    [data-revealed] .skill-segment {
+      animation: none;
     }
   }
 

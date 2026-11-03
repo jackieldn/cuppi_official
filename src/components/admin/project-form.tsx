@@ -41,7 +41,9 @@ const formSchema = z.object({
   image: z.any().optional(),
   blurredImage: z.any().optional(),
   videos: z.any().optional(),
-  galleryImages: z.any().optional(),
+  // File input only. Must not share a name with Project.galleryImages (saved
+  // URLs), or form.reset(project) fills it with strings and they get uploaded.
+  newGalleryImages: z.any().optional(),
   featured: z.boolean().default(false),
   tags: z.string().optional(),
   client: z.string().optional(),
@@ -204,7 +206,10 @@ const deleteFilesFromStorage = async (urls: string[]) => {
             // Only delete files that are from Firebase Storage
             if (url.includes('firebasestorage.googleapis.com')) {
                 const fileRef = ref(storage, url);
-                return deleteObject(fileRef);
+                // Already-missing files (e.g. dead entries being cleaned up) are fine.
+                return deleteObject(fileRef).catch((err) => {
+                    if (err?.code !== 'storage/object-not-found') throw err;
+                });
             }
             return Promise.resolve(); // Don't try to delete external URLs
         } catch (error) {
@@ -259,9 +264,9 @@ const deleteFilesFromStorage = async (urls: string[]) => {
         const finalVideoUrls = [...videoPreviews, ...newVideoUrls];
 
         let newGalleryImageUrls: string[] = [];
-        if (data.galleryImages && data.galleryImages.length > 0) {
-            const uploadPromises = Array.from(data.galleryImages).map((file: any) => 
-                handleFileUpload(file, `projects/gallery/${Date.now()}_${file.name}`)
+        if (data.newGalleryImages && data.newGalleryImages.length > 0) {
+            const uploadPromises = Array.from<File>(data.newGalleryImages).map((file, i) =>
+                handleFileUpload(file, `projects/gallery/${Date.now()}_${i}_${file.name}`)
             );
             newGalleryImageUrls = await Promise.all(uploadPromises);
         }
@@ -283,7 +288,7 @@ const deleteFilesFromStorage = async (urls: string[]) => {
         delete (processedData as any).image;
         delete (processedData as any).blurredImage;
         delete (processedData as any).videos;
-        delete (processedData as any).galleryImages; // This is the input element
+        delete (processedData as any).newGalleryImages; // This is the input element
         delete (processedData as any).galleryImageUrls;
         
 
@@ -493,7 +498,7 @@ const deleteFilesFromStorage = async (urls: string[]) => {
             )}
              <FormField
                 control={form.control}
-                name="galleryImages"
+                name="newGalleryImages"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Add New Gallery Images</FormLabel>

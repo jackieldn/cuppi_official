@@ -11,7 +11,8 @@ export default {
     extend: {
       fontFamily: {
         body: ['Inter', 'sans-serif'],
-        headline: ['"Space Grotesk"', 'sans-serif'],
+        // Cuppi keeps Space Grotesk; the portfolio theme sets --font-headline.
+        headline: ['var(--font-headline, "Space Grotesk")', 'sans-serif'],
         code: ['monospace'],
         'sf-pro': ['-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
         serif: ['"Times New Roman"', 'Times', 'serif'],
@@ -46,6 +47,14 @@ export default {
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
+        },
+        // Fixed portfolio palette, for sprinkling beyond the themed variables.
+        palette: {
+          ink: '#0b2027',
+          ocean: '#40798c',
+          lagoon: '#70a9a1',
+          sage: '#cfd7c7',
+          cream: '#f6f1d1',
         },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

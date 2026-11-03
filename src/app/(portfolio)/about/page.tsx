@@ -11,6 +11,7 @@ import { ExperienceSection } from '@/components/about/experience-section';
 import { FactsSection } from '@/components/about/facts-section';
 import { useMemo, useEffect } from 'react';
 import { Separator } from '@/components/ui/separator';
+import { Reveal } from '@/components/ui/reveal';
 import { TestimonialsSection } from '@/components/about/testimonials-section';
 
 export default function AboutPage() {
@@ -84,11 +85,11 @@ export default function AboutPage() {
   return (
     <div className="bg-background text-foreground">
       <header className="pt-24 pb-8 sm:pt-32">
-        <div className="container mx-auto px-4 text-center">
+        <Reveal className="container mx-auto px-4 text-center">
           <h1 className="font-headline text-5xl font-bold tracking-tight text-accent sm:text-6xl">
             History & Fun Facts
           </h1>
-        </div>
+        </Reveal>
       </header>
 
       <main className="container mx-auto px-4 pb-16 sm:pb-24">
@@ -102,9 +103,9 @@ export default function AboutPage() {
           <>
             <div className="space-y-16">
               {profile && (
-                <div className="max-w-3xl mx-auto bg-card p-8 sm:p-12 rounded-2xl border shadow-sm">
+                <Reveal className="max-w-3xl mx-auto bg-card p-8 sm:p-12 rounded-2xl border shadow-sm">
                     <ProfileSection profile={profile} />
-                </div>
+                </Reveal>
               )}
               {skills && skills.length > 0 && <SkillsSection skills={skills} />}
             </div>

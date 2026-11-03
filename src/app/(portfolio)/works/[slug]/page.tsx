@@ -1,6 +1,6 @@
 'use client';
 import { sanitizeHtml } from '@/lib/sanitize-html';
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -12,11 +12,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { clearFlight, landFlight, startReturnFlight, useFlight } from '@/lib/card-flight';
+import { hideBand, showBand } from '@/lib/title-band';
+import { CoverGlow } from '@/components/works/cover-glow';
 import { useFetchCollection } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
-import { Skeleton } from "@/components/ui/skeleton";
+import { Reveal } from "@/components/ui/reveal";
 import { Project } from "@/lib/projects";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -24,12 +27,26 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { NoAiIcon } from "@/components/icons/no-ai-icon";
-import { getResizedImageUrl } from "@/lib/utils";
+import { cn, getResizedImageUrl } from "@/lib/utils";
+
+// Tags and gallery outlines cycle through the portfolio palette.
+const TAG_COLOURS = [
+  "bg-palette-ocean text-palette-cream hover:bg-palette-ocean/80",
+  "bg-palette-lagoon text-palette-ink hover:bg-palette-lagoon/80",
+  "bg-palette-sage text-palette-ink hover:bg-palette-sage/80",
+];
+const GALLERY_RINGS = [
+  "hover:ring-accent",
+  "hover:ring-palette-lagoon",
+  "hover:ring-palette-cream",
+  "hover:ring-palette-ocean",
+];
 
 export default function ProjectPage() {
   const firestore = useFirestore();
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [password, setPassword] = useState('');
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const params = useParams();
   const slug = params.slug as string;
@@ -46,6 +63,92 @@ export default function ProjectPage() {
     return projects[0];
   }, [projects]);
 
+  // Coming from a works card: its copy is waiting to fly onto this cover. Hold the
+  // real cover back until it has landed, then let the flight glide in.
+  const coverRef = useRef<HTMLDivElement>(null);
+  const flight = useFlight();
+  const awaitingFlight = flight?.slug === slug;
+  // Arrived by flight: the cover is handed over by the flying copy. Otherwise (direct
+  // visit, reload) the cover fades up with everything else.
+  const cameFromFlight = useRef(awaitingFlight).current;
+
+  // The lighter band behind the title and details is drawn by a layer in the layout
+  // (see src/lib/title-band.ts) so it can fade over 1s in and out across page changes.
+  // This page only reports how tall the top section is.
+  const router = useRouter();
+  const [leaving, setLeaving] = useState(false);
+  const topSectionRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = topSectionRef.current;
+    if (isLoading || !project || !el) return;
+    const report = () => showBand(el.getBoundingClientRect().bottom + window.scrollY);
+    report();
+    const observer = new ResizeObserver(report);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      hideBand();
+    };
+  }, [isLoading, project, isUnlocked]);
+
+  // Once the cover is in place, an ambient glow (a blurred copy of the picture) fades
+  // in behind it. Wait for the picture itself, and for any flight to have landed.
+  const [glowSrc, setGlowSrc] = useState<string | null>(null);
+  const [glowRun, setGlowRun] = useState(false);
+  useEffect(() => {
+    const img = coverRef.current?.querySelector('img');
+    if (isLoading || !project || !img) return;
+    const take = () => setGlowSrc(img.currentSrc || img.src);
+    if (img.complete && img.naturalWidth > 0) take();
+    else img.addEventListener('load', take, { once: true });
+    return () => img.removeEventListener('load', take);
+  }, [isLoading, project, isUnlocked]);
+  useEffect(() => {
+    if (!glowSrc || awaitingFlight || glowRun) return;
+    // After a flight the cover is already there; on a direct visit it's still fading up.
+    const timer = setTimeout(() => setGlowRun(true), cameFromFlight ? 150 : 700);
+    return () => clearTimeout(timer);
+  }, [glowSrc, awaitingFlight, glowRun, cameFromFlight]);
+
+  useEffect(() => {
+    if (!flight || flight.direction !== 'forward' || flight.slug !== slug || flight.phase !== 'held' || isLoading) return;
+    const cover = coverRef.current;
+    if (!cover) {
+      // Locked, missing or no artwork: there's nothing to land on.
+      clearFlight();
+      return;
+    }
+    let landed = false;
+    const land = () => {
+      if (landed) return;
+      landed = true;
+      landFlight(slug, () => coverRef.current);
+    };
+    // Wait for the cover picture so the hand-over doesn't flash an empty frame.
+    const img = cover.querySelector('img');
+    if (!img || (img.complete && img.naturalWidth > 0)) {
+      land();
+      return;
+    }
+    img.addEventListener('load', land);
+    img.addEventListener('error', land);
+    const timer = setTimeout(land, 3000);
+    return () => {
+      img.removeEventListener('load', land);
+      img.removeEventListener('error', land);
+      clearTimeout(timer);
+    };
+  }, [flight, slug, isLoading, project, isUnlocked]);
+
+  // Browser back (or forward) out of this page: send the cover back to its card.
+  useEffect(() => {
+    // Capture phase: Next's own popstate handler swaps the page synchronously, and
+    // the cover has to be measured before that happens.
+    const onPopState = () => startReturnFlight(slug);
+    window.addEventListener('popstate', onPopState, { capture: true });
+    return () => window.removeEventListener('popstate', onPopState, { capture: true });
+  }, [slug]);
+
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (project?.privacy?.password === password) {
@@ -60,35 +163,9 @@ export default function ProjectPage() {
     }
   };
   
+  // No placeholder boxes while loading: the page is blank, then the content fades up.
   if (isLoading) {
-    return (
-      <div className="relative flex flex-col">
-        <main className="flex-1">
-          <section className="bg-card py-24 sm:py-32">
-            <div className="container mx-auto px-4">
-              <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2">
-                <Skeleton className="relative aspect-square w-full max-w-md mx-auto lg:max-w-none lg:mx-0 rounded-2xl" />
-                <div className="space-y-6">
-                  <Skeleton className="h-12 w-3/4" />
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-6 w-2/3" />
-                  <div className="space-y-4">
-                    <Skeleton className="h-5 w-1/2" />
-                    <Skeleton className="h-5 w-1/3" />
-                    <Skeleton className="h-5 w-1/4" />
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Skeleton className="h-6 w-20 rounded-full" />
-                    <Skeleton className="h-6 w-24 rounded-full" />
-                    <Skeleton className="h-6 w-16 rounded-full" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        </main>
-      </div>
-    );
+    return <div className="min-h-screen" />;
   }
 
   if (!project) {
@@ -128,12 +205,15 @@ export default function ProjectPage() {
   const galleryImages = project.galleryImages || [];
   const videoUrls = project.videoUrls || [];
 
-  const galleryImageObjects = galleryImages.map((url, i) => ({
+  // Skip entries whose file no longer exists so they don't render as broken boxes.
+  const galleryImageObjects = galleryImages
+    .map((url, i) => ({
       id: `${project.id}-gallery-${i}`,
       imageUrl: url,
       description: project.title,
       imageHint: "project gallery"
-  }))
+    }))
+    .filter((image) => !failedImages.has(image.imageUrl))
 
   const deliveryDate = [project.deliveryMonth, project.deliveryYear].filter(Boolean).join(", ");
 
@@ -145,56 +225,83 @@ export default function ProjectPage() {
         className="absolute top-8 left-8 z-10 h-12 w-12 rounded-full"
         aria-label="Back to works"
       >
-        <Link href="/works">
+        <Link
+          href="/works"
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            // Fade the page (and its lighter band) out first, with the cover already on its
+            // way back, then navigate.
+            e.preventDefault();
+            startReturnFlight(slug);
+            hideBand();
+            setLeaving(true);
+            setTimeout(() => router.push('/works'), 450);
+          }}
+        >
           <ChevronLeft className="h-6 w-6" />
         </Link>
       </Button>
-      <main className="flex-1">
+      <main className="flex-1 transition-opacity duration-300 ease-out" style={{ opacity: leaving ? 0 : 1 }}>
         {/* Section 1: Project Info */}
-        <section className="bg-card py-24 sm:py-32">
+        <section ref={topSectionRef} className="py-24 sm:py-32">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2">
               {project.imageUrl && (
-                <div className="relative aspect-square w-full max-w-md mx-auto lg:max-w-none lg:mx-0">
+                // One fixed size at every breakpoint: 20% under the old 28rem (max-w-md).
+                <div
+                  ref={coverRef}
+                  data-flight-cover=""
+                  className={cn(
+                    "relative aspect-square w-full max-w-[22.4rem] mx-auto lg:mr-0 lg:ml-auto",
+                    !cameFromFlight && "opacity-0 animate-[fade-in-up_0.6s_ease-out_forwards] motion-reduce:animate-none motion-reduce:opacity-100",
+                    // important, so it also hides the cover while its animation fill holds it visible
+                    awaitingFlight && "!opacity-0"
+                  )}
+                >
+                  {glowRun && glowSrc && <CoverGlow src={glowSrc} />}
                   <Image
                     src={getResizedImageUrl(project.imageUrl, '800x800')}
                     alt={project.description || ''}
                     fill
+                    priority
                     className="object-cover rounded-2xl"
                     data-ai-hint="project cover"
                   />
                 </div>
               )}
               <div className="space-y-6">
-                 <div className="flex items-center gap-4">
+                 <Reveal hold={awaitingFlight} stagger={140} className="flex items-center gap-4">
                   <h1 className="font-headline text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
                     {project.title}
                   </h1>
-                </div>
+                </Reveal>
                 {project.overview && (
-                  <div
-                    className="text-lg leading-8 text-foreground/80"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(project.overview) }}
-                  />
+                  <Reveal hold={awaitingFlight} stagger={140}>
+                    <div
+                      className="text-lg leading-8 text-foreground/80"
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(project.overview) }}
+                    />
+                  </Reveal>
                 )}
-                <div className="space-y-4 text-foreground/80">
-                  <p><strong>Client:</strong> {project.client}</p>
-                  <p><strong>Timeframe:</strong> {project.timeframe}</p>
-                  <p><strong>Software:</strong> {project.software?.join(", ")}</p>
-                  {deliveryDate && <p><strong>Delivered:</strong> {deliveryDate}</p>}
+                <Reveal hold={awaitingFlight} stagger={140} className="space-y-4 text-foreground/80">
+                  <p><strong className="text-palette-lagoon">Client:</strong> {project.client}</p>
+                  <p><strong className="text-palette-lagoon">Timeframe:</strong> {project.timeframe}</p>
+                  <p><strong className="text-palette-lagoon">Software:</strong> {project.software?.join(", ")}</p>
+                  {deliveryDate && <p><strong className="text-palette-lagoon">Delivered:</strong> {deliveryDate}</p>}
                   {project.noAi && (
                     <p className="flex items-center gap-2">
                       <NoAiIcon className="h-6 w-6" />
                       <strong>This project was built without using Generative AI.</strong>
                     </p>
                   )}
-                  {project.aiDisclaimer && <p><strong>AI Disclaimer:</strong> {project.aiDisclaimer}</p>}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {project.tags?.map((tag: string) => (
-                    <Badge key={tag} variant="secondary">{tag}</Badge>
+                  {project.aiDisclaimer && <p><strong className="text-palette-lagoon">AI Disclaimer:</strong> {project.aiDisclaimer}</p>}
+                </Reveal>
+                <Reveal hold={awaitingFlight} stagger={140} className="flex flex-wrap gap-2">
+                  {project.tags?.map((tag: string, i: number) => (
+                    <Badge key={tag} variant="secondary" className={TAG_COLOURS[i % TAG_COLOURS.length]}>{tag}</Badge>
                   ))}
-                </div>
+                </Reveal>
               </div>
             </div>
           </div>
@@ -204,15 +311,18 @@ export default function ProjectPage() {
         {galleryImageObjects.length > 0 && (
           <section className="py-24 sm:py-32">
             <div className="container mx-auto px-4">
-              <h2 className="text-center font-headline text-3xl font-bold sm:text-4xl mb-16">
-                Gallery
-              </h2>
+              <Reveal hold={awaitingFlight}>
+                <h2 className="text-center font-headline text-3xl font-bold text-palette-sage sm:text-4xl mb-16">
+                  Gallery
+                </h2>
+              </Reveal>
               <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                {galleryImageObjects.map((image) => (
+                {galleryImageObjects.map((image, i) => (
                   image.imageUrl && (
-                    <Dialog key={image.id}>
+                    <Reveal key={image.id} hold={awaitingFlight} stagger={90}>
+                    <Dialog>
                       <DialogTrigger asChild>
-                        <div className="group relative block cursor-pointer overflow-hidden rounded-2xl shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl hover:ring-4 hover:ring-accent">
+                        <div className={`group relative block cursor-pointer overflow-hidden rounded-2xl shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl hover:ring-4 ${GALLERY_RINGS[i % GALLERY_RINGS.length]}`}>
                           <div className="aspect-video">
                             <Image
                               src={getResizedImageUrl(image.imageUrl, '600x338')}
@@ -220,6 +330,7 @@ export default function ProjectPage() {
                               fill
                               className="object-cover transition-transform duration-300 group-hover:scale-105"
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              onError={() => setFailedImages((prev) => new Set(prev).add(image.imageUrl))}
                               data-ai-hint={image.imageHint}
                             />
                           </div>
@@ -240,6 +351,7 @@ export default function ProjectPage() {
                         </div>
                       </DialogContent>
                     </Dialog>
+                    </Reveal>
                   )
                 ))}
               </div>
@@ -249,17 +361,20 @@ export default function ProjectPage() {
 
         {/* Section 3: Videos */}
         {videoUrls.length > 0 && (
-          <section className="bg-card py-24 sm:py-32">
+          <section className="py-24 sm:py-32">
             <div className="container mx-auto px-4">
-              <h2 className="text-center font-headline text-3xl font-bold sm:text-4xl mb-16">
-                Final Product
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+              <Reveal hold={awaitingFlight}>
+                <h2 className="text-center font-headline text-3xl font-bold text-palette-sage sm:text-4xl mb-16">
+                  Final Product
+                </h2>
+              </Reveal>
+              {/* A lone video stays large and centred; two or more go two per row. */}
+              <div className={`grid grid-cols-1 gap-8 mx-auto ${videoUrls.length === 1 ? 'max-w-5xl' : 'md:grid-cols-2 max-w-6xl'}`}>
                 {videoUrls.map((videoUrl, index) => {
                   const isYoutube = videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be');
                   return (
+                    <Reveal key={index} hold={awaitingFlight} stagger={120}>
                     <div
-                      key={index}
                       className="relative w-full aspect-video overflow-hidden rounded-2xl shadow-2xl bg-black"
                     >
                       {isYoutube ? (
@@ -280,6 +395,7 @@ export default function ProjectPage() {
                         />
                       )}
                     </div>
+                    </Reveal>
                   )
                 })}
               </div>

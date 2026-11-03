@@ -3,6 +3,8 @@ import '../globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
 import { Dock } from '@/components/layout/dock';
+import { CardFlightLayer } from '@/components/works/card-flight-layer';
+import { TitleBandLayer } from '@/components/works/title-band-layer';
 
 const siteUrl = 'https://jackiepoot.co.uk';
 
@@ -33,12 +35,14 @@ export default function PortfolioRootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Sora:wght@500;700&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased">
+      <body className="theme-portfolio font-body antialiased">
         <FirebaseClientProvider>
+          <TitleBandLayer />
           {children}
           <Dock />
+          <CardFlightLayer />
           <Toaster />
         </FirebaseClientProvider>
       </body>
