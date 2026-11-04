@@ -93,5 +93,16 @@ away; `/admin` still works. Set it back to `"true"` to restore the site.
     `gcloud firestore fields ttls update expireAt --collection-group=faq_feedback_limits --enable-ttl --project studio-5700093446-89b93`
 - Portfolio projects, snaps, about and apps: Firestore, edited at `/admin` on
   jackiepoot.co.uk.
+  - Password-protected projects keep only their card details (title, slug,
+    description, tags, cover images) in the public `projects` doc. The key's
+    salted hash and the content shown once unlocked live in the admin-only
+    `project_secrets/{id}` (`src/lib/project-lock.ts`). The project page sends
+    the key to a server action (`src/app/actions/unlock-project.ts`), which
+    checks it and returns the content only on a match, at most 10 tries per
+    visitor per project per hour. One-off setup: deploy the rules, run
+    `node --experimental-transform-types --no-warnings scripts/migrate-project-secrets.mjs`
+    (dry run, then again with `--apply`), and enable the TTL policy for the
+    counters:
+    `gcloud firestore fields ttls update expireAt --collection-group=project_unlock_limits --enable-ttl --project studio-5700093446-89b93`
 - `/.well-known/apple-app-site-association` (the iOS app's universal links) is
   served for cuppi.co.uk only. Don't change its path.

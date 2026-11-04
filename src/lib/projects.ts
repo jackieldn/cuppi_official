@@ -21,7 +21,6 @@ export type Project = {
   deliveryMonth?: string;
   privacy?: {
     isPasswordProtected: boolean;
-    password?: string;
   };
   noAi?: boolean;
   aiDisclaimer?: string;

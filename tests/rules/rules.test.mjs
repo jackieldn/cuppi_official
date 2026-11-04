@@ -6,7 +6,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, getDocs, collection } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, getDocs, collection } from 'firebase/firestore';
 import { ref, uploadString, getBytes } from 'firebase/storage';
 
 let env, anon, stranger, admin;
@@ -21,6 +21,9 @@ before(async () => {
   await env.withSecurityRulesDisabled(async (ctx) => {
     await setDoc(doc(ctx.firestore(), 'roles_admin/admin'), { createdAt: 1 });
     await setDoc(doc(ctx.firestore(), 'projects/p1'), { title: 'x' });
+    await setDoc(doc(ctx.firestore(), 'projects/locked1'), { title: 'L', privacy: { isPasswordProtected: true } });
+    await setDoc(doc(ctx.firestore(), 'project_secrets/locked1'), { password: { algo: 'PBKDF2-SHA256', hash: 'h', salt: 's', iterations: 1 }, content: { client: 'secret' } });
+    await setDoc(doc(ctx.firestore(), 'projects/legacy1'), { title: 'Old', privacy: { isPasswordProtected: true, password: 'old' } });
     await setDoc(doc(ctx.firestore(), 'beta_signups/s1'), { email: 'a@b.c' });
     await setDoc(doc(ctx.firestore(), 'faq_feedback/a1'), { up: 1, down: 0 });
     await setDoc(doc(ctx.firestore(), 'faq_feedback_votes/a1_v1'), { helpful: true });
@@ -66,6 +69,46 @@ describe('Firestore rules', () => {
   test('signup emails are never readable from a client', async () => {
     await assertFails(getDoc(doc(admin.firestore(), 'beta_signups/s1')));
     await assertFails(getDoc(doc(anon.firestore(), 'beta_signups/s1')));
+  });
+});
+
+describe('Locked project rules', () => {
+  test('strangers and anonymous visitors cannot read, list or write project secrets', async () => {
+    for (const ctx of [anon, stranger]) {
+      await assertFails(getDoc(doc(ctx.firestore(), 'project_secrets/locked1')));
+      await assertFails(getDocs(collection(ctx.firestore(), 'project_secrets')));
+      await assertFails(setDoc(doc(ctx.firestore(), 'project_secrets/locked1'), { password: { hash: 'x' } }));
+      await assertFails(setDoc(doc(ctx.firestore(), 'project_secrets/new1'), { content: {} }));
+    }
+  });
+
+  test('admins can read and write project secrets', async () => {
+    await assertSucceeds(getDoc(doc(admin.firestore(), 'project_secrets/locked1')));
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'project_secrets/locked2'), { content: { client: 'c' } }));
+  });
+
+  test('the public doc of a locked project holds no key', async () => {
+    const snap = await getDoc(doc(anon.firestore(), 'projects/locked1'));
+    assert.equal(snap.get('privacy.isPasswordProtected'), true);
+    assert.equal(snap.get('privacy.password'), undefined);
+  });
+
+  test('not even an admin can write a plain-text key to a public project doc', async () => {
+    await assertFails(setDoc(doc(admin.firestore(), 'projects/p3'), { title: 'z', privacy: { isPasswordProtected: true, password: 'k' } }));
+    await assertFails(updateDoc(doc(admin.firestore(), 'projects/locked1'), { privacy: { isPasswordProtected: true, password: 'k' } }));
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'projects/p3'), { title: 'z', privacy: { isPasswordProtected: true } }));
+  });
+
+  test('a not-yet-migrated project can still be edited without touching its key', async () => {
+    await assertSucceeds(updateDoc(doc(admin.firestore(), 'projects/legacy1'), { featured: true }));
+    await assertFails(updateDoc(doc(admin.firestore(), 'projects/legacy1'), { privacy: { isPasswordProtected: true, password: 'new' } }));
+  });
+
+  test('nobody can read or write unlock counters from a client, not even an admin', async () => {
+    for (const ctx of [anon, stranger, admin]) {
+      await assertFails(getDoc(doc(ctx.firestore(), 'project_unlock_limits/p_locked1_x')));
+      await assertFails(setDoc(doc(ctx.firestore(), 'project_unlock_limits/p_locked1_x'), { count: 0 }));
+    }
   });
 });
 

@@ -37,9 +37,30 @@ service cloud.firestore {
      */
     match /projects/{projectId} {
       allow get, list: if true;
-      allow create: if isAdmin();
-      allow update: if isAdmin();
+      allow create: if isAdmin() && noNewPlainPassword();
+      allow update: if isAdmin() && noNewPlainPassword();
       allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Password-protected projects: the key's salted hash and the content
+     * shown only once unlocked (see src/lib/project-lock.ts). The project page never
+     * reads this; it asks the server (src/app/actions/unlock-project.ts, Admin SDK),
+     * which checks the key and returns the content only on a match.
+     * @path /project_secrets/{projectId}
+     * @allow (read, write) Admins only, for the admin project form.
+     * @deny Everyone else, signed in or not.
+     */
+    match /project_secrets/{projectId} {
+      allow read, write: if isAdmin();
+    }
+
+    /**
+     * @description Hourly unlock-attempt counters, written only by the server.
+     * @path /project_unlock_limits/{limitId}
+     */
+    match /project_unlock_limits/{limitId} {
+      allow read, write: if false;
     }
     
     /**
@@ -192,6 +213,17 @@ service cloud.firestore {
     }
 
     // ---- Helper functions ----
+
+    /**
+     * @description A project key must never be written in plain text to the public
+     * doc (it belongs, hashed, in project_secrets). An unchanged legacy `privacy` map
+     * is let through so other edits (like toggling `featured`) still work before the
+     * migration script has run.
+     */
+    function noNewPlainPassword() {
+      return !('password' in request.resource.data.get('privacy', {}))
+        || (resource != null && request.resource.data.get('privacy', {}) == resource.data.get('privacy', {}));
+    }
 
     /**
      * @description Checks if the user is an administrator by verifying the existence of a document in the /roles_admin/{userId} collection.

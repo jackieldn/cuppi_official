@@ -1,7 +1,8 @@
 'use client';
 
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, writeBatch } from 'firebase/firestore';
+import { PROJECT_SECRETS_COLLECTION } from '@/lib/project-lock';
 import {
   Table,
   TableBody,
@@ -61,8 +62,11 @@ export function ProjectList() {
   const handleDelete = async (projectId: string) => {
     if (!firestore) return;
     if(window.confirm('Are you sure you want to delete this project?')) {
-        const projectRef = doc(firestore, 'projects', projectId);
-        await deleteDoc(projectRef);
+        const batch = writeBatch(firestore);
+        batch.delete(doc(firestore, 'projects', projectId));
+        // A locked project's content and key hash live here (see src/lib/project-lock.ts).
+        batch.delete(doc(firestore, PROJECT_SECRETS_COLLECTION, projectId));
+        await batch.commit();
     }
   }
 
