@@ -88,6 +88,60 @@ export function usePortalData() {
   return { data, failed, retry };
 }
 
+// ------------------------------------------------------- photo galleries
+
+/** A picture in the Snaps or Free time galleries. */
+export interface GalleryPhoto {
+  id: string;
+  imageUrl: string;
+  order?: number;
+  createdAt?: { toMillis?: () => number } | string | null;
+}
+
+const millis = (p: GalleryPhoto): number => {
+  const t = p.createdAt;
+  if (!t) return 0;
+  if (typeof t === 'string') return Date.parse(t) || 0;
+  return t.toMillis?.() ?? 0;
+};
+
+// Same order as the real galleries: by position, then newest first.
+const sortPhotos = (photos: GalleryPhoto[]) =>
+  [...photos].sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity) || millis(b) - millis(a));
+
+const galleries = new Map<string, Promise<GalleryPhoto[]>>();
+
+/** Reads a gallery collection (once per visit) the first time its page is opened. */
+export function useGallery(name: 'snaps' | 'hobby_images') {
+  const firestore = useFirestore();
+  const [photos, setPhotos] = useState<GalleryPhoto[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (!firestore) return;
+    let live = true;
+    let read = galleries.get(name);
+    if (!read) {
+      read = getDocs(collection(firestore, name)).then((snap) =>
+        sortPhotos(snap.docs.map((d) => ({ ...(d.data() as GalleryPhoto), id: d.id }))),
+      );
+      galleries.set(name, read);
+      read.catch(() => galleries.delete(name));
+    }
+    read
+      .then((p) => live && setPhotos(p))
+      .catch((err) => {
+        console.warn(`Poot XP: could not read ${name}.`, err);
+        if (live) setFailed(true);
+      });
+    return () => {
+      live = false;
+    };
+  }, [firestore, name]);
+
+  return { photos, failed };
+}
+
 /** Rich text from the CMS to plain text. */
 export function plain(html?: string): string {
   if (!html) return '';

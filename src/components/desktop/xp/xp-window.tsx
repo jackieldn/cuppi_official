@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { TitleGlyph } from './xp-icons';
 import styles from './xp.module.css';
 
-export const TASKBAR_HEIGHT = 30;
+export const TASKBAR_HEIGHT = 36;
 const TITLE_HEIGHT = 29;
 
 export interface XpRect {

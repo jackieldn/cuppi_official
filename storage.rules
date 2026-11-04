@@ -93,6 +93,15 @@ service firebase.storage {
             && request.resource.contentType.matches('image/.*')));
     }
 
+    // Pictures inside Poot XP Journal posts. Images only, up to 10 MB.
+    match /journal_images/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && (request.resource == null
+          || (request.resource.size < 10 * 1024 * 1024
+            && request.resource.contentType.matches('image/.*')));
+    }
+
     // Match all files for technical skills icons.
     match /skills/{allPaths=**} {
       allow read: if true;

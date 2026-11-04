@@ -154,14 +154,19 @@ export function HeroSection() {
   }, []);
 
   return (
-    <section className="flex min-h-screen items-center bg-background/70 py-24 sm:py-32 lg:overflow-x-clip">
-      <div className="container mx-auto px-4">
+    <section
+      className="flex min-h-screen items-center bg-background/70 py-24 sm:py-32 lg:overflow-x-clip lg:py-[clamp(2rem,7cqh,8rem)]"
+      // Fills the window the page is in (the screen, when it's full screen), not always the whole screen.
+      style={{ minHeight: '100cqh' }}
+    >
+      <div className="container mx-auto px-4 lg:px-8">
         {/*
           Desktop only (lg+): hovering the video widens it to the right, pushing the
           text along, and swaps the text's "Watch Showreel" button for one on the video.
           Below lg nothing here changes, so phones and tablets keep the plain layout.
         */}
-        <div className="flex flex-col items-center gap-12 lg:flex-row">
+        {/* Capped and centred, so in a wide window the video and text sit in the middle, not against the left edge. */}
+        <div className="flex flex-col items-center gap-12 lg:mx-auto lg:max-w-[76rem] lg:flex-row">
           {/* The slot is what widens. At rest it's the video (24rem) plus half the old spare space
               beside it, which halves the distance to the text (never wider than the old column). */}
           <Reveal
