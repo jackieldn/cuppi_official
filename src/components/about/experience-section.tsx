@@ -2,7 +2,8 @@
 
 import Image from 'next/image';
 import { WorkExperience } from '@/lib/about-types';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { useIsomorphicLayoutEffect } from '@/lib/use-flip';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
@@ -15,6 +16,75 @@ import {
 
 interface ExperienceSectionProps {
   experiences: WorkExperience[];
+}
+
+// A description taller than this many lines is folded, with a Show more / Show less toggle.
+const DESCRIPTION_MAX_LINES = 6;
+
+/**
+ * The description, folded to DESCRIPTION_MAX_LINES lines when it is longer than that.
+ * Short ones render exactly as before, with no toggle. The height is animated (so it
+ * can't use CSS line-clamp), measured from the text itself and re-measured whenever the
+ * width changes and the lines re-wrap.
+ */
+function ExperienceDescription({ text, id }: { text: string; id: string }) {
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [heights, setHeights] = useState<{ full: number; folded: number } | null>(null);
+
+  useIsomorphicLayoutEffect(() => {
+    const el = textRef.current;
+    if (!el) return;
+    const measure = () => {
+      const style = getComputedStyle(el);
+      // line-height can come back as "normal"; fall back to a typical ratio.
+      const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.5;
+      const folded = lineHeight * DESCRIPTION_MAX_LINES;
+      const full = el.offsetHeight;
+      // Half a line of slack, so a text that only just fits is not folded for a few pixels.
+      setHeights(full > folded + lineHeight / 2 ? { full, folded } : null);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text]);
+
+  const isFoldable = heights !== null;
+
+  return (
+    <div>
+      <div
+        id={id}
+        className="relative overflow-hidden transition-[max-height] duration-500 ease-in-out motion-reduce:transition-none"
+        style={isFoldable ? { maxHeight: isOpen ? heights.full : heights.folded } : undefined}
+      >
+        <p ref={textRef} className="text-foreground/80 whitespace-pre-line">{text}</p>
+        {/* Fades the last folded line into the card, so the cut doesn't look accidental. */}
+        {isFoldable && (
+          <div
+            aria-hidden="true"
+            className={cn(
+              'pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card to-transparent transition-opacity duration-500 motion-reduce:transition-none',
+              isOpen ? 'opacity-0' : 'opacity-100'
+            )}
+          />
+        )}
+      </div>
+      {isFoldable && (
+        <button
+          type="button"
+          aria-expanded={isOpen}
+          aria-controls={id}
+          onClick={() => setIsOpen((open) => !open)}
+          className="text-primary transition-colors hover:text-accent inline-flex items-center gap-1 mt-3 text-sm"
+        >
+          <span>{isOpen ? 'Show less' : 'Show more'}</span>
+          <ChevronDown className={cn('h-4 w-4 transition-transform duration-300', isOpen && 'rotate-180')} />
+        </button>
+      )}
+    </div>
+  );
 }
 
 const ExperienceItem = ({ exp, isLastItem }: { exp: WorkExperience, isLastItem: boolean }) => (
@@ -51,7 +121,7 @@ const ExperienceItem = ({ exp, isLastItem }: { exp: WorkExperience, isLastItem: 
             </div>
             <div className="md:col-span-2">
             <div className="bg-card p-6 rounded-2xl border shadow-sm">
-                {exp.description && <p className="text-foreground/80 whitespace-pre-line">{exp.description}</p>}
+                {exp.description && <ExperienceDescription text={exp.description} id={`experience-description-${exp.id}`} />}
             </div>
             </div>
         </div>
@@ -99,7 +169,7 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
           <div className="relative pl-16">
               <Separator />
               <CollapsibleTrigger asChild>
-                <button className="text-primary hover:underline group inline-flex items-center gap-1 pt-4">
+                <button className="text-primary transition-colors hover:text-accent group inline-flex items-center gap-1 pt-4">
                   <span>{isOpen ? 'Show less' : 'Show more'}</span>
                   <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isOpen && "rotate-180")} />
                 </button>

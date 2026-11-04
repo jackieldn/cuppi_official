@@ -7,7 +7,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { Button } from '@/components/ui/button';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -54,7 +53,7 @@ const TestimonialItem = ({ testimonial }: { testimonial: Testimonial }) => {
           </blockquote>
           {isLong && (
             <CollapsibleTrigger asChild>
-              <button className="text-primary hover:underline group inline-flex items-center gap-1 mt-2 text-sm">
+              <button className="text-primary transition-colors hover:text-accent group inline-flex items-center gap-1 mt-2 text-sm">
                 <span>{isOpen ? 'Show less' : 'Show more'}</span>
                 <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isOpen && "rotate-180")} />
               </button>
@@ -114,12 +113,14 @@ export function TestimonialsSection({ testimonials }: TestimonialsSectionProps) 
           </CollapsibleContent>
 
           {hiddenTestimonials.length > 0 && (
-            <div className="mt-8 text-center">
+            // Same line and text button as the work experience section's Show more.
+            <div className="mt-8">
+              <Separator />
               <CollapsibleTrigger asChild>
-                <Button variant="outline" className="group">
+                <button className="text-primary transition-colors hover:text-accent group inline-flex items-center gap-1 pt-4">
                   <span>{isOpen ? 'Show less' : 'Show more'}</span>
-                  <ChevronDown className={cn("ml-2 h-4 w-4 transition-transform duration-300", isOpen && "rotate-180")} />
-                </Button>
+                  <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isOpen && "rotate-180")} />
+                </button>
               </CollapsibleTrigger>
             </div>
           )}

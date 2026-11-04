@@ -103,6 +103,15 @@ service cloud.firestore {
     }
 
     /**
+     * @description Music taste album covers for the About page. Public read, admin write.
+     * @path /music_covers/{coverId}
+     */
+    match /music_covers/{coverId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
      * @description Testimonials for the About page. Public read, admin write.
      * @path /testimonials/{testimonialId}
      */

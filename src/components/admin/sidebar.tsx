@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FolderKanban, GalleryHorizontal, UserCircle, Smile, Bot, AppWindow, Scale } from 'lucide-react';
+import { FolderKanban, GalleryHorizontal, UserCircle, Smile, Bot, AppWindow, Scale, Music } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ const navigation = [
   { name: 'Snaps Gallery', href: '/admin/snaps', icon: GalleryHorizontal },
   { name: 'Free time', href: '/admin/free-time', icon: Smile },
   { name: 'About Page', href: '/admin/about', icon: UserCircle },
+  { name: 'Music Taste', href: '/admin/music', icon: Music },
   { name: 'Chatbot', href: '/admin/chatbot', icon: Bot },
   { name: 'Apps & Websites', href: '/admin/apps', icon: AppWindow },
   { name: 'Legal', href: '/admin/legal', icon: Scale },

@@ -42,6 +42,15 @@ export type Testimonial = {
   date?: string;
 };
 
+export type MusicCover = {
+  id: string;
+  imageUrl: string;
+  /** Optional album/artist label, used as the cover's alt text. */
+  title?: string;
+  order?: number;
+  createdAt?: any;
+};
+
 export type GalleryImage = {
   url: string;
   width: number;

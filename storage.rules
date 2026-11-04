@@ -67,6 +67,12 @@ service firebase.storage {
       allow write: if isAdmin();
     }
     
+    // Match all files for the About page's music taste album covers.
+    match /music_covers/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Match all files for technical skills icons.
     match /skills/{allPaths=**} {
       allow read: if true;
