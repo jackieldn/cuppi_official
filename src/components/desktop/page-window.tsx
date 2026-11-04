@@ -23,6 +23,7 @@ import {
 import { DesktopApps } from './apps';
 import { DesktopSurface } from './desktop-surface';
 import { DosScreen } from './dos/dos-screen';
+import { XpScreen } from './xp/xp-screen';
 import { MenuBar } from './menu-bar';
 import { TrafficLights } from './traffic-lights';
 
@@ -302,8 +303,11 @@ export function PageWindow({ children }: { children: ReactNode }) {
       {/* App windows only exist on the desktop; they come back when it does. */}
       {isWindow && <DesktopApps />}
 
-      {/* The Time Machine's July 1997: JackDOS covers everything, the Dock included. */}
+      {/* The Time Machine's 1997: JackDOS covers everything, the Dock included. */}
       {isWindow && desktop.era === '1997' && <DosScreen />}
+
+      {/* 2006: the Poot XP desktop, with its own taskbar in place of the Dock. */}
+      {isWindow && desktop.era === '2006' && <XpScreen />}
     </>
   );
 }

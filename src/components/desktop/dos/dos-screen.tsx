@@ -1,6 +1,6 @@
 'use client';
 
-// The Time Machine's July 1997: the whole screen becomes a CRT monitor
+// The Time Machine's 1997: the whole screen becomes a CRT monitor
 // running JackDOS. It powers on, runs a BIOS memory check and boots to a
 // C:\> prompt. Type HELP for the commands (see ./commands). EXIT, or leaving
 // the desktop, powers it off and travels back.
@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useFirestore } from '@/firebase';
 import { COLS, toDosText } from '@/lib/dos-text';
-import { useDesktop } from '../desktop-context';
+import { inYear, eraDateLabel, useDesktop } from '../desktop-context';
 import {
   completions,
   runCommand,
@@ -54,11 +54,8 @@ const TONES: Record<Tone, string> = {
   error: '#ff5555',
 };
 
-/** July 1997, at today's time of day: the Time Machine only goes back in years. */
-function now1997(): Date {
-  const d = new Date();
-  return new Date(1997, 6, 16, d.getHours(), d.getMinutes(), d.getSeconds(), d.getMilliseconds());
-}
+/** Today in 1997: the Time Machine only goes back in years. */
+const now1997 = () => inYear(1997);
 
 const asLines = (out: Printable, tone?: Tone): Line[] =>
   (Array.isArray(out) ? out : [out]).map((l) => {
@@ -281,7 +278,7 @@ export function DosScreen() {
       if (!(await share(0.04))) return;
       print([
         '',
-        { text: 'Welcome to July 1997.', tone: 'bright' },
+        { text: `Welcome to ${eraDateLabel(1997)}.`, tone: 'bright' },
         { text: 'Type HELP for a list of commands. Type EXIT to travel back to 2026.', tone: 'warn' },
         '',
       ]);
@@ -458,7 +455,7 @@ export function DosScreen() {
   return (
     <div
       role="application"
-      aria-label="JackDOS, July 1997. Type HELP for commands, EXIT to return."
+      aria-label="JackDOS, 1997. Type HELP for commands, EXIT to return."
       // See-through while 2026 glitches, black once the CRT takes over.
       className={cn('fixed inset-0 z-[90]', power !== 'glitch' && 'bg-black')}
       onPointerDown={(e) => {

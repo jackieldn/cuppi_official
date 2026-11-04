@@ -6,7 +6,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, getDocs, collection } from 'firebase/firestore';
+import { doc, getDoc, setDoc, getDocs, collection, query, where } from 'firebase/firestore';
 import { ref, uploadString, getBytes } from 'firebase/storage';
 
 let env, anon, stranger, admin;
@@ -25,6 +25,8 @@ before(async () => {
     await setDoc(doc(ctx.firestore(), 'faq_feedback/a1'), { up: 1, down: 0 });
     await setDoc(doc(ctx.firestore(), 'faq_feedback_votes/a1_v1'), { helpful: true });
     await setDoc(doc(ctx.firestore(), 'faq_feedback_limits/site_x'), { count: 1 });
+    await setDoc(doc(ctx.firestore(), 'journal_posts/live'), { title: 'x', published: true });
+    await setDoc(doc(ctx.firestore(), 'journal_posts/draft'), { title: 'y', published: false });
     await uploadString(ref(ctx.storage(), 'projects/existing.txt'), 'hi');
   });
   anon = env.unauthenticatedContext();
@@ -61,6 +63,23 @@ describe('Firestore rules', () => {
     await assertSucceeds(getDoc(doc(admin.firestore(), 'roles_admin/admin')));
     await assertFails(getDoc(doc(stranger.firestore(), 'roles_admin/admin')));
     await assertFails(getDocs(collection(admin.firestore(), 'roles_admin')));
+  });
+
+  test('Poot XP pictures are public to read and admin-only to write', async () => {
+    await assertSucceeds(getDocs(collection(anon.firestore(), 'xp_pictures')));
+    await assertFails(setDoc(doc(stranger.firestore(), 'xp_pictures/p1'), { title: 'x' }));
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'xp_pictures/p1'), { title: 'x' }));
+  });
+
+  test('journal: visitors read published posts only, admins read and write everything', async () => {
+    const published = query(collection(anon.firestore(), 'journal_posts'), where('published', '==', true));
+    await assertSucceeds(getDocs(published));
+    await assertSucceeds(getDoc(doc(anon.firestore(), 'journal_posts/live')));
+    await assertFails(getDoc(doc(anon.firestore(), 'journal_posts/draft')));
+    await assertFails(getDocs(collection(anon.firestore(), 'journal_posts')));
+    await assertFails(setDoc(doc(stranger.firestore(), 'journal_posts/new'), { title: 'z', published: true }));
+    await assertSucceeds(getDocs(collection(admin.firestore(), 'journal_posts')));
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'journal_posts/new'), { title: 'z', published: false }));
   });
 
   test('music player tracks are public to read and admin-only to write', async () => {
@@ -124,6 +143,13 @@ describe('Storage rules', () => {
     await assertSucceeds(uploadString(ref(admin.storage(), 'player_tracks/a.mp3'), 'x', 'raw', audio));
     await assertSucceeds(uploadString(ref(admin.storage(), 'player_tracks/c.png'), 'x', 'raw', { contentType: 'image/png' }));
     await assertFails(uploadString(ref(admin.storage(), 'player_tracks/a.html'), 'x', 'raw', { contentType: 'text/html' }));
+  });
+
+  test('Poot XP picture files: admins only, images only', async () => {
+    const png = { contentType: 'image/png' };
+    await assertFails(uploadString(ref(stranger.storage(), 'xp_pictures/a.png'), 'x', 'raw', png));
+    await assertSucceeds(uploadString(ref(admin.storage(), 'xp_pictures/a.png'), 'x', 'raw', png));
+    await assertFails(uploadString(ref(admin.storage(), 'xp_pictures/a.mp3'), 'x', 'raw', { contentType: 'audio/mpeg' }));
   });
 
   test('nobody can upload outside the known folders', async () => {

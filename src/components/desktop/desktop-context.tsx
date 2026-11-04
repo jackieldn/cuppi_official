@@ -27,7 +27,21 @@ export type AppId = 'wallpaper' | 'music';
 /** Everything that can be in front: the page window or an app. */
 export type WindowId = 'page' | AppId;
 /** The Time Machine (the menu bar clock): which era the desktop is in. */
-export type Era = 'now' | '1997';
+export type Era = 'now' | '2006' | '1997';
+
+/**
+ * Today's date and time, moved to another year: the Time Machine only
+ * travels in years. 29 February becomes the 28th in years without one.
+ */
+export function inYear(year: number, from = new Date()): Date {
+  const d = new Date(from);
+  const day = Math.min(d.getDate(), new Date(year, d.getMonth() + 1, 0).getDate());
+  return new Date(year, d.getMonth(), day, d.getHours(), d.getMinutes(), d.getSeconds(), d.getMilliseconds());
+}
+
+/** "4 November 2006", for the Time Machine's menus. */
+export const eraDateLabel = (year: number) =>
+  inYear(year).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 export interface Rect {
   x: number;
   y: number;
