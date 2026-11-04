@@ -8,7 +8,7 @@ import { useMemo, useState } from 'react';
 import { addDoc, collection, deleteDoc, doc, query, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Pencil, Plus, XCircle } from 'lucide-react';
 
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useStorage } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,10 +16,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/admin/rich-text-editor';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { JOURNAL_POSTS, journalDate, sortJournal, type JournalPost } from '@/lib/poot-xp-types';
+import { JOURNAL_POSTS, htmlHasContent, journalDate, journalHtml, sortJournal, type JournalPost } from '@/lib/poot-xp-types';
+
+// Storage folder for the pictures put into posts.
+const JOURNAL_IMAGES = 'journal_images';
 
 type Draft = { title: string; date: string; body: string; published: boolean };
 
@@ -32,6 +35,7 @@ const emptyDraft = (): Draft => ({ title: '', date: today(), body: '', published
 
 export function JournalAdmin() {
   const firestore = useFirestore();
+  const storage = useStorage();
   const { toast } = useToast();
 
   // null: closed. A post's id, or 'new'.
@@ -49,13 +53,13 @@ export function JournalAdmin() {
   };
 
   const openEdit = (post: JournalPost) => {
-    setDraft({ title: post.title ?? '', date: post.date || today(), body: post.body ?? '', published: !!post.published });
+    setDraft({ title: post.title ?? '', date: post.date || today(), body: journalHtml({ body: post.body ?? '', format: post.format }), published: !!post.published });
     setEditingId(post.id);
   };
 
   const handleSave = async () => {
     if (!firestore || !editingId) return;
-    if (!draft.title.trim() || !draft.body.trim()) {
+    if (!draft.title.trim() || !htmlHasContent(draft.body)) {
       toast({ variant: 'destructive', title: 'A title and some text are required.' });
       return;
     }
@@ -63,6 +67,7 @@ export function JournalAdmin() {
       title: draft.title.trim(),
       date: draft.date || today(),
       body: draft.body.trim(),
+      format: 'html' as const,
       published: draft.published,
       updatedAt: serverTimestamp(),
     };
@@ -109,8 +114,8 @@ export function JournalAdmin() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Posts show up in the Journal app on the Time Machine&apos;s 2006 desktop, and nowhere else. Drafts stay hidden
-          until you publish them. Leave a blank line between paragraphs.
+          Posts show up in the Journal app on the desktop and in Poot XP on the Time Machine&apos;s 2006 desktop. Drafts
+          stay hidden until you publish them. Use the toolbar to format text and add pictures.
         </p>
         <Button onClick={openNew}>
           <Plus className="mr-2 h-4 w-4" />
@@ -172,7 +177,7 @@ export function JournalAdmin() {
       )}
 
       <Dialog open={!!editingId} onOpenChange={(open) => !open && !saving && setEditingId(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-h-[95vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId === 'new' ? 'New Post' : 'Edit Post'}</DialogTitle>
           </DialogHeader>
@@ -194,13 +199,15 @@ export function JournalAdmin() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="journal-body">Text</Label>
-              <Textarea
+              <RichTextEditor
+                // A fresh editor for each post opened.
+                key={editingId}
                 id="journal-body"
-                value={draft.body}
-                onChange={(e) => setDraft({ ...draft, body: e.target.value })}
-                rows={16}
-                className="font-mono text-sm"
-                placeholder="What happened in today's session? Leave a blank line between paragraphs."
+                initialHtml={draft.body}
+                onChange={(body) => setDraft((d) => ({ ...d, body }))}
+                storage={storage}
+                imageFolder={JOURNAL_IMAGES}
+                placeholder="What happened in today's session?"
               />
             </div>
             <div className="flex items-center gap-3">

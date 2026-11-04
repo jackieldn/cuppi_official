@@ -1,6 +1,6 @@
-// Content that only exists inside the Time Machine's 2006 (Poot XP):
-// the pictures in My Pictures and the posts in the Journal app. Neither
-// shows anywhere else on the site or in JackDOS.
+// Content that only exists on the desktop: the pictures in Poot XP's My
+// Pictures (the Time Machine's 2006) and the posts in the Journal app, which
+// is on the desktop and in Poot XP. Neither shows on the pages themselves or in JackDOS.
 //
 // Managed at /admin/xp-pictures and /admin/journal.
 
@@ -30,8 +30,13 @@ export const JOURNAL_POSTS = 'journal_posts';
 export type JournalPost = {
   id: string;
   title: string;
-  /** Plain text. Blank lines split paragraphs. */
+  /**
+   * Posts written in the rich text editor are HTML (`format: 'html'`), with
+   * uploaded pictures from Storage journal_images/. Older posts are plain text:
+   * blank lines split paragraphs.
+   */
   body: string;
+  format?: 'html';
   /** The day it's dated, YYYY-MM-DD. */
   date: string;
   published: boolean;
@@ -50,3 +55,24 @@ export function journalDate(date: string): string {
   if (!y || !m || !d) return date;
   return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 }
+
+const escapeHtml = (text: string) =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** A plain-text post as HTML (blank lines become paragraphs), so the editor can open it. */
+export function plainToHtml(text: string): string {
+  return text
+    .split(/\n\s*\n/)
+    .map((para) => para.trim())
+    .filter(Boolean)
+    .map((para) => `<p>${escapeHtml(para).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+}
+
+/** The post's body as HTML, ready to be sanitised and shown. */
+export const journalHtml = (post: Pick<JournalPost, 'body' | 'format'>): string =>
+  post.format === 'html' ? post.body : plainToHtml(post.body);
+
+/** The words of a post with the markup taken out, to tell an empty post from a real one. */
+export const htmlHasContent = (html: string): boolean =>
+  /<img\b/i.test(html) || html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0;

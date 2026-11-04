@@ -8,12 +8,14 @@ import type { ComponentType } from 'react';
 import { Music2 } from 'lucide-react';
 
 import { useDesktop, type AppId } from '../desktop-context';
+import { JournalApp, JournalIcon } from './journal-app';
 import { MusicApp } from './music-app';
 import { WallpaperApp } from './wallpaper-app';
 
 const APPS: Record<AppId, ComponentType> = {
   wallpaper: WallpaperApp,
   music: MusicApp,
+  journal: JournalApp,
 };
 
 // App-icon art: a rounded tile, like a macOS app icon.
@@ -28,6 +30,7 @@ function MusicIcon() {
 
 export const DESKTOP_ICONS: { id: AppId; label: string; Icon: () => JSX.Element }[] = [
   { id: 'music', label: 'Music', Icon: MusicIcon },
+  { id: 'journal', label: 'Journal', Icon: JournalIcon },
 ];
 
 export function DesktopApps() {

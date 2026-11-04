@@ -4,7 +4,7 @@ import { JSDOM } from 'jsdom';
 
 // The sanitiser only runs in a browser, so give it a DOM before importing it.
 globalThis.window = new JSDOM('').window;
-const { sanitizeHtml } = await import('../../src/lib/sanitize-html.ts');
+const { sanitizeHtml, sanitizeJournalHtml } = await import('../../src/lib/sanitize-html.ts');
 
 test('real content with <b> is unchanged', () => {
   const real = 'Built in <b>After Effects</b> for a client.';
@@ -35,4 +35,19 @@ test('empty input gives an empty string', () => {
   assert.equal(sanitizeHtml(undefined), '');
   assert.equal(sanitizeHtml(null), '');
   assert.equal(sanitizeHtml(''), '');
+});
+
+test('journal posts keep https pictures and formatting, but nothing risky', () => {
+  const ok = sanitizeJournalHtml('<h2>Hi</h2><p><u>under</u> <img src="https://example.com/a.png" alt="a"></p>');
+  assert.match(ok, /<h2>Hi<\/h2>/);
+  assert.match(ok, /<u>under<\/u>/);
+  assert.match(ok, /<img src="https:\/\/example\.com\/a\.png" alt="a">/);
+  assert.doesNotMatch(sanitizeJournalHtml('<img src="javascript:alert(1)">'), /javascript:/i);
+  assert.doesNotMatch(sanitizeJournalHtml('<img src="data:image/png;base64,AAAA">'), /data:/i);
+  assert.doesNotMatch(sanitizeJournalHtml('<img src="https://x/a.png" onerror="x()">'), /onerror/i);
+  assert.doesNotMatch(sanitizeJournalHtml('<p style="color:red">t</p><script>x()</script>'), /style=|<script/i);
+});
+
+test('regular sanitiser still strips pictures', () => {
+  assert.doesNotMatch(sanitizeHtml('<img src="https://example.com/a.png">'), /<img/i);
 });

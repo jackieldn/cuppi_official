@@ -152,6 +152,13 @@ describe('Storage rules', () => {
     await assertFails(uploadString(ref(admin.storage(), 'xp_pictures/a.mp3'), 'x', 'raw', { contentType: 'audio/mpeg' }));
   });
 
+  test('Poot XP journal pictures: admins only, images only', async () => {
+    const png = { contentType: 'image/png' };
+    await assertFails(uploadString(ref(stranger.storage(), 'journal_images/a.png'), 'x', 'raw', png));
+    await assertSucceeds(uploadString(ref(admin.storage(), 'journal_images/a.png'), 'x', 'raw', png));
+    await assertFails(uploadString(ref(admin.storage(), 'journal_images/a.html'), 'x', 'raw', { contentType: 'text/html' }));
+  });
+
   test('nobody can upload outside the known folders', async () => {
     await assertFails(uploadString(ref(admin.storage(), 'random/a.txt'), 'x'));
   });

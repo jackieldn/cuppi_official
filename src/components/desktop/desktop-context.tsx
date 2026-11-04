@@ -23,7 +23,7 @@ import { DEFAULT_WALLPAPER, isWallpaperId, type WallpaperId } from './wallpapers
 export type WindowMode = 'full' | 'window';
 export type WindowState = 'open' | 'minimised' | 'closed';
 /** Small apps that open in their own windows on the desktop. */
-export type AppId = 'wallpaper' | 'music';
+export type AppId = 'wallpaper' | 'music' | 'journal';
 /** Everything that can be in front: the page window or an app. */
 export type WindowId = 'page' | AppId;
 /** The Time Machine (the menu bar clock): which era the desktop is in. */

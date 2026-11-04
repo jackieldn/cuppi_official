@@ -17,6 +17,8 @@ import { usePortalData } from './portal-data';
 import { type PortalPage } from './portal-site';
 import { DocumentsFolder, JournalApp, PictureViewer, PicturesFolder, pictureTitle } from './xp-apps';
 import { XpBrowser, browserTitle } from './xp-browser';
+import { DesktopIcons, type DesktopIconItem } from './xp-desktop-icons';
+import { PootAmp } from './xp-player';
 import type { XpPicture } from '@/lib/poot-xp-types';
 import {
   BrandMark,
@@ -31,6 +33,7 @@ import {
   LogOffIcon,
   NotepadIcon,
   PicturesIcon,
+  PlayerIcon,
   PowerIcon,
   RestartIcon,
   SpeakerIcon,
@@ -40,7 +43,7 @@ import { TASKBAR_HEIGHT, XpWindow, type XpRect } from './xp-window';
 import styles from './xp.module.css';
 
 type Phase = 'glitch' | 'boot' | 'welcome' | 'desktop' | 'saving';
-type WinId = 'browser' | 'notepad' | 'computer' | 'documents' | 'pictures' | 'viewer' | 'journal' | 'message';
+type WinId = 'browser' | 'notepad' | 'computer' | 'documents' | 'pictures' | 'viewer' | 'journal' | 'player' | 'message';
 
 const BOOT_MS = 3200;
 const WELCOME_MS = 1800;
@@ -100,6 +103,8 @@ This is what my computer looked like back then, when I made my first websites on
 
   * Double-click Internet to open my 2006 homepage.
   * My Documents has my Journal, where I write about coding and things I find interesting.
+  * Poot Amp plays the songs I had on this computer.
+  * Drag the icons wherever you like.
   * "More..." links take you back to 2026, to the real page.
   * Right-click the desktop to change the background colour.
   * Click the clock (bottom right) to travel through time.
@@ -335,6 +340,7 @@ export function XpScreen() {
     pictures: 'My Pictures',
     viewer: viewing ? pictureTitle(viewing.pictures, viewing.index) : 'Picture Viewer',
     journal: 'Journal',
+    player: 'Poot Amp',
     message: message?.title ?? 'Poot XP',
   };
   const icons: Record<WinId, ReactNode> = {
@@ -345,13 +351,15 @@ export function XpScreen() {
     pictures: <PicturesIcon />,
     viewer: <PicturesIcon />,
     journal: <JournalIcon />,
+    player: <PlayerIcon />,
     message: <InfoIcon />,
   };
 
-  const desktopIcons: { id: string; label: string; icon: ReactNode; open: () => void }[] = [
+  const desktopIcons: DesktopIconItem[] = [
     { id: 'computer', label: 'My Computer', icon: <ComputerIcon />, open: () => openWin('computer') },
     { id: 'documents', label: 'My Documents', icon: <FolderIcon />, open: () => openWin('documents') },
     { id: 'browser', label: 'Internet', icon: <BrowserIcon />, open: () => openWin('browser') },
+    { id: 'player', label: 'Poot Amp', icon: <PlayerIcon />, open: () => openWin('player') },
   ];
 
   const backgroundColor = BACKGROUNDS.find((b) => b.id === background)?.color ?? BACKGROUNDS[0].color;
@@ -377,26 +385,14 @@ export function XpScreen() {
           setMenu({ x: Math.min(e.clientX, vw - 190), y: Math.min(e.clientY, vh - 150) });
         }}
       >
-        <div className={styles.icons}>
-          {desktopIcons.map((icon) => (
-            <button
-              key={icon.id}
-              type="button"
-              className={cn(styles.icon, selectedIcon === icon.id && styles.iconSelected)}
-              onPointerDown={(e) => {
-                e.stopPropagation();
-                closeMenus();
-                setSelectedIcon(icon.id);
-              }}
-              onContextMenu={(e) => e.stopPropagation()}
-              onDoubleClick={icon.open}
-              onKeyDown={(e) => e.key === 'Enter' && icon.open()}
-            >
-              <span className={styles.iconArt}>{icon.icon}</span>
-              <span className={styles.iconLabel}>{icon.label}</span>
-            </button>
-          ))}
-        </div>
+        <DesktopIcons
+          items={desktopIcons}
+          selected={selectedIcon}
+          onSelect={(id) => {
+            closeMenus();
+            setSelectedIcon(id);
+          }}
+        />
       </div>
 
       {menu && (
@@ -450,7 +446,7 @@ export function XpScreen() {
                 minH={320}
                 onMinimise={() => minimiseWin(id)}
               >
-                <XpBrowser travel={travel} now={now} onPage={(p: PortalPage) => setBrowserTitleText(browserTitle(p))} />
+                <XpBrowser travel={travel} now={now} onPage={(p: PortalPage, projectTitle?: string) => setBrowserTitleText(browserTitle(p, projectTitle))} />
               </XpWindow>
             );
           case 'notepad':
@@ -520,6 +516,19 @@ export function XpScreen() {
                 onMinimise={() => minimiseWin(id)}
               >
                 <JournalApp />
+              </XpWindow>
+            );
+          case 'player':
+            return (
+              <XpWindow
+                key={id}
+                {...common}
+                initial={{ x: Math.max(20, vw - 420), y: 40, w: 390, h: Math.min(440, vh - 60) }}
+                minW={360}
+                minH={380}
+                onMinimise={() => minimiseWin(id)}
+              >
+                <PootAmp muted={!sound} />
               </XpWindow>
             );
           case 'message':
@@ -718,6 +727,13 @@ function StartMenu({ name, avatar, onOpen, onHelp, onLogOff, onTurnOff }: StartM
             <span>
               <b>Internet</b>
               <small>Jackie&apos;s portal</small>
+            </span>
+          </button>
+          <button type="button" role="menuitem" className={styles.startItem} onClick={() => onOpen('player')}>
+            <PlayerIcon />
+            <span>
+              <b>Poot Amp</b>
+              <small>Music player</small>
             </span>
           </button>
           <button type="button" role="menuitem" className={styles.startItem} onClick={() => onOpen('journal')}>

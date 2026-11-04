@@ -9,10 +9,22 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 
 import { cn } from '@/lib/utils';
-import { clip, plain, projectImage, type PortalData } from './portal-data';
+import { sanitizeHtml } from '@/lib/sanitize-html';
+import { youtubeEmbedUrl, youtubeId } from '@/lib/youtube';
+import { MediaSkin } from './xp-media-skin';
+import { clip, plain, projectImage, useGallery, type PortalData } from './portal-data';
 import styles from './portal.module.css';
 
-export type PortalPage = 'home' | 'works' | 'about' | 'cv' | 'guestbook';
+export type PortalPage = 'home' | 'works' | 'about' | 'cv' | 'freetime' | 'snaps' | 'guestbook' | 'project';
+
+/** Where the browser is: a page, and for 'project' which work (its slug). */
+export interface PortalRoute {
+  page: PortalPage;
+  slug?: string;
+}
+
+/** The pages in the left-hand menu. */
+const MENU_PAGES: PortalPage[] = ['home', 'works', 'about', 'cv', 'freetime', 'snaps', 'guestbook'];
 
 export const PORTAL_HOST = 'www.jackiepoot.co.uk';
 
@@ -21,7 +33,10 @@ export const PAGE_TITLES: Record<PortalPage, string> = {
   works: '*NEW* My works!',
   about: 'About me',
   cv: 'CV',
+  freetime: 'Free time',
+  snaps: 'Snaps',
   guestbook: 'Guestbook',
+  project: 'My works',
 };
 
 const FONTS_URL = 'https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap';
@@ -87,13 +102,15 @@ interface Signature {
 interface PortalSiteProps {
   data: PortalData;
   page: PortalPage;
-  go: (page: PortalPage) => void;
+  /** The work being shown, on the 'project' page. */
+  slug?: string;
+  go: (page: PortalPage, slug?: string) => void;
   /** Back to 2026, opening this page of the real site. */
   travel: (href: string) => void;
   now: Date;
 }
 
-export function PortalSite({ data, page, go, travel, now }: PortalSiteProps) {
+export function PortalSite({ data, page, slug, go, travel, now }: PortalSiteProps) {
   useEffect(() => {
     if (document.querySelector(`link[href="${FONTS_URL}"]`)) return;
     const link = document.createElement('link');
@@ -103,6 +120,7 @@ export function PortalSite({ data, page, go, travel, now }: PortalSiteProps) {
   }, []);
 
   const name = data.profile?.name?.trim() || 'Jackie';
+  const project = page === 'project' ? data.projects.find((p) => p.slug === slug) : undefined;
 
   return (
     <div className={styles.site}>
@@ -114,13 +132,21 @@ export function PortalSite({ data, page, go, travel, now }: PortalSiteProps) {
       </div>
 
       <div className={styles.columns}>
-        <LeftColumn data={data} page={page} go={go} travel={travel} now={now} />
+        <LeftColumn data={data} page={page} go={go} now={now} />
         <main className={styles.center}>
-          <div className={styles.pageHead}>-&gt;{page === 'home' ? `${name}'s portal` : PAGE_TITLES[page]}</div>
-          {page === 'home' && <HomePage data={data} go={go} travel={travel} now={now} />}
-          {page === 'works' && <WorksPage data={data} travel={travel} />}
+          <div className={styles.pageHead}>-&gt;{page === 'home' ? `${name}'s portal` : project ? project.title.trim() : PAGE_TITLES[page]}</div>
+          {page === 'home' && <HomePage data={data} go={go} now={now} />}
+          {page === 'works' && <WorksPage data={data} go={go} />}
+          {page === 'project' && <ProjectPage key={slug} data={data} slug={slug} go={go} />}
           {page === 'about' && <AboutPage data={data} travel={travel} />}
           {page === 'cv' && <CvPage data={data} travel={travel} />}
+          {page === 'freetime' && (
+            <GalleryPage
+              source="hobby_images"
+              intro="What I get up to when I'm not at the computer (I know, hard to believe)."
+            />
+          )}
+          {page === 'snaps' && <GalleryPage source="snaps" intro="Pictures I took. Click one to see it big!" />}
           {page === 'guestbook' && <GuestbookPage data={data} now={now} />}
         </main>
         <RightColumn data={data} now={now} />
@@ -166,7 +192,7 @@ function Box({ title, children }: { title: string; children: React.ReactNode }) 
 
 // ---------------------------------------------------------------- columns
 
-function LeftColumn({ data, page, go, travel, now }: Omit<PortalSiteProps, 'data'> & { data: PortalData }) {
+function LeftColumn({ data, page, go, now }: Omit<PortalSiteProps, 'data' | 'travel'> & { data: PortalData }) {
   const photo = data.profile?.profilePictureUrl;
   return (
     <aside className={styles.left}>
@@ -176,18 +202,17 @@ function LeftColumn({ data, page, go, travel, now }: Omit<PortalSiteProps, 'data
       </div>
       <Box title="Menu">
         <ul className={styles.menuList}>
-          {(Object.keys(PAGE_TITLES) as PortalPage[]).map((p) => (
+          {MENU_PAGES.map((p) => (
             <li key={p}>
-              <button type="button" className={cn(styles.link, p === page && styles.menuCurrent)} onClick={() => go(p)}>
+              <button
+                type="button"
+                className={cn(styles.link, (p === page || (p === 'works' && page === 'project')) && styles.menuCurrent)}
+                onClick={() => go(p)}
+              >
                 {PAGE_TITLES[p]}
               </button>
             </li>
           ))}
-          <li>
-            <button type="button" className={styles.link} onClick={() => travel('/snaps')}>
-              Photos (in 2026)
-            </button>
-          </li>
         </ul>
       </Box>
       <Shoutbox now={now} />
@@ -225,18 +250,6 @@ function RightColumn({ data, now }: { data: PortalData; now: Date }) {
       )}
       <Box title="Calendar">
         <Calendar now={now} />
-      </Box>
-      <Box title="Link me!">
-        <div className={styles.badges}>
-          <Badge top="JACKIE" bottom="link me!!" bg="#ff69b4" fg="#fff" />
-        </div>
-        <p className={styles.counterNote}>Copy the code to your site:</p>
-        <textarea
-          readOnly
-          className={styles.field}
-          rows={3}
-          value={`<a href="http://${PORTAL_HOST}"><img src="banner.gif"></a>`}
-        />
       </Box>
     </aside>
   );
@@ -438,17 +451,7 @@ function Poll({ data }: { data: PortalData }) {
 
 // ------------------------------------------------------------------ pages
 
-function HomePage({
-  data,
-  go,
-  travel,
-  now,
-}: {
-  data: PortalData;
-  go: (p: PortalPage) => void;
-  travel: (href: string) => void;
-  now: Date;
-}) {
+function HomePage({ data, go, now }: { data: PortalData; go: (p: PortalPage, slug?: string) => void; now: Date }) {
   const projects = useMemo(
     () => [...data.projects].sort((a, b) => Number(!!b.featured) - Number(!!a.featured)).slice(0, 8),
     [data.projects],
@@ -502,7 +505,7 @@ function HomePage({
             ) : (
               <p>{clip(plain(p.overview || p.description), 320)}</p>
             )}
-            <button type="button" className={cn(styles.link, styles.more)} onClick={() => travel(`/works/${p.slug}`)}>
+            <button type="button" className={cn(styles.link, styles.more)} onClick={() => go('project', p.slug)}>
               More...
             </button>
           </article>
@@ -520,7 +523,7 @@ function HomePage({
   );
 }
 
-function WorksPage({ data, travel }: { data: PortalData; travel: (href: string) => void }) {
+function WorksPage({ data, go }: { data: PortalData; go: (p: PortalPage, slug?: string) => void }) {
   return (
     <>
       <p>
@@ -530,7 +533,7 @@ function WorksPage({ data, travel }: { data: PortalData; travel: (href: string) 
         {data.projects.map((p) => {
           const image = projectImage(p);
           return (
-            <button key={p.id} type="button" className={styles.thumb} onClick={() => travel(`/works/${p.slug}`)}>
+            <button key={p.id} type="button" className={styles.thumb} onClick={() => go('project', p.slug)}>
               {image ? <img src={image} alt="" loading="lazy" /> : <span className={styles.thumbBlank} />}
               <span>
                 {p.privacy?.isPasswordProtected && '🔒 '}
@@ -540,6 +543,207 @@ function WorksPage({ data, travel }: { data: PortalData; travel: (href: string) 
           );
         })}
       </div>
+    </>
+  );
+}
+
+function ProjectPage({
+  data,
+  slug,
+  go,
+}: {
+  data: PortalData;
+  slug?: string;
+  go: (p: PortalPage, slug?: string) => void;
+}) {
+  const project = data.projects.find((p) => p.slug === slug);
+  const [key, setKey] = useState('');
+  const [wrong, setWrong] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  // A picture clicked in the gallery, shown big above the list.
+  const [big, setBig] = useState<string | null>(null);
+
+  if (!project) {
+    return (
+      <article className={styles.post}>
+        <h2 className={styles.postTitle}>404 - Not found</h2>
+        <p>That work doesn&apos;t exist (any more).</p>
+        <button type="button" className={cn(styles.link, styles.more)} onClick={() => go('works')}>
+          Back to my works
+        </button>
+      </article>
+    );
+  }
+
+  const locked = !!project.privacy?.isPasswordProtected && !unlocked;
+  const image = locked ? projectImage(project) : project.imageUrl || project.coverImage?.imageUrl;
+  const overview = sanitizeHtml(project.overview);
+  const details: [string, string | undefined][] = [
+    ['Client', project.client],
+    ['Timeframe', project.timeframe],
+    ['Software', project.software?.join(', ')],
+    ['Tags', project.tags?.join(', ')],
+  ];
+  const videos = (project.videoUrls ?? []).map((url) => {
+    const id = youtubeId(url);
+    return id
+      ? { url, kind: 'youtube' as const, src: youtubeEmbedUrl(id) }
+      : { url, kind: 'file' as const, src: url };
+  });
+  const gallery = (project.galleryImages ?? []).filter(Boolean);
+
+  return (
+    <>
+      <p>
+        <button type="button" className={styles.link} onClick={() => go('works')}>
+          &lt;&lt; All my works
+        </button>
+      </p>
+      <article className={styles.post}>
+        <div className={styles.postHead}>
+          <h2 className={styles.postTitle}>{project.title.trim()}</h2>
+          <div className={styles.postMeta}>{[project.deliveryMonth, project.deliveryYear].filter(Boolean).join(' ')}</div>
+        </div>
+
+        {image && <img src={image} alt="" className={styles.projectCover} />}
+
+        {locked ? (
+          <form
+            className={styles.guestForm}
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (project.privacy?.password === key) setUnlocked(true);
+              else setWrong(true);
+            }}
+          >
+            <p className={styles.locked}>
+              This one is password protected (licensing, contracts, you know). VIP members only!!
+            </p>
+            <label>
+              Key:
+              <input
+                type="password"
+                className={styles.field}
+                value={key}
+                onChange={(e) => {
+                  setKey(e.target.value);
+                  setWrong(false);
+                }}
+              />
+            </label>
+            <button type="submit" className={styles.oldButton}>
+              Unlock
+            </button>
+            {wrong && <span className={styles.locked}> Wrong key!</span>}
+          </form>
+        ) : (
+          <>
+            {overview ? (
+              <div className={styles.projectText} dangerouslySetInnerHTML={{ __html: overview }} />
+            ) : (
+              project.description && <p>{plain(project.description)}</p>
+            )}
+
+            <table className={styles.projectFacts}>
+              <tbody>
+                {details.map(
+                  ([label, value]) =>
+                    value && (
+                      <tr key={label}>
+                        <th>{label}:</th>
+                        <td>{value}</td>
+                      </tr>
+                    ),
+                )}
+              </tbody>
+            </table>
+
+            {project.noAi && <p className={styles.locked}>No AI was used for this one!</p>}
+            {project.aiDisclaimer && <p>{plain(project.aiDisclaimer)}</p>}
+
+            {big && (
+              <div className={styles.bigPicture}>
+                <img src={big} alt="" />
+                <button type="button" className={styles.oldButton} onClick={() => setBig(null)}>
+                  Close picture
+                </button>
+              </div>
+            )}
+            {gallery.length > 0 && (
+              <>
+                <h3 className={styles.projectHeading}>Pictures</h3>
+                <p className={styles.counterNote} style={{ textAlign: 'left' }}>
+                  Click a picture to see it big.
+                </p>
+                <div className={styles.gallery}>
+                  {gallery.map((url, i) => (
+                    <button key={`${url}-${i}`} type="button" className={styles.thumb} onClick={() => setBig(url)}>
+                      <img src={url} alt="" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {videos.length > 0 && (
+              <>
+                <h3 className={styles.projectHeading}>Final product</h3>
+                {videos.map((v, i) => (
+                  <MediaSkin
+                    key={v.url}
+                    kind={v.kind}
+                    src={v.src}
+                    title={videos.length > 1 ? `${project.title.trim()} (${i + 1})` : project.title.trim()}
+                  />
+                ))}
+              </>
+            )}
+          </>
+        )}
+      </article>
+    </>
+  );
+}
+
+/** Snaps and Free time: a wall of thumbnails, one shown big at a time. */
+function GalleryPage({ source, intro }: { source: 'snaps' | 'hobby_images'; intro: string }) {
+  const { photos, failed } = useGallery(source);
+  const [big, setBig] = useState<string | null>(null);
+
+  return (
+    <>
+      <p>
+        {intro}
+        {photos && photos.length > 0 && (
+          <>
+            {' '}
+            <b>{photos.length}</b> {photos.length === 1 ? 'picture' : 'pictures'} so far.
+          </>
+        )}
+      </p>
+      {big && (
+        <div className={styles.bigPicture}>
+          <img src={big} alt="" />
+          <button type="button" className={styles.oldButton} onClick={() => setBig(null)}>
+            Close picture
+          </button>
+        </div>
+      )}
+      {!photos ? (
+        <p className={styles.counterNote} style={{ textAlign: 'left' }}>
+          {failed ? 'The pictures could not be loaded. Try Refresh.' : 'Loading pictures...'}
+        </p>
+      ) : photos.length === 0 ? (
+        <p>Nothing here yet. Come back soon!</p>
+      ) : (
+        <div className={styles.gallery}>
+          {photos.map((p) => (
+            <button key={p.id} type="button" className={styles.thumb} onClick={() => setBig(p.imageUrl)}>
+              <img src={p.imageUrl} alt="" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
     </>
   );
 }

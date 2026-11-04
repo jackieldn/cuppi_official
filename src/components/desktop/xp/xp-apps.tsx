@@ -5,7 +5,7 @@
 // viewer) and the Journal. Pictures and journal posts are their own content,
 // managed at /admin/xp-pictures and /admin/journal, and live only here.
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
 
 import { cn } from '@/lib/utils';
@@ -14,10 +14,12 @@ import {
   JOURNAL_POSTS,
   XP_PICTURES,
   journalDate,
+  journalHtml,
   sortJournal,
   type JournalPost,
   type XpPicture,
 } from '@/lib/poot-xp-types';
+import { sanitizeJournalHtml } from '@/lib/sanitize-html';
 import { ArrowIcon, JournalIcon, NotepadIcon } from './xp-icons';
 import styles from './xp.module.css';
 
@@ -228,12 +230,7 @@ export function JournalApp() {
           <>
             <h1>{post.title}</h1>
             <p className={styles.journalDate}>{journalDate(post.date)}</p>
-            {post.body
-              .split(/\n\s*\n/)
-              .filter((para) => para.trim())
-              .map((para, i) => (
-                <p key={i}>{para}</p>
-              ))}
+            <JournalBody post={post} />
           </>
         ) : (
           items && !failed && <p className={styles.journalDate}>Nothing to read yet. Come back soon!</p>
@@ -241,4 +238,10 @@ export function JournalApp() {
       </article>
     </div>
   );
+}
+
+/** Posts are HTML from the admin's editor (older ones are plain text, shown the same way). */
+function JournalBody({ post }: { post: JournalPost }) {
+  const html = useMemo(() => sanitizeJournalHtml(journalHtml(post)), [post]);
+  return <div className={styles.journalBody} dangerouslySetInnerHTML={{ __html: html }} />;
 }

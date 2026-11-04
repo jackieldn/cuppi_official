@@ -278,7 +278,11 @@ export function PageWindow({ children }: { children: ReactNode }) {
         <div
           className={cn(isWindow && 'relative min-h-0 flex-1 [contain:layout_paint]', interacting && 'pointer-events-none select-none')}
         >
-          <div ref={scrollerRef} className={cn(isWindow && 'h-full overflow-y-auto overflow-x-hidden overscroll-contain')}>
+          {/* In a window the scroller is a size container, so a page can fill the window (100cqh) rather than the screen. */}
+          <div
+            ref={scrollerRef}
+            className={cn(isWindow && 'h-full overflow-y-auto overflow-x-hidden overscroll-contain [container-type:size]')}
+          >
             {children}
           </div>
         </div>

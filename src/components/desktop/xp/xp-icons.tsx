@@ -88,6 +88,27 @@ export function JournalIcon(p: P) {
   );
 }
 
+/** Poot Amp: a black speaker with an icy cone and a little spectrum. */
+export function PlayerIcon(p: P) {
+  return (
+    <svg viewBox="0 0 32 32" {...base(p)}>
+      <defs>
+        <radialGradient id="xp-amp-cone" cx="0.4" cy="0.35" r="0.8">
+          <stop offset="0" stopColor="#d9f4ff" />
+          <stop offset="0.5" stopColor="#2f8fd6" />
+          <stop offset="1" stopColor="#0b3f75" />
+        </radialGradient>
+      </defs>
+      <rect x="4" y="3" width="24" height="26" rx="3" fill="#1c1c1c" stroke="#000" />
+      <rect x="7" y="6" width="18" height="6" rx="1" fill="#04080b" stroke="#333" />
+      <path d="M9 11V9m3 2V8m3 3V9.5m3 1.5V8m3 3V9.5" stroke="#6fd3ff" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="16" cy="21" r="6" fill="#0c0c0c" stroke="#444" />
+      <circle cx="16" cy="21" r="4" fill="url(#xp-amp-cone)" />
+      <circle cx="16" cy="21" r="1.2" fill="#06284c" />
+    </svg>
+  );
+}
+
 export function FolderIcon(p: P & { tint?: string }) {
   const { tint = '#f6d35c', ...rest } = p;
   return (

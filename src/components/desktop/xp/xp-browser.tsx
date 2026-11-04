@@ -7,29 +7,31 @@ import { useEffect, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { usePortalData } from './portal-data';
-import { PAGE_TITLES, PortalError, PortalLoading, PortalSite, type PortalPage } from './portal-site';
+import { PAGE_TITLES, PortalError, PortalLoading, PortalSite, type PortalPage, type PortalRoute } from './portal-site';
 import { ArrowIcon, GlobeSmall, HomeIcon, RefreshIcon } from './xp-icons';
 import styles from './xp.module.css';
 
 // Pages "load" for a moment, as they did on a 2006 connection.
 const LOAD_MS = 450;
 
-export const browserTitle = (page: PortalPage) =>
-  `${page === 'home' ? "Jackie's portal" : PAGE_TITLES[page]} - Internet`;
+export const browserTitle = (page: PortalPage, projectTitle?: string) =>
+  `${page === 'home' ? "Jackie's portal" : projectTitle || PAGE_TITLES[page]} - Internet`;
 
 interface XpBrowserProps {
   travel: (href: string) => void;
   now: Date;
-  onPage: (page: PortalPage) => void;
+  /** The page being shown, with the work's title when it's a project. */
+  onPage: (page: PortalPage, projectTitle?: string) => void;
 }
 
 export function XpBrowser({ travel, now, onPage }: XpBrowserProps) {
   const { data, failed, retry } = usePortalData();
-  const [history, setHistory] = useState<PortalPage[]>(['home']);
+  const [history, setHistory] = useState<PortalRoute[]>([{ page: 'home' }]);
   const [at, setAt] = useState(0);
   const [loading, setLoading] = useState(true);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const page = history[at];
+  const route = history[at];
+  const { page, slug } = route;
   const onPageRef = useRef(onPage);
   onPageRef.current = onPage;
 
@@ -38,17 +40,22 @@ export function XpBrowser({ travel, now, onPage }: XpBrowserProps) {
     setTimeout(() => setLoading(false), LOAD_MS);
   };
 
+  const projectTitle = page === 'project' ? data?.projects.find((p) => p.slug === slug)?.title.trim() : undefined;
+
   useEffect(() => {
-    onPageRef.current(page);
+    onPageRef.current(page, projectTitle);
+  }, [page, projectTitle]);
+
+  useEffect(() => {
     viewportRef.current?.scrollTo({ top: 0 });
     setLoading(true);
     const t = setTimeout(() => setLoading(false), LOAD_MS);
     return () => clearTimeout(t);
-  }, [page]);
+  }, [page, slug]);
 
-  const go = (next: PortalPage) => {
-    if (next === page) return;
-    setHistory((h) => [...h.slice(0, at + 1), next]);
+  const go = (next: PortalPage, nextSlug?: string) => {
+    if (next === page && nextSlug === slug) return;
+    setHistory((h) => [...h.slice(0, at + 1), { page: next, slug: nextSlug }]);
     setAt((i) => i + 1);
   };
 
@@ -93,7 +100,7 @@ export function XpBrowser({ travel, now, onPage }: XpBrowserProps) {
         ) : !data ? (
           <PortalLoading />
         ) : (
-          <PortalSite data={data} page={page} go={go} travel={travel} now={now} />
+          <PortalSite data={data} page={page} slug={slug} go={go} travel={travel} now={now} />
         )}
       </div>
 
