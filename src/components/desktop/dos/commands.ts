@@ -51,7 +51,7 @@ export interface DosContext {
   exit: () => void;
   /** Back to 2026, opening this page in the desktop's window. */
   open: (href: string) => void;
-  /** The time machine's clock: July 1997, at today's time of day. */
+  /** The time machine's clock: today's date and time, in 1997. */
   now: () => Date;
   cache: Map<string, Promise<unknown>>;
   /** Owned by the screen, cleaned up when DOS closes. */
@@ -679,7 +679,7 @@ export const COMMANDS: Command[] = [
     run: (_args, ctx) => {
       const d = ctx.now();
       const day = d.toLocaleDateString('en-US', { weekday: 'short' });
-      ctx.print([`Current date is ${day} ${dosDate(d).replace(/-(\d\d)$/, `-${d.getFullYear()}`)}`, 'The time machine is stuck in July 1997. Type EXIT to leave.']);
+      ctx.print([`Current date is ${day} ${dosDate(d).replace(/-(\d\d)$/, `-${d.getFullYear()}`)}`, 'The time machine is stuck in 1997. Type EXIT to leave.']);
     },
   },
   {

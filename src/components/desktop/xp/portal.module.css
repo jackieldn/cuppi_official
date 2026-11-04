@@ -1,0 +1,562 @@
+/*
+  The 2006 portal: a home-made fan-portal homepage, the kind built on free
+  site builders back then. Three columns, glossy blue box headers, a gothic
+  banner, a marquee, a visitor counter and a guestbook.
+*/
+
+.site {
+  min-width: 860px;
+  background: #fff;
+  color: #111;
+  font-family: Verdana, Tahoma, Geneva, sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.site a,
+.link {
+  color: #2a6bc2;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.site a:hover,
+.link:hover {
+  text-decoration: underline;
+  color: #c0392b;
+}
+
+/* --------------------------------------------------------------- marquee */
+
+.marquee {
+  overflow: hidden;
+  white-space: nowrap;
+  background: #000;
+  color: #ffe24a;
+  font-family: 'Comic Sans MS', 'Comic Neue', cursive;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 2px 0;
+  border-top: 1px solid #333;
+  border-bottom: 3px double #3a73d6;
+}
+
+.marquee span {
+  display: inline-block;
+  padding-left: 100%;
+  animation: portal-marquee 28s linear infinite;
+}
+
+@keyframes portal-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+/* --------------------------------------------------------------- columns */
+
+.columns {
+  display: flex;
+  align-items: flex-start;
+}
+
+.left {
+  width: 230px;
+  flex-shrink: 0;
+  padding: 8px 6px;
+  border-right: 1px solid #ddd;
+}
+
+.center {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-right: 1px solid #ddd;
+}
+
+.right {
+  width: 210px;
+  flex-shrink: 0;
+  padding: 8px 6px;
+}
+
+/* The glossy blue pill every box sits under. */
+.boxHead {
+  height: 21px;
+  margin: 10px 0 6px;
+  padding: 0 14px;
+  border: 1px solid #1a4f9e;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #a9cdf5 0%, #5c9ae3 45%, #1d5fc2 52%, #2f73d3 80%, #5a95e2 100%);
+  box-shadow: inset 0 1px 0 #e0eeff, 0 1px 1px rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font-family: Verdana, Tahoma, sans-serif;
+  font-size: 12px;
+  line-height: 19px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 0 2px #0b2f6e, 1px 1px 0 #0b2f6e;
+}
+
+.box:first-child .boxHead {
+  margin-top: 0;
+}
+
+.boxBody {
+  padding: 0 4px;
+}
+
+.menuArt {
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+  border: 1px solid #ccc;
+  background: linear-gradient(180deg, #fff 0%, #e8eef8 100%);
+}
+
+.menuArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.8);
+}
+
+.menuArtWord {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  text-align: center;
+  font-family: 'Great Vibes', 'Brush Script MT', cursive;
+  font-size: 46px;
+  color: #f4b5c8;
+  -webkit-text-stroke: 1px #7a2d47;
+  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.5);
+}
+
+.menuList {
+  list-style: none;
+  margin: 0;
+  padding: 0 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+}
+
+.menuCurrent {
+  color: #c0392b !important;
+  font-weight: bold;
+}
+
+.shout {
+  height: 170px;
+  overflow-y: auto;
+  border: 2px inset #ddd;
+  background: #fafafa;
+  padding: 4px;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  user-select: text;
+}
+
+.shout b {
+  color: #2a6bc2;
+}
+
+.shout time {
+  color: #999;
+  font-size: 10px;
+}
+
+.field {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 2px 0 4px;
+  padding: 2px 3px;
+  border: 1px solid #7f9db9;
+  font: 12px Verdana, Tahoma, sans-serif;
+  color: #000;
+  background: #fff;
+  cursor: text;
+}
+
+textarea.field {
+  resize: vertical;
+  min-height: 48px;
+}
+
+.smileys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 2px 0 4px;
+}
+
+.smileys button {
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.oldButton {
+  padding: 1px 8px;
+  border: 1px solid #7a7a7a;
+  border-radius: 0;
+  background: linear-gradient(180deg, #fff 0%, #e4e4e4 100%);
+  font: 12px Verdana, Tahoma, sans-serif;
+  color: #000;
+  cursor: pointer;
+}
+
+.oldButton:active {
+  background: #d4d4d4;
+}
+
+.counter {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin: 2px 0;
+}
+
+.counter span {
+  min-width: 56px;
+  padding: 1px 4px;
+  border: 1px solid #666;
+  background: #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  text-align: center;
+}
+
+.counterNote {
+  text-align: center;
+  font-size: 10px;
+  color: #444;
+}
+
+.poll {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.poll label {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.pollBar {
+  height: 9px;
+  background: linear-gradient(180deg, #ffb347, #e8731a);
+  border: 1px solid #b35b0f;
+}
+
+.center1 {
+  text-align: center;
+}
+
+/* ----------------------------------------------------------------- posts */
+
+.pageHead {
+  composes: boxHead;
+  margin-top: 0;
+}
+
+.post {
+  padding: 6px 0 10px;
+  border-top: 1px solid #bbb;
+  overflow: hidden;
+}
+
+.post:first-of-type {
+  border-top: 0;
+}
+
+.postHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.postTitle {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0;
+  color: #000;
+}
+
+.postMeta {
+  font-style: italic;
+  font-size: 12px;
+  color: #333;
+  white-space: nowrap;
+}
+
+.postMeta span + span {
+  margin-left: 20px;
+}
+
+.postImage {
+  float: left;
+  width: 180px;
+  max-height: 150px;
+  object-fit: cover;
+  margin: 0 8px 4px 0;
+  border: 1px solid #ccc;
+}
+
+.smallImage {
+  width: 80px;
+  height: 80px;
+}
+
+.more {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.more::before {
+  content: '»»';
+  font-weight: bold;
+  color: #4a8fe0;
+  letter-spacing: -2px;
+  margin-right: 4px;
+}
+
+.locked {
+  color: #c0392b;
+  font-weight: bold;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid #ccc;
+  background: #f7f9fc;
+  text-align: center;
+  font: inherit;
+  cursor: pointer;
+  color: #2a6bc2;
+}
+
+.thumb:hover {
+  border-color: #4a8fe0;
+  background: #eaf2fd;
+}
+
+.thumb img,
+.thumbBlank {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid #ddd;
+  background: #dfe7f3;
+}
+
+.guestEntry {
+  border: 1px solid #b9cbe8;
+  margin-bottom: 10px;
+}
+
+.guestHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 6px;
+  background: #e3edfb;
+  border-bottom: 1px solid #b9cbe8;
+  font-size: 11px;
+}
+
+.guestText {
+  padding: 6px 8px;
+}
+
+.guestForm {
+  padding: 8px;
+  border: 1px dashed #8aa9d6;
+  background: #f5f8fd;
+  margin-bottom: 14px;
+}
+
+.skill {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 5px;
+  font-size: 11px;
+}
+
+.skillBar {
+  height: 8px;
+  border: 1px solid #1a4f9e;
+  background: #fff;
+}
+
+.skillBar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(180deg, #a9cdf5, #2f73d3);
+}
+
+/* -------------------------------------------------------------- calendar */
+
+.calendar {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: center;
+}
+
+.calendar th {
+  font-weight: bold;
+  padding: 2px 0;
+}
+
+.calendar td {
+  padding: 2px 0;
+}
+
+.calendar .sun {
+  color: #e01010;
+  font-weight: bold;
+}
+
+.calendar .other {
+  color: #aaa;
+}
+
+.calendar .today {
+  outline: 1px solid #1a4f9e;
+  background: #e3edfb;
+}
+
+.plugin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  color: #666;
+  font-size: 10px;
+  text-align: center;
+}
+
+.smiley {
+  display: block;
+  margin: 0 auto;
+  font-size: 64px;
+  line-height: 1;
+  text-align: center;
+  animation: portal-wave 1.6s ease-in-out infinite;
+}
+
+@keyframes portal-wave {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg) scale(1.05); }
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+}
+
+/* The 88x31 buttons every site had a row of. */
+.badge {
+  width: 88px;
+  height: 31px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 4px;
+  border: 1px solid #000;
+  font-family: Verdana, sans-serif;
+  font-size: 9px;
+  line-height: 1.1;
+  font-weight: bold;
+  text-align: center;
+  overflow: hidden;
+}
+
+.footer {
+  padding: 10px;
+  border-top: 3px double #3a73d6;
+  text-align: center;
+  font-size: 10px;
+  color: #555;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* "The page cannot be displayed": the browser's own error page. */
+.errorPage {
+  max-width: 620px;
+  padding: 24px 30px;
+  font-family: Tahoma, Verdana, sans-serif;
+  font-size: 12px;
+  color: #000;
+}
+
+.errorPage h1 {
+  font-size: 16px;
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.errorPage hr {
+  border: 0;
+  border-top: 1px solid #c6c6c6;
+}
+
+.loading {
+  padding: 30px;
+  font-family: Tahoma, Verdana, sans-serif;
+  color: #444;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee span {
+    animation: none;
+    padding-left: 8px;
+  }
+
+  .smiley {
+    animation: none;
+  }
+}

@@ -121,6 +121,25 @@ service cloud.firestore {
     }
 
     /**
+     * @description Pictures in Poot XP's My Pictures folder (the Time Machine's 2006). Public read, admin write.
+     * @path /xp_pictures/{pictureId}
+     */
+    match /xp_pictures/{pictureId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * @description Posts in Poot XP's Journal app. Visitors can read published posts only
+     * (their queries must ask for published == true); drafts and writes are admin only.
+     * @path /journal_posts/{postId}
+     */
+    match /journal_posts/{postId} {
+      allow get, list: if resource.data.published == true || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    /**
      * @description Testimonials for the About page. Public read, admin write.
      * @path /testimonials/{testimonialId}
      */

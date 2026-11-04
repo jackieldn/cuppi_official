@@ -7,16 +7,19 @@ import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { MENU_BAR_HEIGHT, useDesktop, type Era } from './desktop-context';
+import { MENU_BAR_HEIGHT, eraDateLabel, useDesktop, type Era } from './desktop-context';
 import { unlockDosAudio } from './dos/dos-sound';
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 const timeFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-const ERAS: { id: Era; label: string; detail: string }[] = [
-  { id: 'now', label: 'Today', detail: 'The desktop' },
-  { id: '1997', label: 'July 1997', detail: 'JackDOS 6.22' },
+const ERAS: { id: Era; detail: string }[] = [
+  { id: 'now', detail: 'The desktop' },
+  { id: '2006', detail: 'Poot XP' },
+  { id: '1997', detail: 'JackDOS 6.22' },
 ];
+
+const eraLabel = (era: Era) => (era === 'now' ? 'Today' : eraDateLabel(Number(era)));
 
 /** The current time, updated on the minute (not every second). */
 function useNow() {
@@ -97,7 +100,7 @@ function TimeMachine() {
         <div
           role="menu"
           aria-label="Time Machine"
-          className="absolute right-0 top-[calc(100%+4px)] z-[70] min-w-[230px] animate-in fade-in zoom-in-95 rounded-lg border border-palette-lagoon/40 bg-palette-ink/85 p-1 text-[13px] text-palette-cream shadow-[0_12px_40px_-8px_rgba(0,0,0,0.6)] backdrop-blur-xl duration-100"
+          className="absolute right-0 top-[calc(100%+4px)] z-[70] min-w-[300px] animate-in fade-in zoom-in-95 rounded-lg border border-palette-lagoon/40 bg-palette-ink/85 p-1 text-[13px] text-palette-cream shadow-[0_12px_40px_-8px_rgba(0,0,0,0.6)] backdrop-blur-xl duration-100"
           onKeyDown={onMenuKeyDown}
         >
           <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wider text-palette-cream/50">
@@ -109,17 +112,17 @@ function TimeMachine() {
               type="button"
               role="menuitemradio"
               aria-checked={era === e.id}
-              className="flex w-full cursor-default items-center gap-2 rounded-md px-2.5 py-1 text-left outline-none hover:bg-primary focus:bg-primary"
+              className="flex w-full cursor-default items-center gap-2 whitespace-nowrap rounded-md px-2.5 py-1 text-left outline-none hover:bg-primary focus:bg-primary"
               onClick={() => {
                 setOpen(false);
                 // Browsers only allow sound that starts from a click: wake the audio now.
-                if (e.id === '1997') unlockDosAudio();
+                if (e.id !== 'now') unlockDosAudio();
                 setEra(e.id);
               }}
             >
               <Check aria-hidden="true" className={cn('size-3.5 shrink-0', era === e.id ? 'opacity-100' : 'opacity-0')} />
-              <span className="flex-1">{e.label}</span>
-              <span className="text-palette-cream/55">{e.detail}</span>
+              <span className="flex-1">{eraLabel(e.id)}</span>
+              <span className="pl-4 text-palette-cream/55">{e.detail}</span>
             </button>
           ))}
         </div>

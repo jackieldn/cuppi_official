@@ -57,7 +57,7 @@ export function dosSoundEnabled(): boolean {
   }
 }
 
-function saveDosSoundEnabled(on: boolean) {
+export function saveDosSoundEnabled(on: boolean) {
   try {
     localStorage.setItem(PREF_KEY, on ? 'on' : 'off');
   } catch {
