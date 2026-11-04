@@ -5,6 +5,8 @@ import { FirebaseClientProvider } from '@/firebase';
 import { Dock } from '@/components/layout/dock';
 import { CardFlightLayer } from '@/components/works/card-flight-layer';
 import { TitleBandLayer } from '@/components/works/title-band-layer';
+import { DesktopProvider } from '@/components/desktop/desktop-context';
+import { PageWindow } from '@/components/desktop/page-window';
 
 const siteUrl = 'https://jackiepoot.co.uk';
 
@@ -39,11 +41,13 @@ export default function PortfolioRootLayout({
       </head>
       <body className="theme-portfolio font-body antialiased">
         <FirebaseClientProvider>
-          <TitleBandLayer />
-          {children}
-          <Dock />
-          <CardFlightLayer />
-          <Toaster />
+          <DesktopProvider>
+            <TitleBandLayer />
+            <PageWindow>{children}</PageWindow>
+            <Dock />
+            <CardFlightLayer />
+            <Toaster />
+          </DesktopProvider>
         </FirebaseClientProvider>
       </body>
     </html>

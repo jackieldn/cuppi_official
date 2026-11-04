@@ -2,11 +2,12 @@
 
 import { useState, CSSProperties, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Home, LayoutGrid, UserCircle, Palette, Smile, AppWindow } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 import { startReturnFlight } from "@/lib/card-flight";
+import { useDesktop } from "@/components/desktop/desktop-context";
+import { dockItems, dockItemMatches, findDockItem } from "@/components/layout/dock-items";
 import {
   Tooltip,
   TooltipContent,
@@ -14,17 +15,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const dockItems = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/works", icon: LayoutGrid, label: "Work" },
-  { href: "/snaps", icon: Palette, label: "Snaps" },
-  { href: "/free-time", icon: Smile, label: "Free time" },
-  { href: "/apps", icon: AppWindow, label: "Apps & Websites" },
-  { href: "/about", icon: UserCircle, label: "About" },
-];
 
 export function Dock() {
   const pathname = usePathname();
+  const desktop = useDesktop();
   const [isClient, setIsClient] = useState(false);
   // Re-clicking the page you're already on: a single bounce.
   const [clickedItem, setClickedItem] = useState<string | null>(null);
@@ -52,6 +46,8 @@ export function Dock() {
 
   const handleClick = (e: React.MouseEvent, item: (typeof dockItems)[number]) => {
     const opensElsewhere = e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
+    // Desktop easter egg: a Dock click brings a minimised or closed window back.
+    if (!opensElsewhere) desktop.open();
     if (opensElsewhere || item.href === pathname) {
       setClickedItem(item.label);
       return;
@@ -82,9 +78,9 @@ export function Dock() {
     return {};
   };
 
-  // Sub-pages count too: /works/young-lions lights up Work. Home only matches "/".
-  const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
+  // With the window closed, no page is open, so nothing lights up.
+  const isActive = (href: string) => desktop.windowState !== 'closed' && dockItemMatches(href, pathname);
+  const minimisedItem = desktop.windowState === 'minimised' ? findDockItem(pathname) : undefined;
 
   if (!isClient || pathname.startsWith('/admin')) {
     return null;
@@ -139,6 +135,32 @@ export function Dock() {
               </TooltipContent>
             </Tooltip>
           ))}
+          {minimisedItem && (
+            <>
+              <div aria-hidden="true" className="relative mx-1 w-px self-stretch bg-palette-lagoon/50" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={desktop.open}
+                    aria-label={`Restore ${minimisedItem.label} window`}
+                    className="group relative flex size-[58px] animate-in zoom-in-50 fade-in items-center justify-center overflow-hidden rounded-[14px] border border-palette-lagoon/50 bg-background/80 text-foreground backdrop-blur-md duration-300 transition-transform ease-in-out hover:-translate-y-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {/* A tiny window: title bar dots over the page's icon. */}
+                    <span className="absolute inset-x-0 top-0 flex h-3 items-center gap-[3px] bg-palette-ink/90 px-1.5">
+                      <span className="size-[4px] rounded-full bg-[#ff5f57]" />
+                      <span className="size-[4px] rounded-full bg-[#febc2e]" />
+                      <span className="size-[4px] rounded-full bg-[#28c840]" />
+                    </span>
+                    <minimisedItem.icon className="mt-2 size-6" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{minimisedItem.label}</p>
+                </TooltipContent>
+              </Tooltip>
+            </>
+          )}
         </nav>
       </TooltipProvider>
     </footer>

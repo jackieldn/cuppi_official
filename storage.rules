@@ -73,6 +73,17 @@ service firebase.storage {
       allow write: if isAdmin();
     }
 
+    // Audio samples and cover art for the desktop easter egg's music player.
+    // Only audio and images, up to 10 MB (samples are about 10 seconds long).
+    // A delete has no request.resource, so it only needs the admin check.
+    match /player_tracks/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && (request.resource == null
+          || (request.resource.size < 10 * 1024 * 1024
+            && request.resource.contentType.matches('(audio|image)/.*')));
+    }
+
     // Match all files for technical skills icons.
     match /skills/{allPaths=**} {
       allow read: if true;

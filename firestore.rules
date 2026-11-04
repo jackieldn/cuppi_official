@@ -112,6 +112,15 @@ service cloud.firestore {
     }
 
     /**
+     * @description Tracks for the desktop easter egg's music player. Public read, admin write.
+     * @path /player_tracks/{trackId}
+     */
+    match /player_tracks/{trackId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
      * @description Testimonials for the About page. Public read, admin write.
      * @path /testimonials/{testimonialId}
      */

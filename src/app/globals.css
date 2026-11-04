@@ -250,6 +250,78 @@
   }
 
   /*
+    The desktop music player's equaliser bars. Each bar bounces between two
+    heights with its own speed and delay, so together they look random.
+    Scaled rather than resized, so it's cheap to run on many bars.
+  */
+  @keyframes eq-bar {
+    0% {
+      transform: scaleY(var(--eq-low, 0.15));
+    }
+    100% {
+      transform: scaleY(var(--eq-high, 1));
+    }
+  }
+
+  /*
+    The 1997 DOS skin's CRT monitor. Power on: a bright line opens up into the
+    picture. Power off: the picture squashes to a line, then to a dot. The
+    flicker is very faint; the cursor blinks like DOS's underscore-block.
+  */
+  @keyframes crt-on {
+    0% {
+      transform: scale(1, 0.002);
+      filter: brightness(4);
+      opacity: 0;
+    }
+    8% {
+      opacity: 1;
+    }
+    45% {
+      transform: scale(1, 0.002);
+      filter: brightness(4);
+    }
+    100% {
+      transform: scale(1, 1);
+      filter: brightness(1);
+    }
+  }
+  @keyframes crt-off {
+    0% {
+      transform: scale(1, 1);
+      filter: brightness(1);
+    }
+    55% {
+      transform: scale(1, 0.003);
+      filter: brightness(4);
+    }
+    100% {
+      transform: scale(0, 0.003);
+      filter: brightness(6);
+      opacity: 0;
+    }
+  }
+  @keyframes crt-flicker {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.985;
+    }
+  }
+  @keyframes dos-cursor {
+    0%,
+    49% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /*
     A letter typed onto the profile name (ProfileName): it lights up orange with a
     glow, which eases out until the letter is plain again. Both shadow layers are
     always present so text-shadow can interpolate between them.
