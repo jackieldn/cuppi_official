@@ -63,6 +63,13 @@ describe('Firestore rules', () => {
     await assertFails(getDocs(collection(admin.firestore(), 'roles_admin')));
   });
 
+  test('music player tracks are public to read and admin-only to write', async () => {
+    await assertSucceeds(getDocs(collection(anon.firestore(), 'player_tracks')));
+    await assertFails(setDoc(doc(anon.firestore(), 'player_tracks/t1'), { title: 'x' }));
+    await assertFails(setDoc(doc(stranger.firestore(), 'player_tracks/t1'), { title: 'x' }));
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'player_tracks/t1'), { title: 'x' }));
+  });
+
   test('signup emails are never readable from a client', async () => {
     await assertFails(getDoc(doc(admin.firestore(), 'beta_signups/s1')));
     await assertFails(getDoc(doc(anon.firestore(), 'beta_signups/s1')));
@@ -109,6 +116,14 @@ describe('Storage rules', () => {
   test('admins can upload to the known folders', async () => {
     await assertSucceeds(uploadString(ref(admin.storage(), 'projects/a.txt'), 'x'));
     await assertSucceeds(uploadString(ref(admin.storage(), 'apps/a.txt'), 'x'));
+  });
+
+  test('music player files: admins only, audio and images only', async () => {
+    const audio = { contentType: 'audio/mpeg' };
+    await assertFails(uploadString(ref(stranger.storage(), 'player_tracks/a.mp3'), 'x', 'raw', audio));
+    await assertSucceeds(uploadString(ref(admin.storage(), 'player_tracks/a.mp3'), 'x', 'raw', audio));
+    await assertSucceeds(uploadString(ref(admin.storage(), 'player_tracks/c.png'), 'x', 'raw', { contentType: 'image/png' }));
+    await assertFails(uploadString(ref(admin.storage(), 'player_tracks/a.html'), 'x', 'raw', { contentType: 'text/html' }));
   });
 
   test('nobody can upload outside the known folders', async () => {
