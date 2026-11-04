@@ -495,6 +495,26 @@
         }
       },
       {
+        "path": "/music_covers/{coverId}",
+        "definition": {
+          "entityName": "MusicCover",
+          "schema": {
+            "type": "object",
+            "description": "An album cover in the About page's Music taste section.",
+            "properties": {
+              "id": { "type": "string", "description": "Unique identifier for the cover." },
+              "imageUrl": { "type": "string", "format": "uri", "description": "URL of the cover image (square)." },
+              "title": { "type": "string", "description": "Optional album/artist label, used as alt text." },
+              "order": { "type": "number", "description": "A number for manual sorting order." },
+              "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when the cover was added." }
+            },
+            "required": ["imageUrl", "order"]
+          },
+          "description": "Album covers for the About page's Music taste section.",
+          "params": [{ "name": "coverId", "description": "Unique identifier for the cover." }]
+        }
+      },
+      {
         "path": "/about_profile/{profileId}",
         "definition": {
           "entityName": "AboutProfile",

@@ -2,13 +2,15 @@
 
 import Image from 'next/image';
 import { useFetchCollection, useFirestore } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
-import { AboutProfile, TechnicalSkill, WorkExperience, Fact, Testimonial } from '@/lib/about-types';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { AboutProfile, TechnicalSkill, WorkExperience, Fact, Testimonial, MusicCover } from '@/lib/about-types';
+import { MusicTasteSection } from '@/components/about/music-taste-section';
+import { ShineCard } from '@/components/about/shine-card';
 import { ProfileSection } from '@/components/about/profile-section';
 import { SkillsSection } from '@/components/about/skills-section';
 import { ExperienceSection } from '@/components/about/experience-section';
 import { FactsSection } from '@/components/about/facts-section';
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { Reveal } from '@/components/ui/reveal';
 import { TestimonialsSection } from '@/components/about/testimonials-section';
@@ -46,6 +48,26 @@ export default function AboutPage() {
   );
   const { data: facts, isLoading: areFactsLoading } = useFetchCollection<Fact>(factsQuery);
   
+  // Music taste is optional, so unlike the sections above a failed fetch (for example
+  // the rules not being deployed yet) just hides it instead of taking the page down.
+  const [musicCovers, setMusicCovers] = useState<MusicCover[]>([]);
+  const [areMusicCoversLoading, setAreMusicCoversLoading] = useState(true);
+  useEffect(() => {
+    if (!firestore) return;
+    let isMounted = true;
+    getDocs(query(collection(firestore, 'music_covers'), orderBy('order')))
+      .then((snapshot) => {
+        if (isMounted) setMusicCovers(snapshot.docs.map((d) => ({ ...(d.data() as Omit<MusicCover, 'id'>), id: d.id })));
+      })
+      .catch((error) => console.warn('Could not load music covers:', error))
+      .finally(() => {
+        if (isMounted) setAreMusicCoversLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [firestore]);
+
   const sortedExperiences = useMemo(() => {
     if (!experiences) return [];
     return [...experiences].sort((a, b) => {
@@ -63,7 +85,7 @@ export default function AboutPage() {
 
 
   const profile = profiles?.[0];
-  const isLoading = isProfileLoading || areSkillsLoading || areExperiencesLoading || areFactsLoading || areTestimonialsLoading;
+  const isLoading = isProfileLoading || areSkillsLoading || areExperiencesLoading || areFactsLoading || areTestimonialsLoading || areMusicCoversLoading;
 
   useEffect(() => {
     // Only run this logic on the client, after the initial render and when data is loaded.
@@ -91,13 +113,16 @@ export default function AboutPage() {
         </Reveal>
       </header>
 
-      <main className="container mx-auto px-4 pb-16 sm:pb-24">
+      <main className="pb-16 sm:pb-24">
         {!isLoading && (
           <>
+            <div className="container mx-auto px-4">
             <div className="space-y-16">
               {profile && (
-                <Reveal className="max-w-3xl mx-auto bg-card p-8 sm:p-12 rounded-2xl border shadow-sm">
-                    <ProfileSection profile={profile} />
+                <Reveal className="max-w-3xl mx-auto">
+                    <ShineCard className="bg-card p-8 sm:p-12 rounded-2xl border shadow-sm">
+                        <ProfileSection profile={profile} />
+                    </ShineCard>
                 </Reveal>
               )}
               {skills && skills.length > 0 && <SkillsSection skills={skills} />}
@@ -108,7 +133,12 @@ export default function AboutPage() {
                 </div>
             )}
             {testimonials && testimonials.length > 0 && <TestimonialsSection testimonials={testimonials} />}
-            {facts && facts.length > 0 && <FactsSection facts={facts} />}
+            </div>
+            {/* Outside the padded container: the covers run edge to edge. */}
+            {musicCovers.length > 0 && <MusicTasteSection covers={musicCovers} />}
+            <div className="container mx-auto px-4">
+              {facts && facts.length > 0 && <FactsSection facts={facts} />}
+            </div>
           </>
         )}
       </main>

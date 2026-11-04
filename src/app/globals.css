@@ -249,6 +249,37 @@
     }
   }
 
+  /*
+    A letter typed onto the profile name (ProfileName): it lights up orange with a
+    glow, which eases out until the letter is plain again. Both shadow layers are
+    always present so text-shadow can interpolate between them.
+  */
+  @keyframes letter-glow {
+    0% {
+      opacity: 0;
+      color: hsl(var(--accent));
+      text-shadow: 0 0 0.3em hsl(var(--accent) / 0.95), 0 0 0.8em hsl(var(--accent) / 0.7);
+    }
+    12% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 1;
+      color: inherit;
+      text-shadow: 0 0 0 hsl(var(--accent) / 0), 0 0 0 hsl(var(--accent) / 0);
+    }
+  }
+
+  .typed-letter {
+    animation: letter-glow var(--letter-ms, 800ms) ease-out both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .typed-letter {
+      animation: none;
+    }
+  }
+
   .skill-segment {
     transform: scaleX(0);
     transform-origin: left;
