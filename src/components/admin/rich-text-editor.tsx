@@ -154,7 +154,13 @@ export function RichTextEditor({ id, initialHtml, onChange, storage, imageFolder
       emit();
     } catch (error) {
       console.error('Journal picture upload failed:', error);
-      toast({ variant: 'destructive', title: 'Upload failed', description: 'The picture could not be added.' });
+      // Storage errors carry a code such as storage/unauthorized; show it so the cause isn't a mystery.
+      const code = (error as { code?: string } | null)?.code;
+      toast({
+        variant: 'destructive',
+        title: 'Upload failed',
+        description: code ? `The picture could not be added (${code}).` : 'The picture could not be added.',
+      });
     } finally {
       setUploading(false);
     }
