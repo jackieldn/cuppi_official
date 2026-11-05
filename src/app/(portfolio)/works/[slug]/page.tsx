@@ -21,6 +21,7 @@ import { collection, orderBy, query, where } from 'firebase/firestore';
 import type { Testimonial } from '@/lib/about-types';
 import { TestimonialItem } from '@/components/about/testimonials-section';
 import { useFirestore } from '@/firebase/provider';
+import { useDesktop } from '@/components/desktop/desktop-context';
 import { Reveal } from "@/components/ui/reveal";
 import { Project } from "@/lib/projects";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,6 +48,7 @@ const GALLERY_RINGS = [
 
 export default function ProjectPage() {
   const firestore = useFirestore();
+  const desktop = useDesktop();
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [password, setPassword] = useState('');
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
@@ -243,7 +245,12 @@ export default function ProjectPage() {
        <Button
         asChild
         variant="outline"
-        className="absolute top-8 left-8 z-10 h-12 w-12 rounded-full"
+        // Full screen on a desktop: the traffic lights float in the top-left corner (and grow
+        // under the cursor), so the back button sits underneath them.
+        className={cn(
+          "absolute left-8 z-10 h-12 w-12 rounded-full",
+          desktop.available && desktop.mode === 'full' ? "top-24" : "top-8",
+        )}
         aria-label="Back to works"
       >
         <Link
@@ -361,13 +368,10 @@ export default function ProjectPage() {
 
         {/* Section 2: Testimonials (optional, picked per project) */}
         {projectTestimonials.length > 0 && (
-          <section className="pb-8 sm:pb-12">
+          // No heading: the boxes speak for themselves. The top padding keeps them clear of the
+          // lighter band behind the title and details above.
+          <section className="pb-8 pt-14 sm:pb-12 sm:pt-20">
             <div className="container mx-auto px-4">
-              <Reveal hold={awaitingFlight}>
-                <h2 className="text-center font-headline text-3xl font-bold text-palette-sage sm:text-4xl mb-16">
-                  {projectTestimonials.length === 1 ? 'Testimonial' : 'Testimonials'}
-                </h2>
-              </Reveal>
               <div className={cn("mx-auto grid grid-cols-1 gap-8", projectTestimonials.length === 1 ? "max-w-3xl" : "max-w-6xl md:grid-cols-2")}>
                 {projectTestimonials.map((testimonial) => (
                   <TestimonialItem key={testimonial.id} testimonial={testimonial} />

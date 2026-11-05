@@ -121,6 +121,16 @@ service cloud.firestore {
     }
 
     /**
+     * @description Videos for the desktop easter egg: the 2006 torrent client's files and the
+     * 2026 desktop's video files. Public read, admin write.
+     * @path /desktop_videos/{videoId}
+     */
+    match /desktop_videos/{videoId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
      * @description Pictures in Poot XP's My Pictures folder (the Time Machine's 2006). Public read, admin write.
      * @path /xp_pictures/{pictureId}
      */

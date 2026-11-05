@@ -1,14 +1,18 @@
 'use client';
 
-// App icons on the desktop. By default they line up down the right-hand side,
-// top to bottom. Drag one anywhere and it stays there (remembered in this
+// App icons and video files on the desktop. By default they line up down the
+// right-hand side, top to bottom, and carry on in the next column along when
+// the column is full. Drag one anywhere and it stays there (remembered in this
 // browser). Click selects, double-click (or Enter) opens, like macOS.
 
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
+import { videoSource } from '@/lib/desktop-video-source';
 import { DESKTOP_ICONS } from './apps';
-import { MENU_BAR_HEIGHT, useDesktop, type AppId } from './desktop-context';
+import { VideoFileIcon } from './apps/video-app';
+import { MENU_BAR_HEIGHT, useDesktop } from './desktop-context';
+import { useDesktopVideos } from './use-desktop-videos';
 
 const CELL_W = 88;
 const CELL_H = 104;
@@ -17,11 +21,20 @@ const EDGE = 16;
 const DRAG_THRESHOLD = 4;
 const POSITIONS_KEY = 'desktop-icon-positions';
 
-type Point = { x: number; y: number };
-type Positions = Partial<Record<AppId, Point>>;
+// Room left for the Dock underneath, as the windows assume too.
+const DOCK_ROOM = 110;
 
+type Point = { x: number; y: number };
+type Positions = Record<string, Point>;
+
+/** Down the right-hand edge, then on into the next column to the left. */
 function defaultPosition(index: number): Point {
-  return { x: window.innerWidth - EDGE - CELL_W, y: MENU_BAR_HEIGHT + EDGE + index * CELL_H };
+  const perColumn = Math.max(1, Math.floor((window.innerHeight - MENU_BAR_HEIGHT - EDGE - DOCK_ROOM) / CELL_H));
+  const column = Math.floor(index / perColumn);
+  return {
+    x: window.innerWidth - EDGE - CELL_W - column * CELL_W,
+    y: MENU_BAR_HEIGHT + EDGE + (index % perColumn) * CELL_H,
+  };
 }
 
 // Icons stay fully on screen, below the menu bar, even after the browser shrinks.
@@ -50,12 +63,22 @@ function savePositions(p: Positions) {
 }
 
 interface DesktopIconsProps {
-  selected: AppId | null;
-  onSelect: (id: AppId | null) => void;
+  selected: string | null;
+  onSelect: (id: string | null) => void;
+}
+
+/** One icon on the desktop: an app, or a video file. */
+interface Entry {
+  /** Also the key its position is remembered under. */
+  id: string;
+  label: string;
+  art: ReactNode;
+  open: () => void;
 }
 
 export function DesktopIcons({ selected, onSelect }: DesktopIconsProps) {
-  const { openApp } = useDesktop();
+  const { openApp, openVideo } = useDesktop();
+  const { videos } = useDesktopVideos('2026');
   const [positions, setPositions] = useState<Positions>({});
   // Re-render on resize so default and clamped positions follow the screen.
   const [, setViewport] = useState(0);
@@ -67,7 +90,20 @@ export function DesktopIcons({ selected, onSelect }: DesktopIconsProps) {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const place = (id: AppId, p: Point) => {
+  // The apps, then the videos tagged for 2026 as files (only ones the player can open).
+  const entries: Entry[] = [
+    ...DESKTOP_ICONS.map(({ id, label, Icon }) => ({ id, label, art: <Icon />, open: () => openApp(id) })),
+    ...(videos ?? [])
+      .filter((v) => videoSource(v.url))
+      .map((v) => ({
+        id: `video:${v.id}`,
+        label: `${v.title}.mp4`,
+        art: <VideoFileIcon video={v} />,
+        open: () => openVideo(v.id),
+      })),
+  ];
+
+  const place = (id: string, p: Point) => {
     setPositions((prev) => {
       const next = { ...prev, [id]: p };
       savePositions(next);
@@ -77,20 +113,20 @@ export function DesktopIcons({ selected, onSelect }: DesktopIconsProps) {
 
   return (
     <>
-      {DESKTOP_ICONS.map((app, index) => (
+      {entries.map((entry, index) => (
         <DesktopIcon
-          key={app.id}
-          id={app.id}
-          label={app.label}
-          Icon={app.Icon}
-          position={clampPoint(positions[app.id] ?? defaultPosition(index))}
-          selected={selected === app.id}
-          onSelect={() => onSelect(app.id)}
+          key={entry.id}
+          id={entry.id}
+          label={entry.label}
+          art={entry.art}
+          position={clampPoint(positions[entry.id] ?? defaultPosition(index))}
+          selected={selected === entry.id}
+          onSelect={() => onSelect(entry.id)}
           onOpen={() => {
             onSelect(null);
-            openApp(app.id);
+            entry.open();
           }}
-          onPlace={(p) => place(app.id, p)}
+          onPlace={(p) => place(entry.id, p)}
         />
       ))}
     </>
@@ -98,9 +134,9 @@ export function DesktopIcons({ selected, onSelect }: DesktopIconsProps) {
 }
 
 interface DesktopIconProps {
-  id: AppId;
+  id: string;
   label: string;
-  Icon: () => JSX.Element;
+  art: ReactNode;
   position: Point;
   selected: boolean;
   onSelect: () => void;
@@ -108,7 +144,7 @@ interface DesktopIconProps {
   onPlace: (p: Point) => void;
 }
 
-function DesktopIcon({ id, label, Icon, position, selected, onSelect, onOpen, onPlace }: DesktopIconProps) {
+function DesktopIcon({ id, label, art, position, selected, onSelect, onOpen, onPlace }: DesktopIconProps) {
   const ref = useRef<HTMLButtonElement>(null);
   const dragRef = useRef<{ startX: number; startY: number; moved: boolean; latest: Point } | null>(null);
 
@@ -176,11 +212,11 @@ function DesktopIcon({ id, label, Icon, position, selected, onSelect, onOpen, on
           selected ? 'bg-palette-ink/45 ring-1 ring-palette-cream/25' : 'bg-transparent',
         )}
       >
-        <Icon />
+        {art}
       </span>
       <span
         className={cn(
-          'max-w-full truncate rounded px-1.5 text-[12px] font-medium leading-5 text-palette-cream [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]',
+          'line-clamp-2 max-w-full break-words rounded px-1 text-center text-[12px] font-medium leading-5 text-palette-cream [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]',
           selected && 'bg-primary [text-shadow:none]',
         )}
       >

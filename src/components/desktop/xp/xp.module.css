@@ -234,10 +234,27 @@
 }
 
 .iconLabel {
+  max-width: 100%;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
   padding: 0 2px 1px;
   font-size: 13px;
   text-shadow: 1px 1px 1px #000, 0 0 2px #000;
   line-height: 1.25;
+}
+
+/* A picture on the desktop: a little photo with a white border, like a thumbnail. */
+.iconPhoto {
+  width: 38px;
+  height: 38px;
+  border: 2px solid #fff;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px #000;
+  object-fit: cover;
+  pointer-events: none;
 }
 
 .iconSelected .iconArt {

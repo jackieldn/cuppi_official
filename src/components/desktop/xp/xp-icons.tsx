@@ -284,3 +284,72 @@ export function TitleGlyph({ kind }: { kind: 'min' | 'max' | 'restore' | 'close'
     </svg>
   );
 }
+
+/** PootTorrent: a fat green orb with a down arrow, ringed by little dots, the swarm. */
+export function TorrentIcon(p: P) {
+  return (
+    <svg viewBox="0 0 32 32" {...base(p)}>
+      <defs>
+        <radialGradient id="xp-torrent" cx="0.38" cy="0.3" r="0.85">
+          <stop offset="0" stopColor="#d6ffb8" />
+          <stop offset="0.45" stopColor="#4cc43a" />
+          <stop offset="1" stopColor="#0f5a14" />
+        </radialGradient>
+      </defs>
+      <circle cx="16" cy="16" r="12.5" fill="url(#xp-torrent)" stroke="#06300a" />
+      <path d="M16 7.5v10M11.5 13.5 16 18l4.5-4.5" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9.5 22.5h13" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
+      <ellipse cx="12.5" cy="9" rx="6" ry="3" fill="#fff" opacity="0.28" />
+      <circle cx="4" cy="8" r="1.6" fill="#6fd3ff" />
+      <circle cx="28" cy="10" r="1.6" fill="#6fd3ff" />
+      <circle cx="27" cy="26" r="1.6" fill="#6fd3ff" />
+      <circle cx="5" cy="25" r="1.6" fill="#6fd3ff" />
+    </svg>
+  );
+}
+
+/** Poot Media Player: the aqua orb of its skin, with a play triangle. */
+export function MediaPlayerIcon(p: P) {
+  return (
+    <svg viewBox="0 0 32 32" {...base(p)}>
+      <defs>
+        <radialGradient id="xp-media" cx="0.35" cy="0.28" r="0.85">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.35" stopColor="#8fdcff" />
+          <stop offset="0.75" stopColor="#1f86d6" />
+          <stop offset="1" stopColor="#07406f" />
+        </radialGradient>
+      </defs>
+      <circle cx="16" cy="16" r="13" fill="url(#xp-media)" stroke="#07406f" />
+      <path d="M12.5 9.5v13l11-6.5z" fill="#fff" stroke="#07406f" strokeWidth="1.2" strokeLinejoin="round" />
+      <ellipse cx="12" cy="8.5" rx="7" ry="3" fill="#fff" opacity="0.35" />
+    </svg>
+  );
+}
+
+/** A film file: a strip of frames, for the videos on the desktop. */
+export function VideoFileIcon(p: P) {
+  return (
+    <svg viewBox="0 0 32 32" {...base(p)}>
+      <path d="M7 3h13l5 5v21H7z" fill="#fff" stroke="#7a8796" />
+      <path d="M20 3v5h5" fill="#e2e8f0" stroke="#7a8796" />
+      <rect x="10" y="12" width="12" height="11" rx="1" fill="#0b3f75" stroke="#06284c" />
+      <path d="M14.2 14.6v5.8l5-2.9z" fill="#8fdcff" />
+      <path d="M10 15h-1.5M10 18h-1.5M10 21h-1.5M22 15h1.5M22 18h1.5M22 21h1.5" stroke="#6d6a5c" strokeWidth="1" />
+    </svg>
+  );
+}
+
+/** A .doc: a page with a blue title band and lines of text. */
+export function DocIcon(p: P) {
+  return (
+    <svg viewBox="0 0 32 32" {...base(p)}>
+      <path d="M7 3h13l5 5v21H7z" fill="#fff" stroke="#7a8796" />
+      <path d="M20 3v5h5" fill="#e2e8f0" stroke="#7a8796" />
+      <rect x="10" y="11" width="12" height="4" fill="#2f6fd0" />
+      {[18, 21, 24].map((y) => (
+        <path key={y} d={`M10 ${y}h${y === 24 ? 7 : 12}`} stroke="#8a97a8" strokeWidth="1.2" />
+      ))}
+    </svg>
+  );
+}

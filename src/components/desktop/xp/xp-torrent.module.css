@@ -1,0 +1,179 @@
+/*
+  PootTorrent's window: a category list on the left, the torrents in a table on
+  the right. Dark like the rest of Poot XP, with the lime-green progress bars
+  every torrent client of the day had.
+*/
+
+.main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  border-top: 1px solid #000;
+  background: var(--body-dark);
+}
+
+.filters {
+  width: 128px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 0;
+  border-right: 1px solid #000;
+  background: var(--body);
+}
+
+.filter {
+  padding: 3px 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  white-space: nowrap;
+  outline: none;
+}
+
+.filter:hover {
+  background: rgba(37, 94, 140, 0.35);
+}
+
+.filter:focus-visible {
+  outline: 1px dotted var(--ice);
+  outline-offset: -2px;
+}
+
+.filterOn,
+.filterOn:hover {
+  background: var(--hover);
+  color: #fff;
+}
+
+.listWrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+}
+
+.listWrap::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+.listWrap::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.listWrap::-webkit-scrollbar-thumb {
+  border: 1px solid #000;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #4a4a4a 0%, #333 100%);
+}
+
+.list {
+  width: 100%;
+  min-width: 740px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  white-space: nowrap;
+}
+
+.list th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 20px;
+  padding: 0 6px;
+  border-right: 1px solid #111;
+  border-bottom: 1px solid #000;
+  background: linear-gradient(180deg, #404040 0%, #2a2a2a 100%);
+  font-weight: normal;
+  text-align: left;
+  overflow: hidden;
+}
+
+.list td {
+  height: 20px;
+  padding: 0 6px;
+  border-bottom: 1px solid #262626;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list tbody tr {
+  outline: none;
+}
+
+.list tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.list tbody tr:focus-visible {
+  outline: 1px dotted var(--ice);
+  outline-offset: -1px;
+}
+
+.rowOn,
+.list tbody tr.rowOn:nth-child(even) {
+  background: var(--hover);
+  color: #fff;
+}
+
+.num {
+  text-align: right !important;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border: 1px solid #000;
+  border-radius: 50%;
+}
+
+.dotDown {
+  background: #4cc43a;
+}
+
+.dotSeed {
+  background: #6fd3ff;
+}
+
+.dotPaused {
+  background: #9a9a9a;
+}
+
+.bar {
+  position: relative;
+  height: 14px;
+  border: 1px solid #000;
+  background: #101010;
+  overflow: hidden;
+}
+
+.barFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(180deg, #8fe07a 0%, #3aa82c 55%, #2b8a20 100%);
+}
+
+.barSeed {
+  background: linear-gradient(180deg, #8fdcff 0%, #2f8fd6 55%, #1f6fae 100%);
+}
+
+.bar span {
+  position: absolute;
+  inset: 0;
+  line-height: 12px;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 0 2px #000, 1px 1px 1px #000;
+}
+
+.note {
+  margin: 0;
+  padding: 14px 10px;
+  color: var(--text-dim);
+}

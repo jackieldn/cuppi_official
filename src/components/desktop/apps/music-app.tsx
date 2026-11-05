@@ -122,7 +122,7 @@ function Cover({ track }: { track?: PlayerTrack }) {
   );
 }
 
-const iconButton =
+export const iconButton =
   'flex items-center justify-center rounded-full text-foreground/85 transition-[transform,background-color,color] hover:bg-secondary hover:text-foreground active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40';
 
 /**

@@ -23,7 +23,7 @@ import { sanitizeJournalHtml } from '@/lib/sanitize-html';
 import { ArrowIcon, JournalIcon, NotepadIcon } from './xp-icons';
 import styles from './xp.module.css';
 
-type Load<T> = { items: T[] | null; failed: boolean };
+export type Load<T> = { items: T[] | null; failed: boolean };
 
 /** Reads a collection once, when the folder or app first opens. */
 function useOnce<T>(read: (db: NonNullable<ReturnType<typeof useFirestore>>) => Promise<T[]>): Load<T> {
@@ -125,8 +125,14 @@ export function DocumentsFolder({ onReadme, onJournal }: { onReadme: () => void;
   );
 }
 
-export function PicturesFolder({ onOpen }: { onOpen: (pictures: XpPicture[], index: number) => void }) {
-  const { items, failed } = usePictures();
+export function PicturesFolder({
+  load: { items, failed },
+  onOpen,
+}: {
+  /** The pictures, read once by the caller (the desktop shows some of them too). */
+  load: Load<XpPicture>;
+  onOpen: (pictures: XpPicture[], index: number) => void;
+}) {
   if (!items) {
     return (
       <>
@@ -200,9 +206,19 @@ export const pictureTitle = (pictures: XpPicture[], index: number) =>
 
 // ---------------------------------------------------------------- journal
 
-export function JournalApp() {
-  const { items, failed } = useJournal();
-  const [openId, setOpenId] = useState<string | null>(null);
+export function JournalApp({
+  load: { items, failed },
+  request,
+}: {
+  /** The posts, read once by the caller (the desktop shows some of them as .doc files). */
+  load: Load<JournalPost>;
+  /** A .doc on the desktop was opened: show that entry. `n` changes on every opening, so the same one can be asked for again. */
+  request?: { id: string; n: number };
+}) {
+  const [openId, setOpenId] = useState<string | null>(request?.id ?? null);
+  useEffect(() => {
+    if (request) setOpenId(request.id);
+  }, [request]);
   const post = items?.find((p) => p.id === openId) ?? items?.[0];
 
   return (

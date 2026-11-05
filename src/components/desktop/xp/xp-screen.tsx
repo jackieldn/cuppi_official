@@ -6,18 +6,32 @@
 // fan-portal homepage. Turning the computer off (or the clock's Time Machine)
 // travels back to 2026.
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
 import { eraDateLabel, inYear, useDesktop, type Era } from '../desktop-context';
 import { dosSoundEnabled, saveDosSoundEnabled, unlockDosAudio } from '../dos/dos-sound';
 import { GLITCH_MS, TimeGlitch } from '../dos/time-glitch';
-import { usePortalData } from './portal-data';
+import { videoSource } from '@/lib/desktop-video-source';
+import { torrentFacts, type DesktopVideo } from '@/lib/desktop-videos-types';
+import { useDesktopVideos } from '../use-desktop-videos';
+import { plain, usePortalData } from './portal-data';
 import { type PortalPage } from './portal-site';
-import { DocumentsFolder, JournalApp, PictureViewer, PicturesFolder, pictureTitle } from './xp-apps';
+import {
+  DocumentsFolder,
+  JournalApp,
+  PictureViewer,
+  PicturesFolder,
+  pictureTitle,
+  useJournal,
+  usePictures,
+} from './xp-apps';
 import { XpBrowser, browserTitle } from './xp-browser';
 import { DesktopIcons, type DesktopIconItem } from './xp-desktop-icons';
+import { MediaSkin } from './xp-media-skin';
+import { sample } from './xp-icon-layout';
+import { TorrentApp } from './xp-torrent';
 import { PootAmp } from './xp-player';
 import type { XpPicture } from '@/lib/poot-xp-types';
 import {
@@ -26,24 +40,28 @@ import {
   ClockIcon,
   ComputerIcon,
   DiskIcon,
+  DocIcon,
   FloppyIcon,
   FolderIcon,
   InfoIcon,
   JournalIcon,
   LogOffIcon,
+  MediaPlayerIcon,
   NotepadIcon,
   PicturesIcon,
   PlayerIcon,
   PowerIcon,
   RestartIcon,
   SpeakerIcon,
+  TorrentIcon,
+  VideoFileIcon,
 } from './xp-icons';
 import { playDing, playShutdown, playStartup } from './xp-sound';
 import { TASKBAR_HEIGHT, XpWindow, type XpRect } from './xp-window';
 import styles from './xp.module.css';
 
 type Phase = 'glitch' | 'boot' | 'welcome' | 'desktop' | 'saving';
-type WinId = 'browser' | 'notepad' | 'computer' | 'documents' | 'pictures' | 'viewer' | 'journal' | 'player' | 'message';
+type WinId = 'browser' | 'notepad' | 'computer' | 'documents' | 'pictures' | 'viewer' | 'journal' | 'player' | 'torrent' | 'media' | 'facts' | 'message';
 
 const BOOT_MS = 3200;
 const WELCOME_MS = 1800;
@@ -104,7 +122,8 @@ This is what my computer looked like back then, when I made my first websites on
   * Double-click Internet to open my 2006 homepage.
   * My Documents has my Journal, where I write about coding and things I find interesting.
   * Poot Amp plays the songs I had on this computer.
-  * Drag the icons wherever you like.
+  * PootTorrent has all the videos I downloaded. Double-click one to watch. Two aren't finished yet. They never are.
+  * Drag the icons wherever you like. (Yes, the desktop is a mess. It's fine. I know where everything is.)
   * "More..." links take you back to 2026, to the real page.
   * Right-click the desktop to change the background colour.
   * Click the clock (bottom right) to travel through time.
@@ -125,6 +144,8 @@ export function XpScreen() {
   const now = useClock2006();
   // Starts loading the portal while the PC boots.
   const { data } = usePortalData();
+  // The videos for the torrent client, also fetched while it boots.
+  const { videos: torrents, failed: torrentsFailed } = useDesktopVideos('2006');
   const [background, setBackground] = useBackground();
 
   const [phase, setPhase] = useState<Phase>(() =>
@@ -146,6 +167,25 @@ export function XpScreen() {
   const [sound, setSound] = useState(dosSoundEnabled);
   const [browserTitleText, setBrowserTitleText] = useState(browserTitle('home'));
   const [viewing, setViewing] = useState<{ pictures: XpPicture[]; index: number } | null>(null);
+  // The video in the media player.
+  const [watching, setWatching] = useState<DesktopVideo | null>(null);
+  // The posts and pictures are read once here: the Journal and My Pictures use them, and so does the desktop.
+  const journal = useJournal();
+  const pictures = usePictures();
+  const [journalRequest, setJournalRequest] = useState<{ id: string; n: number } | undefined>();
+  // This visit's pick of what lies about on the desktop: a few pictures, a few posts as .doc files and a couple of videos.
+  const [pickSeed] = useState(() => Math.floor(Math.random() * 2 ** 32));
+  const lyingPictures = useMemo(() => sample(pictures.items ?? [], 3, pickSeed + 1), [pictures.items, pickSeed]);
+  const lyingDocs = useMemo(() => sample(journal.items ?? [], 4, pickSeed + 2), [journal.items, pickSeed]);
+  const lyingVideos = useMemo(
+    () =>
+      sample(
+        (torrents ?? []).filter((v) => torrentFacts(v).status === 'seeding' && videoSource(v.url)),
+        2,
+        pickSeed + 3,
+      ),
+    [torrents, pickSeed],
+  );
   const leavingRef = useRef(false);
 
   // Glitch, boot, welcome, desktop. A click or key skips the boot screen.
@@ -332,6 +372,15 @@ export function XpScreen() {
     h,
   });
 
+  const playVideo = (video: DesktopVideo) => {
+    if (!videoSource(video.url)) {
+      showMessage({ title: 'Poot Media Player', text: `Cannot play ${video.title}. The file is damaged.` });
+      return;
+    }
+    setWatching(video);
+    openWin('media');
+  };
+
   const titles: Record<WinId, string> = {
     browser: browserTitleText,
     notepad: 'readme.txt - Notepad',
@@ -341,6 +390,9 @@ export function XpScreen() {
     viewer: viewing ? pictureTitle(viewing.pictures, viewing.index) : 'Picture Viewer',
     journal: 'Journal',
     player: 'Poot Amp',
+    torrent: 'PootTorrent 1.6.1',
+    media: watching ? `${watching.title} - Poot Media Player` : 'Poot Media Player',
+    facts: 'asdfgh.txt - Notepad',
     message: message?.title ?? 'Poot XP',
   };
   const icons: Record<WinId, ReactNode> = {
@@ -352,15 +404,57 @@ export function XpScreen() {
     viewer: <PicturesIcon />,
     journal: <JournalIcon />,
     player: <PlayerIcon />,
+    torrent: <TorrentIcon />,
+    media: <MediaPlayerIcon />,
+    facts: <NotepadIcon />,
     message: <InfoIcon />,
   };
 
+  // Mess is made of real things: every icon opens something that works. They
+  // come in groups, and a couple of the groups get dragged into a corner.
   const desktopIcons: DesktopIconItem[] = [
-    { id: 'computer', label: 'My Computer', icon: <ComputerIcon />, open: () => openWin('computer') },
-    { id: 'documents', label: 'My Documents', icon: <FolderIcon />, open: () => openWin('documents') },
-    { id: 'browser', label: 'Internet', icon: <BrowserIcon />, open: () => openWin('browser') },
-    { id: 'player', label: 'Poot Amp', icon: <PlayerIcon />, open: () => openWin('player') },
+    { id: 'computer', group: 'system', label: 'My Computer', icon: <ComputerIcon />, open: () => openWin('computer') },
+    { id: 'documents', group: 'system', label: 'My Documents', icon: <FolderIcon />, open: () => openWin('documents') },
+    { id: 'browser', group: 'system', label: 'Internet', icon: <BrowserIcon />, open: () => openWin('browser') },
+    { id: 'player', group: 'media', label: 'Poot Amp', icon: <PlayerIcon />, open: () => openWin('player') },
+    { id: 'torrent', group: 'media', label: 'PootTorrent', icon: <TorrentIcon />, open: () => openWin('torrent') },
+    ...lyingVideos.map((v) => {
+      const name = torrentFacts(v).name;
+      return {
+        id: `avi:${v.id}`,
+        group: 'media',
+        label: /\.avi$/i.test(name) ? name : `${name}.avi`,
+        icon: <VideoFileIcon />,
+        open: () => playVideo(v),
+      };
+    }),
+    { id: 'asdfgh', group: 'docs', label: 'asdfgh.txt', icon: <NotepadIcon />, open: () => openWin('facts') },
+    ...lyingDocs.map((post) => ({
+      id: `doc:${post.id}`,
+      group: 'docs',
+      label: `${post.title}.doc`,
+      icon: <DocIcon />,
+      open: () => {
+        setJournalRequest((r) => ({ id: post.id, n: (r?.n ?? 0) + 1 }));
+        openWin('journal');
+      },
+    })),
+    ...lyingPictures.map((picture) => ({
+      id: `picture:${picture.id}`,
+      group: 'pics',
+      label: picture.title,
+      // eslint-disable-next-line @next/next/no-img-element -- a thumbnail on a 2006 desktop, at its own size
+      icon: <img src={picture.imageUrl} alt="" draggable={false} className={styles.iconPhoto} />,
+      open: () => {
+        setViewing({ pictures: pictures.items ?? [], index: (pictures.items ?? []).indexOf(picture) });
+        openWin('viewer');
+      },
+    })),
   ];
+
+  // Notepad's asdfgh.txt: the "fun facts" from the About page, scribbled down.
+  const factLines = (data?.facts ?? []).map((f) => `* ${f.title}\n  ${plain(f.description).replace(/\n/g, ' ')}`);
+  const factsText = `asdfgh\n\nfun things about me (dont tell anyone)\n\n${factLines.join('\n\n') || '...i forgot'}\n`;
 
   const backgroundColor = BACKGROUNDS.find((b) => b.id === background)?.color ?? BACKGROUNDS[0].color;
 
@@ -387,6 +481,8 @@ export function XpScreen() {
       >
         <DesktopIcons
           items={desktopIcons}
+          covered={[104, 104 + Math.min(1180, vw - 130)]}
+          groups={['system', 'media', 'docs', 'pics']}
           selected={selectedIcon}
           onSelect={(id) => {
             closeMenus();
@@ -488,6 +584,7 @@ export function XpScreen() {
             return (
               <XpWindow key={id} {...common} initial={centred(620, 420, 10)} onMinimise={() => minimiseWin(id)}>
                 <PicturesFolder
+                  load={pictures}
                   onOpen={(pictures, index) => {
                     setViewing({ pictures, index });
                     openWin('viewer');
@@ -515,7 +612,7 @@ export function XpScreen() {
                 minH={300}
                 onMinimise={() => minimiseWin(id)}
               >
-                <JournalApp />
+                <JournalApp load={journal} request={journalRequest} />
               </XpWindow>
             );
           case 'player':
@@ -531,6 +628,56 @@ export function XpScreen() {
                 <PootAmp muted={!sound} />
               </XpWindow>
             );
+          case 'facts':
+            return (
+              <XpWindow key={id} {...common} initial={centred(480, 360, 24)} onMinimise={() => minimiseWin(id)}>
+                <pre className={styles.notepad}>{factsText}</pre>
+              </XpWindow>
+            );
+          case 'torrent':
+            return (
+              <XpWindow
+                key={id}
+                {...common}
+                initial={centred(Math.min(960, vw - 100), Math.min(420, vh - 60), -10)}
+                minW={520}
+                minH={240}
+                onMinimise={() => minimiseWin(id)}
+              >
+                <TorrentApp
+                  videos={torrents}
+                  failed={torrentsFailed}
+                  onPlay={playVideo}
+                  onIncomplete={(name, percent) =>
+                    showMessage({
+                      title: 'Poot Media Player',
+                      text: (
+                        <>
+                          Cannot play <b>{name}</b>. The file is incomplete ({percent.toFixed(1)}% downloaded). Wait for
+                          the download to finish.
+                        </>
+                      ),
+                    })
+                  }
+                />
+              </XpWindow>
+            );
+          case 'media': {
+            // The link is checked again here: it starts playing the moment the window opens.
+            const source = watching ? videoSource(watching.url, true) : null;
+            return watching && source ? (
+              <XpWindow
+                key={id}
+                {...common}
+                initial={centred(Math.min(680, vw - 80), Math.min(500, vh - 40), 20)}
+                minW={380}
+                minH={300}
+                onMinimise={() => minimiseWin(id)}
+              >
+                <MediaSkin key={watching.id} fill autoPlay kind={source.kind} src={source.src} title={watching.title} />
+              </XpWindow>
+            ) : null;
+          }
           case 'message':
             return message ? (
               <XpWindow key={id} {...common} initial={centred(360, 150)} resizable={false}>
@@ -734,6 +881,13 @@ function StartMenu({ name, avatar, onOpen, onHelp, onLogOff, onTurnOff }: StartM
             <span>
               <b>Poot Amp</b>
               <small>Music player</small>
+            </span>
+          </button>
+          <button type="button" role="menuitem" className={styles.startItem} onClick={() => onOpen('torrent')}>
+            <TorrentIcon />
+            <span>
+              <b>PootTorrent</b>
+              <small>Downloads</small>
             </span>
           </button>
           <button type="button" role="menuitem" className={styles.startItem} onClick={() => onOpen('journal')}>

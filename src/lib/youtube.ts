@@ -28,8 +28,9 @@ export function youtubeId(input: unknown): string | null {
 }
 
 /** Privacy-enhanced embed: YouTube sets no cookies until the visitor presses play. */
-export function youtubeEmbedUrl(id: string): string {
-  return `https://www.youtube-nocookie.com/embed/${id}?rel=0`;
+export function youtubeEmbedUrl(id: string, options: { autoplay?: boolean } = {}): string {
+  // `autoplay` is for players the visitor just opened by hand (a double-click), so the sound is allowed.
+  return `https://www.youtube-nocookie.com/embed/${id}?rel=0${options.autoplay ? '&autoplay=1&playsinline=1' : ''}`;
 }
 
 export function youtubeWatchUrl(id: string): string {

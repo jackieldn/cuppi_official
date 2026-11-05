@@ -1,13 +1,18 @@
 'use client';
 
-// The icons on the Poot XP desktop. Like the real thing they can be dragged
-// anywhere and snap to the grid when let go; one dropped on another icon
-// takes the nearest free spot. Where they were left is remembered.
+// The icons on the Poot XP desktop. They can be dragged and dropped anywhere,
+// with no grid to snap to (and they can pile on top of each other, the way
+// they did). Where you leave one is remembered.
+//
+// An icon you haven't moved starts wherever xp-icon-layout.ts put it: a couple
+// of groups gathered into corners, the rest dropped here and there. It's a
+// different mess each visit.
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
 import { TASKBAR_HEIGHT } from './xp-window';
+import { clampPoint, createLayout, type Point } from './xp-icon-layout';
 import styles from './xp.module.css';
 
 export interface DesktopIconItem {
@@ -15,29 +20,20 @@ export interface DesktopIconItem {
   label: string;
   icon: ReactNode;
   open: () => void;
+  /** Things in the same group tend to end up in the same corner. */
+  group?: string;
 }
 
-interface Cell {
-  col: number;
-  row: number;
-}
-
-const CELL_W = 98;
-const CELL_H = 103;
-const PAD_X = 7;
-const PAD_Y = 12;
 /** Pointer travel before a press turns into a drag, so a double-click stays a double-click. */
 const DRAG_THRESHOLD = 4;
-const STORAGE_KEY = 'xp-icon-cells';
+const STORAGE_KEY = 'xp-icon-pos';
 
-const key = (c: Cell) => `${c.col}:${c.row}`;
-
-function readSaved(): Record<string, Cell> {
+function readSaved(): Record<string, Point> {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Record<string, Cell>;
-    const clean: Record<string, Cell> = {};
-    for (const [id, c] of Object.entries(saved)) {
-      if (Number.isInteger(c?.col) && Number.isInteger(c?.row) && c.col >= 0 && c.row >= 0) clean[id] = c;
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Record<string, Point>;
+    const clean: Record<string, Point> = {};
+    for (const [id, p] of Object.entries(saved)) {
+      if (Number.isFinite(p?.x) && Number.isFinite(p?.y)) clean[id] = { x: p.x, y: p.y };
     }
     return clean;
   } catch {
@@ -49,55 +45,47 @@ interface Props {
   items: DesktopIconItem[];
   selected: string | null;
   onSelect: (id: string) => void;
+  /** The strip of the desktop (left and right edge, in pixels) that a window covers when the PC starts. */
+  covered?: [number, number];
+  /** The groups that can be gathered into a corner. */
+  groups: string[];
 }
 
-export function DesktopIcons({ items, selected, onSelect }: Props) {
-  const [moved, setMoved] = useState<Record<string, Cell>>({});
+export function DesktopIcons({ items, selected, onSelect, covered, groups }: Props) {
+  const [saved, setSaved] = useState<Record<string, Point>>({});
   const [size, setSize] = useState(() => ({ w: window.innerWidth, h: window.innerHeight - TASKBAR_HEIGHT }));
-  // The icon being dragged, and how far it has been taken from its cell.
+  // The icon being dragged, and how far it has been taken from where it was.
   const [drag, setDrag] = useState<{ id: string; dx: number; dy: number } | null>(null);
   const press = useRef<{ id: string; sx: number; sy: number; active: boolean } | null>(null);
+  // The icon last touched is on top, so a pile reads in the order it was made.
+  const raised = useRef<Record<string, number>>({});
+  const top = useRef(0);
+
+  // One layout for the whole visit: icons that turn up late (pictures and
+  // posts load while the PC boots) find a spot without moving the others.
+  const layout = useRef<ReturnType<typeof createLayout>>();
+  if (!layout.current) {
+    layout.current = createLayout({
+      width: size.w,
+      height: size.h,
+      covered,
+      groups,
+      seed: Math.floor(Math.random() * 2 ** 32),
+    });
+  }
 
   useEffect(() => {
-    setMoved(readSaved());
+    setSaved(readSaved());
     const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight - TASKBAR_HEIGHT });
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const cols = Math.max(1, Math.floor((size.w - PAD_X) / CELL_W));
-  const rows = Math.max(1, Math.floor((size.h - PAD_Y) / CELL_H));
+  const pointOf = (item: DesktopIconItem): Point =>
+    clampPoint(saved[item.id] ?? layout.current!.place({ id: item.id, group: item.group }), size.w, size.h);
 
-  const clampCell = (c: Cell): Cell => ({ col: Math.min(c.col, cols - 1), row: Math.min(c.row, rows - 1) });
-
-  // Icons nobody has moved fill the first free cells, top to bottom then left to right.
-  const cells = useMemo(() => {
-    const placed: Record<string, Cell> = {};
-    const taken = new Set<string>();
-    for (const item of items) {
-      const c = moved[item.id];
-      if (c) {
-        const at = { col: Math.min(c.col, cols - 1), row: Math.min(c.row, rows - 1) };
-        placed[item.id] = at;
-        taken.add(key(at));
-      }
-    }
-    let next = 0;
-    for (const item of items) {
-      if (placed[item.id]) continue;
-      let cell: Cell;
-      do {
-        cell = { col: Math.floor(next / rows), row: next % rows };
-        next += 1;
-      } while (taken.has(key(cell)) && next < cols * rows + items.length);
-      placed[item.id] = cell;
-      taken.add(key(cell));
-    }
-    return placed;
-  }, [items, moved, cols, rows]);
-
-  const save = (next: Record<string, Cell>) => {
-    setMoved(next);
+  const save = (next: Record<string, Point>) => {
+    setSaved(next);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
@@ -105,28 +93,10 @@ export function DesktopIcons({ items, selected, onSelect }: Props) {
     }
   };
 
-  /** The wanted cell, or the closest free one if another icon is already there. */
-  const settle = (id: string, want: Cell): Cell => {
-    const taken = new Set(items.filter((i) => i.id !== id).map((i) => key(cells[i.id])));
-    if (!taken.has(key(want))) return want;
-    let best: Cell | null = null;
-    let bestDist = Infinity;
-    for (let col = 0; col < cols; col++) {
-      for (let row = 0; row < rows; row++) {
-        const c = { col, row };
-        const dist = (col - want.col) ** 2 + (row - want.row) ** 2;
-        if (dist < bestDist && !taken.has(key(c))) {
-          best = c;
-          bestDist = dist;
-        }
-      }
-    }
-    return best ?? cells[id];
-  };
-
   const onDown = (e: PointerEvent<HTMLButtonElement>, id: string) => {
     e.stopPropagation();
     onSelect(id);
+    raised.current[id] = ++top.current;
     if (e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     press.current = { id, sx: e.clientX, sy: e.clientY, active: false };
@@ -142,19 +112,17 @@ export function DesktopIcons({ items, selected, onSelect }: Props) {
     setDrag({ id: p.id, dx, dy });
   };
 
-  const onUp = (e: PointerEvent<HTMLButtonElement>) => {
+  const onUp = (e: PointerEvent<HTMLButtonElement>, item: DesktopIconItem) => {
     const p = press.current;
     press.current = null;
     if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
     if (!p?.active) return;
-    const from = cells[p.id];
-    const x = PAD_X + from.col * CELL_W + (e.clientX - p.sx);
-    const y = PAD_Y + from.row * CELL_H + (e.clientY - p.sy);
-    const want = clampCell({
-      col: Math.max(0, Math.round((x - PAD_X) / CELL_W)),
-      row: Math.max(0, Math.round((y - PAD_Y) / CELL_H)),
+    const from = pointOf(item);
+    // Dropped exactly where it was let go: no snapping to anything.
+    save({
+      ...saved,
+      [item.id]: clampPoint({ x: from.x + (e.clientX - p.sx), y: from.y + (e.clientY - p.sy) }, size.w, size.h),
     });
-    save({ ...Object.fromEntries(items.map((i) => [i.id, cells[i.id]])), [p.id]: settle(p.id, want) });
     setDrag(null);
   };
 
@@ -166,7 +134,7 @@ export function DesktopIcons({ items, selected, onSelect }: Props) {
   return (
     <div className={styles.icons}>
       {items.map((item) => {
-        const cell = cells[item.id];
+        const at = pointOf(item);
         const dragging = drag?.id === item.id;
         return (
           <button
@@ -174,13 +142,14 @@ export function DesktopIcons({ items, selected, onSelect }: Props) {
             type="button"
             className={cn(styles.icon, selected === item.id && styles.iconSelected, dragging && styles.iconDragging)}
             style={{
-              left: PAD_X + cell.col * CELL_W,
-              top: PAD_Y + cell.row * CELL_H,
+              left: at.x,
+              top: at.y,
+              zIndex: dragging ? 1000 : raised.current[item.id],
               transform: dragging ? `translate(${drag.dx}px, ${drag.dy}px)` : undefined,
             }}
             onPointerDown={(e) => onDown(e, item.id)}
             onPointerMove={onMove}
-            onPointerUp={onUp}
+            onPointerUp={(e) => onUp(e, item)}
             onPointerCancel={onCancel}
             onContextMenu={(e) => e.stopPropagation()}
             onDoubleClick={item.open}

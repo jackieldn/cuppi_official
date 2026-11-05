@@ -23,7 +23,7 @@ import { DEFAULT_WALLPAPER, isWallpaperId, type WallpaperId } from './wallpapers
 export type WindowMode = 'full' | 'window';
 export type WindowState = 'open' | 'minimised' | 'closed';
 /** Small apps that open in their own windows on the desktop. */
-export type AppId = 'wallpaper' | 'music' | 'journal';
+export type AppId = 'wallpaper' | 'music' | 'journal' | 'video';
 /** Everything that can be in front: the page window or an app. */
 export type WindowId = 'page' | AppId;
 /** The Time Machine (the menu bar clock): which era the desktop is in. */
@@ -119,6 +119,10 @@ interface DesktopValue {
   /** Opens an app, or brings it to the front if it's already open. */
   openApp: (id: AppId) => void;
   closeApp: (id: AppId) => void;
+  /** The video the Videos window is playing (a desktop_videos id), or null when it isn't open. */
+  videoId: string | null;
+  /** Plays a video file from the desktop: opens the Videos window on it, or switches the open one. */
+  openVideo: (videoId: string) => void;
   /** Open apps whose window is minimised to the Dock. */
   minimisedApps: AppId[];
   /** Yellow button on an app window: shrink it to the Dock. Opening the app again restores it. */
@@ -151,6 +155,7 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
   const [wallpaper, setWallpaperState] = useState<WallpaperId>(DEFAULT_WALLPAPER);
   const [openApps, setOpenApps] = useState<AppId[]>([]);
   const [minimisedApps, setMinimisedApps] = useState<AppId[]>([]);
+  const [videoId, setVideoId] = useState<string | null>(null);
   // Back to front.
   const [stack, setStack] = useState<WindowId[]>(['page']);
   const [era, setEra] = useState<Era>('now');
@@ -312,7 +317,16 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
     [focus],
   );
 
+  const openVideo = useCallback(
+    (id: string) => {
+      setVideoId(id);
+      openApp('video');
+    },
+    [openApp],
+  );
+
   const closeApp = useCallback((id: AppId) => {
+    if (id === 'video') setVideoId(null);
     setOpenApps((apps) => apps.filter((a) => a !== id));
     setMinimisedApps((apps) => apps.filter((a) => a !== id));
     setStack((s) => s.filter((w) => w !== id));
@@ -347,6 +361,8 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
       openApps,
       openApp,
       closeApp,
+      videoId,
+      openVideo,
       minimisedApps,
       minimiseApp,
       focus,
@@ -372,6 +388,8 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
       openApps,
       openApp,
       closeApp,
+      videoId,
+      openVideo,
       minimisedApps,
       minimiseApp,
       focus,

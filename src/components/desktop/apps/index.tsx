@@ -2,7 +2,8 @@
 
 // Every desktop app, by id. To add one: write its window component, add its id
 // to `AppId` in desktop-context, and list it here. Apps in DESKTOP_ICONS also
-// get an icon on the desktop, in that order down the right-hand side.
+// get an icon on the desktop, in that order down the right-hand side. (The
+// Videos app has no icon of its own: each video file on the desktop opens it.)
 
 import type { ComponentType } from 'react';
 import { Music2 } from 'lucide-react';
@@ -10,12 +11,14 @@ import { Music2 } from 'lucide-react';
 import { useDesktop, type AppId } from '../desktop-context';
 import { JournalApp, JournalIcon } from './journal-app';
 import { MusicApp } from './music-app';
+import { VideoApp } from './video-app';
 import { WallpaperApp } from './wallpaper-app';
 
 const APPS: Record<AppId, ComponentType> = {
   wallpaper: WallpaperApp,
   music: MusicApp,
   journal: JournalApp,
+  video: VideoApp,
 };
 
 // App-icon art: a rounded tile, like a macOS app icon.

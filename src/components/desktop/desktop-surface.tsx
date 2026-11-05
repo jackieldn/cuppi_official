@@ -19,7 +19,7 @@ const MENU_ITEMS: MenuItem[] = [{ label: 'Change Background…', app: 'wallpaper
 export function DesktopSurface() {
   const desktop = useDesktop();
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-  const [selectedIcon, setSelectedIcon] = useState<AppId | null>(null);
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
 
   // Our own menu instead of the browser's.
   const onContextMenu = (e: MouseEvent) => {

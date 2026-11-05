@@ -89,6 +89,13 @@ describe('Firestore rules', () => {
     await assertSucceeds(setDoc(doc(admin.firestore(), 'player_tracks/t1'), { title: 'x' }));
   });
 
+  test('desktop videos are public to read and admin-only to write', async () => {
+    await assertSucceeds(getDocs(collection(anon.firestore(), 'desktop_videos')));
+    await assertFails(setDoc(doc(anon.firestore(), 'desktop_videos/v1'), { title: 'x' }));
+    await assertFails(setDoc(doc(stranger.firestore(), 'desktop_videos/v1'), { title: 'x' }));
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'desktop_videos/v1'), { title: 'x' }));
+  });
+
   test('signup emails are never readable from a client', async () => {
     await assertFails(getDoc(doc(admin.firestore(), 'beta_signups/s1')));
     await assertFails(getDoc(doc(anon.firestore(), 'beta_signups/s1')));
