@@ -220,11 +220,27 @@
   text-align: center;
   outline: none;
   touch-action: none;
+  /* Only the picture and the name grab a press; the empty space around them
+     passes it on to the desktop, where it starts a selection rectangle. */
+  pointer-events: none;
+}
+
+.icon .iconArt,
+.icon .iconLabel {
+  pointer-events: auto;
 }
 
 .iconDragging {
   z-index: 5;
   opacity: 0.7;
+}
+
+/* The rectangle dragged out on empty desktop to select icons. */
+.marquee {
+  z-index: 3;
+  border: 1px dotted #fff;
+  background: rgba(49, 106, 197, 0.35);
+  outline: 1px solid rgba(49, 106, 197, 0.9);
 }
 
 .iconArt {

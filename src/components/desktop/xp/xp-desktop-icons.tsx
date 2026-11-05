@@ -12,7 +12,8 @@ import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from '
 
 import { cn } from '@/lib/utils';
 import { TASKBAR_HEIGHT } from './xp-window';
-import { clampPoint, createLayout, type Point } from './xp-icon-layout';
+import { clampGroupDelta, isAdditive } from '../marquee-select';
+import { clampPoint, createLayout, ICON_H, ICON_W, type Point } from './xp-icon-layout';
 import styles from './xp.module.css';
 
 export interface DesktopIconItem {
@@ -43,8 +44,8 @@ function readSaved(): Record<string, Point> {
 
 interface Props {
   items: DesktopIconItem[];
-  selected: string | null;
-  onSelect: (id: string) => void;
+  selected: string[];
+  onSelect: (ids: string[]) => void;
   /** The strip of the desktop (left and right edge, in pixels) that a window covers when the PC starts. */
   covered?: [number, number];
   /** The groups that can be gathered into a corner. */
@@ -54,9 +55,11 @@ interface Props {
 export function DesktopIcons({ items, selected, onSelect, covered, groups }: Props) {
   const [saved, setSaved] = useState<Record<string, Point>>({});
   const [size, setSize] = useState(() => ({ w: window.innerWidth, h: window.innerHeight - TASKBAR_HEIGHT }));
-  // The icon being dragged, and how far it has been taken from where it was.
-  const [drag, setDrag] = useState<{ id: string; dx: number; dy: number } | null>(null);
-  const press = useRef<{ id: string; sx: number; sy: number; active: boolean } | null>(null);
+  // The icons being dragged (one, or the whole selection), and how far they have been taken.
+  const [drag, setDrag] = useState<{ ids: string[]; dx: number; dy: number } | null>(null);
+  const press = useRef<{ id: string; ids: string[]; sx: number; sy: number; active: boolean; dx: number; dy: number } | null>(
+    null,
+  );
   // The icon last touched is on top, so a pile reads in the order it was made.
   const raised = useRef<Record<string, number>>({});
   const top = useRef(0);
@@ -95,34 +98,70 @@ export function DesktopIcons({ items, selected, onSelect, covered, groups }: Pro
 
   const onDown = (e: PointerEvent<HTMLButtonElement>, id: string) => {
     e.stopPropagation();
-    onSelect(id);
+    const isSelected = selected.includes(id);
     raised.current[id] = ++top.current;
-    if (e.button !== 0) return;
+
+    if (e.button !== 0) {
+      if (!isSelected) onSelect([id]);
+      return;
+    }
+    if (isAdditive(e)) {
+      // Ctrl/Cmd/Shift-click adds an icon to the selection, or takes it back out.
+      onSelect(isSelected ? selected.filter((s) => s !== id) : [...selected, id]);
+      if (isSelected) return;
+    } else if (!isSelected) {
+      onSelect([id]);
+    }
+
+    // Pressing one of several selected icons drags them all.
+    const ids = isAdditive(e) || isSelected ? [...new Set([...selected, id])] : [id];
     e.currentTarget.setPointerCapture(e.pointerId);
-    press.current = { id, sx: e.clientX, sy: e.clientY, active: false };
+    press.current = { id, ids, sx: e.clientX, sy: e.clientY, active: false, dx: 0, dy: 0 };
   };
 
   const onMove = (e: PointerEvent<HTMLButtonElement>) => {
     const p = press.current;
     if (!p) return;
-    const dx = e.clientX - p.sx;
-    const dy = e.clientY - p.sy;
-    if (!p.active && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    // The button was let go somewhere we never heard about: drop them, don't keep carrying them.
+    if (e.buttons === 0) return onUp(e);
+    const rawX = e.clientX - p.sx;
+    const rawY = e.clientY - p.sy;
+    if (!p.active && Math.hypot(rawX, rawY) < DRAG_THRESHOLD) return;
     p.active = true;
-    setDrag({ id: p.id, dx, dy });
+    // Slid back as one, so the group keeps its shape against the edge of the desktop.
+    const { dx, dy } = clampGroupDelta(
+      p.ids.map((id) => pointOf(items.find((item) => item.id === id)!)),
+      size.w - ICON_W,
+      size.h - ICON_H,
+      0,
+      rawX,
+      rawY,
+    );
+    p.dx = dx;
+    p.dy = dy;
+    for (const id of p.ids) raised.current[id] = ++top.current;
+    setDrag({ ids: p.ids, dx, dy });
   };
 
-  const onUp = (e: PointerEvent<HTMLButtonElement>, item: DesktopIconItem) => {
+  const onUp = (e: PointerEvent<HTMLButtonElement>) => {
     const p = press.current;
     press.current = null;
     if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-    if (!p?.active) return;
-    const from = pointOf(item);
+    if (!p) return;
+    if (!p.active) {
+      // A plain click on one of several selected icons picks just that one.
+      if (p.ids.length > 1 && !isAdditive(e)) onSelect([p.id]);
+      return;
+    }
     // Dropped exactly where it was let go: no snapping to anything.
-    save({
-      ...saved,
-      [item.id]: clampPoint({ x: from.x + (e.clientX - p.sx), y: from.y + (e.clientY - p.sy) }, size.w, size.h),
-    });
+    const next = { ...saved };
+    for (const id of p.ids) {
+      const item = items.find((i) => i.id === id);
+      if (!item) continue;
+      const from = pointOf(item);
+      next[id] = clampPoint({ x: from.x + p.dx, y: from.y + p.dy }, size.w, size.h);
+    }
+    save(next);
     setDrag(null);
   };
 
@@ -135,21 +174,26 @@ export function DesktopIcons({ items, selected, onSelect, covered, groups }: Pro
     <div className={styles.icons}>
       {items.map((item) => {
         const at = pointOf(item);
-        const dragging = drag?.id === item.id;
+        const dragging = drag?.ids.includes(item.id) ? drag : null;
         return (
           <button
             key={item.id}
             type="button"
-            className={cn(styles.icon, selected === item.id && styles.iconSelected, dragging && styles.iconDragging)}
+            data-desktop-icon={item.id}
+            className={cn(
+              styles.icon,
+              selected.includes(item.id) && styles.iconSelected,
+              dragging && styles.iconDragging,
+            )}
             style={{
               left: at.x,
               top: at.y,
               zIndex: dragging ? 1000 : raised.current[item.id],
-              transform: dragging ? `translate(${drag.dx}px, ${drag.dy}px)` : undefined,
+              transform: dragging ? `translate(${dragging.dx}px, ${dragging.dy}px)` : undefined,
             }}
             onPointerDown={(e) => onDown(e, item.id)}
             onPointerMove={onMove}
-            onPointerUp={(e) => onUp(e, item)}
+            onPointerUp={onUp}
             onPointerCancel={onCancel}
             onContextMenu={(e) => e.stopPropagation()}
             onDoubleClick={item.open}
