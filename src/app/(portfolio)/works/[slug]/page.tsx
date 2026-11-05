@@ -17,7 +17,9 @@ import { clearFlight, landFlight, startReturnFlight, useFlight } from '@/lib/car
 import { hideBand, showBand } from '@/lib/title-band';
 import { CoverGlow, CoverSweeps } from '@/components/works/cover-glow';
 import { useFetchCollection } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, orderBy, query, where } from 'firebase/firestore';
+import type { Testimonial } from '@/lib/about-types';
+import { TestimonialItem } from '@/components/about/testimonials-section';
 import { useFirestore } from '@/firebase/provider';
 import { Reveal } from "@/components/ui/reveal";
 import { Project } from "@/lib/projects";
@@ -63,6 +65,21 @@ export default function ProjectPage() {
     if (!projects || projects.length === 0) return null;
     return projects[0];
   }, [projects]);
+
+  // Only fetch the testimonials pool when this project picked some.
+  const hasTestimonials = (project?.testimonialIds?.length ?? 0) > 0;
+  const testimonialsQuery = useMemo(() => {
+    if (!firestore || !hasTestimonials) return null;
+    return query(collection(firestore, 'testimonials'), orderBy('order'));
+  }, [firestore, hasTestimonials]);
+  const { data: testimonialPool } = useFetchCollection<Testimonial>(testimonialsQuery);
+  // In the order the admin picked them; ones that were since deleted just drop out.
+  const projectTestimonials = useMemo(() => {
+    const pool = testimonialPool ?? [];
+    return (project?.testimonialIds ?? [])
+      .map((id) => pool.find((t) => t.id === id))
+      .filter((t): t is Testimonial => Boolean(t));
+  }, [testimonialPool, project]);
 
   // Coming from a works card: its copy is waiting to fly onto this cover. Hold the
   // real cover back until it has landed, then let the flight glide in.
@@ -342,7 +359,25 @@ export default function ProjectPage() {
           </div>
         </section>
 
-        {/* Section 2: Gallery */}
+        {/* Section 2: Testimonials (optional, picked per project) */}
+        {projectTestimonials.length > 0 && (
+          <section className="pb-8 sm:pb-12">
+            <div className="container mx-auto px-4">
+              <Reveal hold={awaitingFlight}>
+                <h2 className="text-center font-headline text-3xl font-bold text-palette-sage sm:text-4xl mb-16">
+                  {projectTestimonials.length === 1 ? 'Testimonial' : 'Testimonials'}
+                </h2>
+              </Reveal>
+              <div className={cn("mx-auto grid grid-cols-1 gap-8", projectTestimonials.length === 1 ? "max-w-3xl" : "max-w-6xl md:grid-cols-2")}>
+                {projectTestimonials.map((testimonial) => (
+                  <TestimonialItem key={testimonial.id} testimonial={testimonial} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Section 3: Gallery */}
         {galleryImageObjects.length > 0 && (
           <section className="py-24 sm:py-32">
             <div className="container mx-auto px-4">
@@ -394,7 +429,7 @@ export default function ProjectPage() {
           </section>
         )}
 
-        {/* Section 3: Videos */}
+        {/* Section 4: Videos */}
         {videoUrls.length > 0 && (
           <section className="py-24 sm:py-32">
             <div className="container mx-auto px-4">

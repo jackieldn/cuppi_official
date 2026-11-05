@@ -17,10 +17,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useFirestore, useStorage } from '@/firebase';
-import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, query, orderBy } from 'firebase/firestore';
+import { useFetchCollection } from '@/firebase';
+import type { Testimonial } from '@/lib/about-types';
 import { useToast } from '@/hooks/use-toast';
 import { Project } from '@/lib/projects';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ref, uploadBytesResumable, getDownloadURL, UploadTaskSnapshot, deleteObject } from "firebase/storage";
 import { Progress } from '../ui/progress';
 import { Label } from '../ui/label';
@@ -54,6 +56,7 @@ const formSchema = z.object({
   blurredImageUrl: z.string().optional(),
   videoUrls: z.array(z.string()).optional(),
   galleryImageUrls: z.array(z.string()).optional(),
+  testimonialIds: z.array(z.string()).optional(),
   deliveryYear: z.string().optional(),
   deliveryMonth: z.string().optional(),
   noAi: z.boolean().default(false),
@@ -105,6 +108,7 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
       blurredImageUrl: '',
       videoUrls: [],
       galleryImageUrls: [],
+      testimonialIds: [],
       deliveryYear: '',
       deliveryMonth: '',
       noAi: false,
@@ -115,6 +119,13 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
       }
     },
   });
+
+  // The existing testimonials (the About page pool) a project can pick from.
+  const testimonialsQuery = useMemo(
+    () => (firestore ? query(collection(firestore, 'testimonials'), orderBy('order')) : null),
+    [firestore]
+  );
+  const { data: testimonialPool } = useFetchCollection<Testimonial>(testimonialsQuery);
   
   useEffect(() => {
     if (project) {
@@ -142,6 +153,7 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
         blurredImageUrl: '',
         videoUrls: [],
         galleryImageUrls: [],
+        testimonialIds: [],
         deliveryYear: '',
         deliveryMonth: '',
         noAi: false,
@@ -439,6 +451,77 @@ const deleteFilesFromStorage = async (urls: string[]) => {
               )}
             />
         </div>
+        <FormField
+          control={form.control}
+          name="testimonialIds"
+          render={({ field }) => {
+            const selectedIds = field.value ?? [];
+            const pool = testimonialPool ?? [];
+            const available = pool.filter((t) => !selectedIds.includes(t.id));
+            return (
+              <FormItem className="space-y-4 rounded-lg border p-4">
+                <FormLabel className="text-base font-medium">Testimonials (Optional)</FormLabel>
+                {selectedIds.length > 0 && (
+                  <ul className="space-y-2">
+                    {selectedIds.map((id) => {
+                      const t = pool.find((item) => item.id === id);
+                      return (
+                        <li key={id} className="flex items-start justify-between gap-4 rounded-md bg-muted p-3 text-sm">
+                          <div className="min-w-0">
+                            {t ? (
+                              <>
+                                <p className="font-medium">
+                                  {t.name}
+                                  {(t.role || t.company) && (
+                                    <span className="font-normal text-muted-foreground">
+                                      {' · '}{[t.role, t.company].filter(Boolean).join(', ')}
+                                    </span>
+                                  )}
+                                </p>
+                                <p className="truncate text-muted-foreground">{t.text}</p>
+                              </>
+                            ) : (
+                              <p className="text-muted-foreground">Testimonial no longer exists</p>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0"
+                            aria-label="Remove testimonial"
+                            onClick={() => field.onChange(selectedIds.filter((x) => x !== id))}
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {/* value stays empty so the dropdown always reads as "Add a testimonial". */}
+                <Select value="" onValueChange={(id) => field.onChange([...selectedIds, id])} disabled={available.length === 0}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={pool.length === 0 ? 'No testimonials yet' : available.length === 0 ? 'All testimonials added' : 'Add a testimonial'} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {available.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}{t.company ? `, ${t.company}` : ''} — {t.text.length > 50 ? `${t.text.slice(0, 50)}…` : t.text}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  Shown on the project page above the gallery and final product. Manage the pool on the About admin page.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
+        />
         <div className="space-y-4 rounded-lg border p-4">
             <h3 className="font-medium">Videos</h3>
             {videoPreviews.length > 0 && (

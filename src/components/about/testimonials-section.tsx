@@ -20,7 +20,7 @@ interface TestimonialsSectionProps {
 
 const PREVIEW_LENGTH = 250; // Number of characters to show in the preview
 
-const TestimonialItem = ({ testimonial }: { testimonial: Testimonial }) => {
+export const TestimonialItem = ({ testimonial }: { testimonial: Testimonial }) => {
   const [isOpen, setIsOpen] = useState(false);
   const isLong = testimonial.text.length > PREVIEW_LENGTH;
   const previewText = isLong ? `${testimonial.text.substring(0, PREVIEW_LENGTH)}...` : testimonial.text;

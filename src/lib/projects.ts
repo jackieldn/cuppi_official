@@ -13,6 +13,8 @@ export type Project = {
   coverImage: ImagePlaceholder;
   galleryImages: string[];
   videoUrls?: string[];
+  /** Ids from the testimonials collection to show above the gallery, in this order. */
+  testimonialIds?: string[];
   featured?: boolean;
   description?: string;
   imageUrl?: string;
