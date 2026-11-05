@@ -7,6 +7,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'r
 
 import { useDesktop, type AppId } from './desktop-context';
 import { DesktopIcons } from './desktop-icons';
+import { isAdditive, MarqueeBox, useMarquee } from './marquee-select';
 import { WALLPAPERS } from './wallpapers';
 
 interface MenuItem {
@@ -19,7 +20,8 @@ const MENU_ITEMS: MenuItem[] = [{ label: 'Change Background…', app: 'wallpaper
 export function DesktopSurface() {
   const desktop = useDesktop();
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+  const [selectedIcons, setSelectedIcons] = useState<string[]>([]);
+  const marquee = useMarquee({ onSelect: setSelectedIcons, current: selectedIcons });
 
   // Our own menu instead of the browser's.
   const onContextMenu = (e: MouseEvent) => {
@@ -33,10 +35,13 @@ export function DesktopSurface() {
         data-desktop-surface=""
         className="fixed inset-0 z-0 animate-in fade-in duration-500"
         onContextMenu={onContextMenu}
-        onPointerDown={() => {
+        {...marquee.handlers}
+        onPointerDown={(e) => {
           setMenu(null);
-          // A click on empty desktop clears the icon selection.
-          setSelectedIcon(null);
+          // A click on empty desktop clears the icon selection (unless adding to it),
+          // and dragging from there draws a selection rectangle.
+          if (!isAdditive(e)) setSelectedIcons([]);
+          marquee.handlers.onPointerDown(e);
         }}
       >
         {/* Every wallpaper is a layer; the chosen one fades in over the rest. */}
@@ -49,7 +54,8 @@ export function DesktopSurface() {
             />
           ))}
         </div>
-        <DesktopIcons selected={selectedIcon} onSelect={setSelectedIcon} />
+        <DesktopIcons selected={selectedIcons} onSelect={setSelectedIcons} />
+        <MarqueeBox box={marquee.box} className="border border-palette-cream/70 bg-palette-lagoon/25" />
       </div>
 
       {menu && (

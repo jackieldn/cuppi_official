@@ -28,6 +28,7 @@ import {
   usePictures,
 } from './xp-apps';
 import { XpBrowser, browserTitle } from './xp-browser';
+import { isAdditive, MarqueeBox, useMarquee } from '../marquee-select';
 import { DesktopIcons, type DesktopIconItem } from './xp-desktop-icons';
 import { MediaSkin } from './xp-media-skin';
 import { sample } from './xp-icon-layout';
@@ -157,7 +158,8 @@ export function XpScreen() {
   const [opened, setOpened] = useState<WinId[]>([]);
   const addOpened = (id: WinId) => setOpened((o) => (o.includes(id) ? o : [...o, id]));
   const [minimised, setMinimised] = useState<WinId[]>([]);
-  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+  const [selectedIcons, setSelectedIcons] = useState<string[]>([]);
+  const marquee = useMarquee({ onSelect: setSelectedIcons, current: selectedIcons });
   const [startOpen, setStartOpen] = useState(false);
   const [clockOpen, setClockOpen] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -468,9 +470,13 @@ export function XpScreen() {
       <div
         className={styles.desktop}
         style={{ backgroundColor }}
-        onPointerDown={() => {
+        {...marquee.handlers}
+        onPointerDown={(e) => {
           closeMenus();
-          setSelectedIcon(null);
+          // Clicking empty desktop clears the selection (unless adding to it),
+          // and dragging from there draws a selection rectangle.
+          if (!isAdditive(e)) setSelectedIcons([]);
+          marquee.handlers.onPointerDown(e);
         }}
         onContextMenu={(e) => {
           e.preventDefault();
@@ -483,12 +489,13 @@ export function XpScreen() {
           items={desktopIcons}
           covered={[104, 104 + Math.min(1180, vw - 130)]}
           groups={['system', 'media', 'docs', 'pics']}
-          selected={selectedIcon}
-          onSelect={(id) => {
+          selected={selectedIcons}
+          onSelect={(ids) => {
             closeMenus();
-            setSelectedIcon(id);
+            setSelectedIcons(ids);
           }}
         />
+        <MarqueeBox box={marquee.box} className={styles.marquee} />
       </div>
 
       {menu && (
@@ -722,7 +729,7 @@ export function XpScreen() {
         />
       )}
 
-      <div className={styles.taskbar} onPointerDown={() => setSelectedIcon(null)}>
+      <div className={styles.taskbar} onPointerDown={() => setSelectedIcons([])}>
         <button
           type="button"
           className={cn(styles.start, startOpen && styles.startOpen)}
