@@ -52,8 +52,8 @@ export function JournalApp() {
   const post = items?.find((p) => p.id === openId) ?? items?.[0];
 
   return (
-    <AppWindow id="journal" title="Journal" width={720}>
-      <div className="flex h-[480px] border-t border-palette-lagoon/25">
+    <AppWindow id="journal" title="Journal" width={720} height={520} minWidth={460} minHeight={300} minimisable>
+      <div className="flex min-h-0 flex-1 border-t border-palette-lagoon/25">
         <nav aria-label="Entries" className="w-56 shrink-0 overflow-y-auto overscroll-contain border-r border-palette-lagoon/25 p-2">
           {!items && (
             <div className="space-y-2 p-1">

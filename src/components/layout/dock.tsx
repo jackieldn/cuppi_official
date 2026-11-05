@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { startReturnFlight } from "@/lib/card-flight";
 import { useDesktop } from "@/components/desktop/desktop-context";
+import { DESKTOP_ICONS } from "@/components/desktop/apps";
 import { dockItems, dockItemMatches, findDockItem } from "@/components/layout/dock-items";
 import {
   Tooltip,
@@ -81,6 +82,8 @@ export function Dock() {
   // With the window closed, no page is open, so nothing lights up.
   const isActive = (href: string) => desktop.windowState !== 'closed' && dockItemMatches(href, pathname);
   const minimisedItem = desktop.windowState === 'minimised' ? findDockItem(pathname) : undefined;
+  // Minimised app windows (the Journal, say), in the order they were minimised.
+  const minimisedApps = desktop.minimisedApps.flatMap((id) => DESKTOP_ICONS.filter((app) => app.id === id));
 
   if (!isClient || pathname.startsWith('/admin')) {
     return null;
@@ -135,9 +138,31 @@ export function Dock() {
               </TooltipContent>
             </Tooltip>
           ))}
+          {(minimisedItem || minimisedApps.length > 0) && (
+            <div aria-hidden="true" className="relative mx-1 w-px self-stretch bg-palette-lagoon/50" />
+          )}
+          {minimisedApps.map((app) => (
+            <Tooltip key={app.id}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => desktop.openApp(app.id)}
+                  aria-label={`Restore ${app.label} window`}
+                  className="group relative flex size-[58px] animate-in zoom-in-50 fade-in items-center justify-center overflow-hidden rounded-[14px] border border-palette-lagoon/50 bg-background/80 backdrop-blur-md duration-300 transition-transform ease-in-out hover:-translate-y-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {/* The app's own icon, shrunk to fit the tile. */}
+                  <span className="origin-center scale-[0.85]">
+                    <app.Icon />
+                  </span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{app.label}</p>
+              </TooltipContent>
+            </Tooltip>
+          ))}
           {minimisedItem && (
             <>
-              <div aria-hidden="true" className="relative mx-1 w-px self-stretch bg-palette-lagoon/50" />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button

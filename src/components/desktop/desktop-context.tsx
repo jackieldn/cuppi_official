@@ -119,6 +119,10 @@ interface DesktopValue {
   /** Opens an app, or brings it to the front if it's already open. */
   openApp: (id: AppId) => void;
   closeApp: (id: AppId) => void;
+  /** Open apps whose window is minimised to the Dock. */
+  minimisedApps: AppId[];
+  /** Yellow button on an app window: shrink it to the Dock. Opening the app again restores it. */
+  minimiseApp: (id: AppId) => void;
   /** Bring a window to the front. */
   focus: (id: WindowId) => void;
   /** Stacking order for a window: higher is in front. */
@@ -146,6 +150,7 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
   const [flush, setFlush] = useState(true);
   const [wallpaper, setWallpaperState] = useState<WallpaperId>(DEFAULT_WALLPAPER);
   const [openApps, setOpenApps] = useState<AppId[]>([]);
+  const [minimisedApps, setMinimisedApps] = useState<AppId[]>([]);
   // Back to front.
   const [stack, setStack] = useState<WindowId[]>(['page']);
   const [era, setEra] = useState<Era>('now');
@@ -300,6 +305,8 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
   const openApp = useCallback(
     (id: AppId) => {
       setOpenApps((apps) => (apps.includes(id) ? apps : [...apps, id]));
+      // Opening a minimised app brings its window back from the Dock.
+      setMinimisedApps((apps) => (apps.includes(id) ? apps.filter((a) => a !== id) : apps));
       focus(id);
     },
     [focus],
@@ -307,6 +314,13 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
 
   const closeApp = useCallback((id: AppId) => {
     setOpenApps((apps) => apps.filter((a) => a !== id));
+    setMinimisedApps((apps) => apps.filter((a) => a !== id));
+    setStack((s) => s.filter((w) => w !== id));
+  }, []);
+
+  const minimiseApp = useCallback((id: AppId) => {
+    setMinimisedApps((apps) => (apps.includes(id) ? apps : [...apps, id]));
+    // Out of the stack, so the window behind it becomes the active one.
     setStack((s) => s.filter((w) => w !== id));
   }, []);
 
@@ -333,6 +347,8 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
       openApps,
       openApp,
       closeApp,
+      minimisedApps,
+      minimiseApp,
       focus,
       zIndexFor,
       frontmost,
@@ -356,6 +372,8 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
       openApps,
       openApp,
       closeApp,
+      minimisedApps,
+      minimiseApp,
       focus,
       zIndexFor,
       frontmost,
