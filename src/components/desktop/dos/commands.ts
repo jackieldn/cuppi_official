@@ -14,6 +14,7 @@ import {
 
 import type { AboutProfile, App, Fact, TechnicalSkill, Testimonial, WorkExperience } from '@/lib/about-types';
 import type { Project } from '@/lib/projects';
+import { KIND_LABEL, STATUS_LABEL, normalizeApp, sortApps } from '@/lib/showcase';
 import { PLAYER_TRACKS, formatTime, type PlayerTrack } from '@/lib/music-player-types';
 import {
   BANNER,
@@ -121,7 +122,9 @@ async function count(ctx: DosContext, name: string): Promise<number> {
 }
 
 const projects = (ctx: DosContext) => load<Project>(ctx, 'projects', orderBy('title'));
-const apps = (ctx: DosContext) => load<App>(ctx, 'apps', orderBy('releaseDate', 'desc'));
+// Same order as the Apps & Websites page, so "APPS 1" is the first card there too.
+const apps = async (ctx: DosContext): Promise<App[]> =>
+  sortApps((await load<Record<string, any>>(ctx, 'apps')).map((d) => normalizeApp(d)));
 const tracks = (ctx: DosContext) => load<PlayerTrack>(ctx, PLAYER_TRACKS, orderBy('order'));
 
 /** "3" picks the third; anything else matches a title. */
@@ -424,8 +427,8 @@ export const COMMANDS: Command[] = [
         const { item: a, index } = found;
         ctx.print(box(a.title, 60), 'bright');
         ctx.print([
-          `STATUS    : ${a.availability ?? '-'}`,
-          `PLATFORMS : ${a.platforms?.join(', ') || '-'}`,
+          `STATUS    : ${STATUS_LABEL[a.status]} ${KIND_LABEL[a.kind].toLowerCase()}`,
+          ...(a.kind === 'app' ? [`PLATFORMS : ${a.platforms.join(', ') || '-'}`] : []),
           ...(a.releaseDate ? [`RELEASED  : ${monthYear(a.releaseDate)}`] : []),
           ...(a.tags?.length ? [`TAGS      : ${truncate(a.tags.join(', '), TEXT_WIDTH - 12)}`] : []),
           ...(a.link ? [`LINK      : ${truncate(a.link, TEXT_WIDTH - 12)}`] : []),
@@ -450,10 +453,15 @@ export const COMMANDS: Command[] = [
           [
             { header: '#', width: 3, align: 'right' },
             { header: 'NAME', width: 30 },
-            { header: 'PLATFORMS', width: 22 },
+            { header: 'KIND', width: 22 },
             { header: 'STATUS', width: 15 },
           ],
-          list.map((a, i) => [String(i + 1), a.title, a.platforms?.join(', ') ?? '', a.availability ?? '']),
+          list.map((a, i) => [
+            String(i + 1),
+            a.title,
+            a.kind === 'app' ? ['App', ...a.platforms].join(', ') : KIND_LABEL.website,
+            STATUS_LABEL[a.status],
+          ]),
         ),
         '',
         { text: 'Type APPS <number> for one, e.g. APPS 1.', tone: 'dim' },
