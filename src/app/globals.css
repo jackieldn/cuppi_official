@@ -388,3 +388,90 @@ body > div:has(iframe[title*="recaptcha"]) {
   z-index: 2147483647 !important;
   pointer-events: auto !important;
 }
+
+/*
+  Bottom glow: a sticky arch of light along the bottom edge of portfolio pages.
+  Several soft layers drift and swell on unrelated, uneven timings (7s to 19s,
+  with lopsided keyframes), so the combined light never settles into a
+  repeating pulse. Only transform and opacity animate.
+*/
+.bottom-glow {
+  -webkit-mask-image: radial-gradient(ellipse 75% 100% at 50% 100%, #000 40%, transparent 100%);
+  mask-image: radial-gradient(ellipse 75% 100% at 50% 100%, #000 40%, transparent 100%);
+}
+.bottom-glow__layer {
+  position: absolute;
+  inset: 0;
+  will-change: transform, opacity;
+}
+.bottom-glow__base {
+  background: radial-gradient(ellipse 60% 100% at 50% 100%, rgba(112, 169, 161, 0.55), transparent 100%);
+  animation: bottom-glow-breathe 11s ease-in-out infinite;
+}
+.bottom-glow__ocean {
+  background: radial-gradient(ellipse 28% 100% at 50% 100%, rgba(64, 121, 140, 0.85), transparent 100%);
+  animation: bottom-glow-drift-a 17s ease-in-out infinite alternate, bottom-glow-swell-a 7s ease-in-out infinite;
+}
+.bottom-glow__amber {
+  background: radial-gradient(ellipse 14% 100% at 50% 100%, rgba(255, 170, 40, 0.6), transparent 100%);
+  animation: bottom-glow-drift-b 19s ease-in-out infinite alternate, bottom-glow-flicker 13s linear infinite;
+}
+.bottom-glow__cream {
+  background: radial-gradient(ellipse 18% 100% at 50% 100%, rgba(246, 241, 209, 0.5), transparent 100%);
+  animation: bottom-glow-drift-c 23s ease-in-out infinite alternate, bottom-glow-swell-b 9s ease-in-out infinite;
+}
+
+@keyframes bottom-glow-breathe {
+  0%, 100% { opacity: 0.55; }
+  22% { opacity: 0.9; }
+  41% { opacity: 0.65; }
+  68% { opacity: 1; }
+  85% { opacity: 0.6; }
+}
+@keyframes bottom-glow-drift-a {
+  0% { transform: translateX(-38%); }
+  35% { transform: translateX(-10%); }
+  60% { transform: translateX(22%); }
+  100% { transform: translateX(41%); }
+}
+@keyframes bottom-glow-drift-b {
+  0% { transform: translateX(36%) scaleX(1); }
+  45% { transform: translateX(-6%) scaleX(1.6); }
+  100% { transform: translateX(-40%) scaleX(0.9); }
+}
+@keyframes bottom-glow-drift-c {
+  0% { transform: translateX(-12%); }
+  30% { transform: translateX(30%); }
+  70% { transform: translateX(-28%); }
+  100% { transform: translateX(8%); }
+}
+@keyframes bottom-glow-swell-a {
+  0%, 100% { opacity: 0.45; }
+  30% { opacity: 1; }
+  52% { opacity: 0.6; }
+  80% { opacity: 0.85; }
+}
+@keyframes bottom-glow-swell-b {
+  0%, 100% { opacity: 0.3; }
+  18% { opacity: 0.75; }
+  60% { opacity: 0.4; }
+  74% { opacity: 0.9; }
+}
+/* A candle-ish flutter: quick small jumps rather than a smooth wave. */
+@keyframes bottom-glow-flicker {
+  0%, 100% { opacity: 0.6; }
+  6% { opacity: 0.9; }
+  11% { opacity: 0.5; }
+  19% { opacity: 0.8; }
+  33% { opacity: 0.45; }
+  47% { opacity: 1; }
+  52% { opacity: 0.7; }
+  71% { opacity: 0.4; }
+  83% { opacity: 0.85; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-glow__layer { animation: none; }
+  .bottom-glow__ocean { opacity: 0.7; }
+  .bottom-glow__amber, .bottom-glow__cream { opacity: 0.4; }
+}

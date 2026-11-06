@@ -452,10 +452,12 @@ function Poll({ data }: { data: PortalData }) {
 // ------------------------------------------------------------------ pages
 
 function HomePage({ data, go, now }: { data: PortalData; go: (p: PortalPage, slug?: string) => void; now: Date }) {
-  const projects = useMemo(
-    () => [...data.projects].sort((a, b) => Number(!!b.featured) - Number(!!a.featured)).slice(0, 8),
-    [data.projects],
-  );
+  // Every featured project, however many; padded with others up to 8 when there are fewer.
+  const projects = useMemo(() => {
+    const sorted = [...data.projects].sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
+    const featuredCount = sorted.filter((p) => p.featured).length;
+    return sorted.slice(0, Math.max(8, featuredCount));
+  }, [data.projects]);
   // Worked out per day, so the dates don't shuffle as the clock ticks.
   const today = day(now);
   const dates = useMemo(

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useCollection } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { useMemo } from 'react';
 import { Project } from "@/lib/projects";
@@ -61,8 +61,7 @@ export function FeaturedWorkSection() {
     if (!firestore) return null;
     return query(
       collection(firestore, 'projects'),
-      where('featured', '==', true),
-      limit(10)
+      where('featured', '==', true)
     );
   }, [firestore]);
 
