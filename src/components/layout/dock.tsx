@@ -27,10 +27,46 @@ export function Dock() {
   // then let the current bounce finish, like the macOS Dock.
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const arrivedRef = useRef(false);
+  // Phones only (the classes below are max-md): the Dock slides away while scrolling down
+  // and slides back as soon as the page scrolls up.
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    let last = window.scrollY;
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const y = window.scrollY;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      // Rubber-banding past either end of the page isn't the user scrolling.
+      if (y < 0 || y > max) return;
+      const delta = y - last;
+      if (y <= 60) {
+        setHidden(false);
+        last = y;
+      } else if (Math.abs(delta) > 6) {
+        // Small movements add up until they pass the threshold, so a slow scroll still counts.
+        setHidden(delta > 0);
+        last = y;
+      }
+    };
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // A new page starts at the top with the Dock showing.
+  useEffect(() => {
+    setHidden(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (pendingHref && pathname === pendingHref) {
@@ -92,10 +128,18 @@ export function Dock() {
   return (
     // Centred with flexbox rather than translateX(-50%), and sized in whole pixels:
     // fractional positions made tiles re-snap sideways when they lifted.
-    <footer className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center">
+    <footer
+      className={cn(
+        "pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center transition-transform duration-300 ease-out motion-reduce:transition-none",
+        // Slides down past the bottom edge (its own height plus its gap from the edge).
+        hidden && "max-md:translate-y-[calc(100%+2rem)]"
+      )}
+      // Tabbing to a hidden Dock brings it back.
+      onFocusCapture={() => setHidden(false)}
+    >
       <TooltipProvider delayDuration={100}>
         <nav
-          className="pointer-events-auto relative flex items-end justify-center gap-[10px] p-[10px]"
+          className="pointer-events-auto relative flex items-end justify-center gap-[6px] p-[8px] sm:gap-[10px] sm:p-[10px]"
           aria-label="Main Navigation"
         >
           {/*
@@ -105,7 +149,7 @@ export function Dock() {
           */}
           <div
             aria-hidden="true"
-            className="absolute inset-0 rounded-[38px] border border-palette-lagoon/60 bg-palette-lagoon/30 backdrop-blur-lg"
+            className="absolute inset-0 rounded-[30px] border sm:rounded-[38px] border-palette-lagoon/60 bg-palette-lagoon/30 backdrop-blur-lg"
           />
           {dockItems.map((item) => (
             <Tooltip key={item.label}>
@@ -122,7 +166,7 @@ export function Dock() {
                     // the tile drops, loses the cursor, lifts again and jiggles).
                     // will-change keeps the tile on its own compositor layer at rest too, so it
                     // isn't re-rasterised (and nudged sideways) each time it lifts or lands.
-                    "group relative flex size-[58px] items-center justify-center rounded-[28px] backdrop-blur-md will-change-transform after:absolute after:inset-x-0 after:top-full after:h-4 after:content-[''] transition-transform duration-200 ease-in-out hover:-translate-y-2.5 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
+                    "group relative flex size-[44px] items-center justify-center rounded-[22px] backdrop-blur-md will-change-transform sm:size-[58px] sm:rounded-[28px] after:absolute after:inset-x-0 after:top-full after:h-4 after:content-[''] transition-transform duration-200 ease-in-out hover:-translate-y-2.5 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
                     isActive(item.href)
                       ? "bg-palette-lagoon text-palette-ink"
                       : "bg-background/60 text-foreground hover:bg-primary hover:text-primary-foreground"
@@ -130,7 +174,7 @@ export function Dock() {
                   aria-label={item.label}
                   aria-current={isActive(item.href) ? "page" : undefined}
                 >
-                  <item.icon className="size-7" />
+                  <item.icon className="size-6 sm:size-7" />
                 </Link>
               </TooltipTrigger>
               <TooltipContent>

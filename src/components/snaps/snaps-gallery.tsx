@@ -2,17 +2,11 @@
 
 import Image from "next/image";
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect, useState, useMemo, useCallback } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { useEffect, useState, useMemo } from "react";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { cn, getResizedImageUrl } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Reveal } from "../ui/reveal";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Snap = {
   id: string;
@@ -78,49 +72,11 @@ export function SnapsGallery({ initialSnaps }: SnapsGalleryProps) {
 
   const showSkeletons = !isClient;
 
-  const handleNext = useCallback(() => {
-    if (selectedSnapIndex === null) return;
-    setSelectedSnapIndex((prevIndex) => (prevIndex! + 1) % filteredAndSortedSnaps.length);
-  }, [selectedSnapIndex, filteredAndSortedSnaps.length]);
+  const lightboxImages = useMemo(
+    () => filteredAndSortedSnaps.map((item) => ({ src: item.imageUrl, alt: "A snap from the gallery" })),
+    [filteredAndSortedSnaps],
+  );
 
-  const handlePrev = useCallback(() => {
-    if (selectedSnapIndex === null) return;
-    setSelectedSnapIndex((prevIndex) => (prevIndex! - 1 + filteredAndSortedSnaps.length) % filteredAndSortedSnaps.length);
-  }, [selectedSnapIndex, filteredAndSortedSnaps.length]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (selectedSnapIndex === null) return;
-      if (e.key === 'ArrowRight') {
-        handleNext();
-      } else if (e.key === 'ArrowLeft') {
-        handlePrev();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [selectedSnapIndex, handleNext, handlePrev]);
-
-  // Preloading effect
-  useEffect(() => {
-    if (selectedSnapIndex !== null && filteredAndSortedSnaps.length > 1) {
-      // Preload next image
-      const nextIndex = (selectedSnapIndex + 1) % filteredAndSortedSnaps.length;
-      const nextImage = new window.Image();
-      nextImage.src = filteredAndSortedSnaps[nextIndex].imageUrl;
-      
-      // Preload previous image
-      const prevIndex = (selectedSnapIndex - 1 + filteredAndSortedSnaps.length) % filteredAndSortedSnaps.length;
-      const prevImage = new window.Image();
-      prevImage.src = filteredAndSortedSnaps[prevIndex].imageUrl;
-    }
-  }, [selectedSnapIndex, filteredAndSortedSnaps]);
-
-
-  const selectedSnap = selectedSnapIndex !== null ? filteredAndSortedSnaps[selectedSnapIndex] : null;
 
   return (
     <section className="py-24 sm:py-32">
@@ -190,43 +146,12 @@ export function SnapsGallery({ initialSnaps }: SnapsGalleryProps) {
         </div>
       </div>
 
-       <Dialog open={selectedSnapIndex !== null} onOpenChange={() => setSelectedSnapIndex(null)}>
-        <DialogContent className="max-w-4xl p-0">
-           <DialogTitle className="sr-only">Enlarged snap from gallery</DialogTitle>
-           <DialogDescription className="sr-only">
-             Image {selectedSnapIndex !== null ? selectedSnapIndex + 1 : 0} of {filteredAndSortedSnaps.length}. Use arrow keys to navigate.
-           </DialogDescription>
-          {selectedSnap && (
-             <div className="relative" style={{ aspectRatio: `${selectedSnap.width} / ${selectedSnap.height}` }}>
-               <Image
-                  src={selectedSnap.imageUrl}
-                  alt="A snap from the gallery"
-                  fill
-                  className="object-contain"
-                  priority={true}
-                />
-            </div>
-          )}
-           <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handlePrev}
-            className="absolute left-2 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-black/30 text-white hover:bg-black/50 hover:text-white"
-            aria-label="Previous image"
-           >
-             <ChevronLeft className="h-8 w-8" />
-           </Button>
-           <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleNext}
-            className="absolute right-2 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-black/30 text-white hover:bg-black/50 hover:text-white"
-            aria-label="Next image"
-           >
-             <ChevronRight className="h-8 w-8" />
-           </Button>
-        </DialogContent>
-      </Dialog>
+      <ImageLightbox
+        images={lightboxImages}
+        index={selectedSnapIndex}
+        onIndexChange={setSelectedSnapIndex}
+        title="Enlarged snap from gallery"
+      />
     </section>
   );
 }

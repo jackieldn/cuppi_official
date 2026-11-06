@@ -138,6 +138,17 @@ export default function AboutPage() {
             {musicCovers.length > 0 && <MusicTasteSection covers={musicCovers} />}
             <div className="container mx-auto px-4">
               {facts && facts.length > 0 && <FactsSection facts={facts} />}
+              {/* Closes the page, centred. The padding underneath keeps the Dock from covering it. */}
+              <Reveal className="flex justify-center pb-28 pt-16 sm:pb-32">
+                <Image
+                  src="/images/profile-1.webp"
+                  alt="Jack"
+                  width={800}
+                  height={800}
+                  sizes="(max-width: 640px) 80vw, 360px"
+                  className="h-auto w-full max-w-[280px] sm:max-w-[360px]"
+                />
+              </Reveal>
             </div>
           </>
         )}
