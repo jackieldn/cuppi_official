@@ -318,59 +318,61 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "App",
       "type": "object",
-      "description": "Represents an application or website project.",
+      "description": "An app or website shown on the portfolio's Apps & Websites page. The page body is an ordered list of sections (screenshot galleries and text-and-image blocks). Entries saved before the redesign (availability, galleryImages, no kind) are mapped onto this shape when read; see src/lib/showcase.ts.",
       "properties": {
         "id": { "type": "string" },
         "title": { "type": "string" },
         "slug": { "type": "string" },
-        "description": { "type": "string" },
+        "kind": { "type": "string", "enum": ["app", "website"] },
+        "status": {
+          "type": "string",
+          "enum": ["live", "testflight", "decommissioned"],
+          "description": "testflight is for apps only."
+        },
+        "tagline": { "type": "string", "description": "One line for the card, up to 140 characters." },
+        "description": { "type": "string", "description": "Intro text; blank lines are paragraph breaks." },
         "tags": { "type": "array", "items": { "type": "string" } },
         "platforms": {
           "type": "array",
-          "items": { "type": "string", "enum": ["Web", "iOS", "Android", "MacOS", "Windows"] }
-        },
-        "availability": {
-          "type": "string",
-          "enum": ["Available", "In Development", "Beta", "Retired"]
+          "description": "Apps only.",
+          "items": { "type": "string", "enum": ["iOS", "iPadOS", "macOS", "Android", "Windows"] }
         },
         "releaseDate": { "type": "string", "format": "date" },
-        "link": { "type": "string", "format": "uri" },
-        "galleryImages": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "url": { "type": "string", "format": "uri" },
-              "width": { "type": "number" },
-              "height": { "type": "number" }
-            },
-            "required": ["url", "width", "height"]
-          }
-        },
-        "coverImage": {
-            "type": "object",
-            "properties": {
-              "url": { "type": "string", "format": "uri" },
-              "width": { "type": "number" },
-              "height": { "type": "number" }
-            },
-            "required": ["url", "width", "height"]
-        },
-        "updateHistory": {
+        "decommissionedDate": { "type": "string", "format": "date", "description": "Only when status is decommissioned." },
+        "link": { "type": "string", "format": "uri", "description": "App Store link, TestFlight invite or website address. Not shown once decommissioned." },
+        "icon": { "$ref": "#/backend/entities/AppImage", "description": "App icon or site logo: the face of the card and of the page's top." },
+        "iconColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Dominant colour of the icon, picked in the admin. Tints the backgrounds." },
+        "order": { "type": "number", "description": "Position among entries of the same kind and status; lower first." },
+        "sections": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
               "id": { "type": "string" },
-              "date": { "type": "string", "format": "date" },
-              "version": { "type": "string" },
-              "description": { "type": "string" }
+              "type": { "type": "string", "enum": ["gallery", "feature"] },
+              "title": { "type": "string" },
+              "images": { "type": "array", "items": { "$ref": "#/backend/entities/AppImage" }, "description": "gallery only." },
+              "body": { "type": "string", "description": "feature only." },
+              "textSide": { "type": "string", "enum": ["left", "right"], "description": "feature only: which side the text sits on." },
+              "image": { "$ref": "#/backend/entities/AppImage", "description": "feature only." }
             },
-            "required": ["id", "date", "description"]
+            "required": ["id", "type"]
           }
         }
       },
-      "required": ["id", "title", "slug", "description", "platforms", "availability", "releaseDate", "link"]
+      "required": ["id", "title", "slug", "kind", "status", "releaseDate", "icon"]
+    },
+    "AppImage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "App Image",
+      "type": "object",
+      "description": "A screenshot, cover, icon or logo, with its pixel size so pages can lay it out before it loads.",
+      "properties": {
+        "url": { "type": "string", "format": "uri" },
+        "width": { "type": "number" },
+        "height": { "type": "number" }
+      },
+      "required": ["url", "width", "height"]
     },
     "LegalDocument": {
       "$schema": "http://json-schema.org/draft-07/schema#",

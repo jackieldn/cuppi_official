@@ -1,31 +1,36 @@
 'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect, useState, useMemo } from "react";
-import { App } from "@/lib/about-types";
-import { Badge } from "@/components/ui/badge";
-import { getResizedImageUrl } from "@/lib/utils";
+import { useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Reveal } from '@/components/ui/reveal';
+import { cn } from '@/lib/utils';
+import { KIND_PLURAL, sortApps, type App, type AppKind } from '@/lib/showcase';
+import { AppCard } from './app-card';
 
 interface AppGalleryProps {
-  initialApps: App[];
+  apps: App[] | null;
+  isLoading?: boolean;
 }
 
-export function AppGallery({ initialApps }: AppGalleryProps) {
-  const [isClient, setIsClient] = useState(false);
-  const [apps, setApps] = useState(initialApps);
+type Filter = 'all' | AppKind;
+const GROUPS: AppKind[] = ['app', 'website'];
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+export function AppGallery({ apps, isLoading }: AppGalleryProps) {
+  const [filter, setFilter] = useState<Filter>('all');
 
-  const showSkeletons = !isClient;
+  const sorted = useMemo(() => sortApps(apps ?? []), [apps]);
+  const counts = useMemo(
+    () => ({ all: sorted.length, app: sorted.filter((a) => a.kind === 'app').length, website: sorted.filter((a) => a.kind === 'website').length }),
+    [sorted]
+  );
+  // Only offer a filter when there's something to filter between.
+  const showFilter = counts.app > 0 && counts.website > 0;
+  const visibleGroups = GROUPS.filter((kind) => (filter === 'all' || filter === kind) && counts[kind] > 0);
 
   return (
     <section className="py-24 sm:py-32">
       <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-3xl">
+        <Reveal className="mx-auto max-w-3xl">
           <h1 className="font-headline text-5xl font-bold tracking-tight text-accent sm:text-6xl">
             Apps & Websites
           </h1>
@@ -34,55 +39,52 @@ export function AppGallery({ initialApps }: AppGalleryProps) {
               Here are some of the applications and websites I've built. Some are personal projects, others were for clients.
             </p>
           </div>
-        </div>
+        </Reveal>
 
-        <div className="mx-auto mt-16 grid grid-cols-1 gap-y-16 gap-x-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
-          {showSkeletons &&
-            Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="flex flex-col space-y-4">
-                 <Skeleton className="aspect-[16/9] w-full rounded-2xl" />
-                 <Skeleton className="h-6 w-3/4" />
-                 <Skeleton className="h-4 w-1/2" />
-                 <Skeleton className="h-10 w-full" />
+        {showFilter && (
+          <div className="mt-16 flex flex-wrap justify-center gap-2">
+            {(['all', 'app', 'website'] as const).map((value) => (
+              <Button
+                key={value}
+                variant={filter === value ? 'default' : 'outline'}
+                onClick={() => setFilter(value)}
+                className={cn('rounded-full transition-all', filter === value && 'bg-primary text-primary-foreground')}
+              >
+                {value === 'all' ? 'All' : KIND_PLURAL[value]}
+                <span className="ml-2 text-xs tabular-nums opacity-70">{counts[value]}</span>
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {/* No placeholder boxes while loading: the page is empty, then the cards fade up. */}
+        {!isLoading && sorted.length === 0 && (
+          <p className="mt-16 text-center text-muted-foreground">Nothing here yet. Check back soon.</p>
+        )}
+
+        <div className={cn('space-y-20', showFilter ? 'mt-14' : 'mt-16')}>
+          {!isLoading &&
+            visibleGroups.map((kind) => (
+              <div key={kind}>
+                {/* The headings only earn their place when both kinds are on show. */}
+                {visibleGroups.length > 1 && (
+                  <Reveal>
+                    <h2 className="mb-8 font-headline text-2xl font-bold text-palette-sage sm:text-3xl">
+                      {KIND_PLURAL[kind]}
+                    </h2>
+                  </Reveal>
+                )}
+                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                  {sorted
+                    .filter((a) => a.kind === kind)
+                    .map((app) => (
+                      <Reveal key={app.id} stagger={90} className="h-full">
+                        <AppCard app={app} />
+                      </Reveal>
+                    ))}
+                </div>
               </div>
             ))}
-
-          {!showSkeletons && apps?.map((app) => (
-            <Link key={app.id} href={`/apps/${app.slug}`} className="group flex flex-col items-start justify-between rounded-2xl bg-card border shadow-sm p-6 hover:shadow-lg transition-shadow">
-                <div className="relative w-full">
-                  <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl ring-1 ring-gray-900/10">
-                    {app.coverImage && (
-                        <Image
-                            src={getResizedImageUrl(app.coverImage.url, "800x450")}
-                            alt={app.title}
-                            fill
-                            className="object-cover"
-                        />
-                    )}
-                  </div>
-                  <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-gray-900/10" />
-                </div>
-                <div className="max-w-xl mt-6">
-                    <div className="flex items-center gap-x-4 text-xs">
-                        <time dateTime={app.releaseDate} className="text-muted-foreground">
-                            {new Date(app.releaseDate).getFullYear()}
-                        </time>
-                        <Badge variant="secondary">{app.availability}</Badge>
-                    </div>
-                    <div className="relative">
-                        <h3 className="mt-3 text-lg font-semibold leading-6 text-foreground group-hover:text-primary">
-                            {app.title}
-                        </h3>
-                        <p className="mt-5 line-clamp-3 text-sm leading-6 text-muted-foreground">{app.description}</p>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                        {app.platforms?.map((platform) => (
-                            <Badge key={platform} variant="outline">{platform}</Badge>
-                        ))}
-                    </div>
-                </div>
-            </Link>
-          ))}
         </div>
       </div>
     </section>

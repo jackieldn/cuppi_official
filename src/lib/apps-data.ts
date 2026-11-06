@@ -1,6 +1,6 @@
 import 'server-only';
 import { firestore } from "@/firebase/server";
-import { App } from './about-types';
+import { normalizeApp, sortApps, type App } from './showcase';
 
 function serializeFirestoreTimestamps(data: any): any {
     if (data === null || data === undefined) {
@@ -25,23 +25,17 @@ function serializeFirestoreTimestamps(data: any): any {
 
 export async function getApps(): Promise<App[]> {
     try {
-      const appsCollection = firestore.collection('apps');
-      const q = appsCollection.orderBy('releaseDate', 'desc');
-      const snapshot = await q.get();
-      
+      const snapshot = await firestore.collection('apps').get();
+
       if (snapshot.empty) {
         return [];
       }
-      
-      const apps = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-        } as App;
-      });
 
-      return serializeFirestoreTimestamps(apps);
+      const apps = snapshot.docs.map(doc =>
+        normalizeApp({ id: doc.id, ...serializeFirestoreTimestamps(doc.data()) })
+      );
+
+      return sortApps(apps);
     } catch (error) {
       console.error("Error fetching apps from Firestore:", error);
       // In case of an error, return an empty array to prevent build/render failures.

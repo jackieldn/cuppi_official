@@ -51,33 +51,8 @@ export type MusicCover = {
   createdAt?: any;
 };
 
-export type GalleryImage = {
-  url: string;
-  width: number;
-  height: number;
-};
-
-export type Update = {
-  id: string;
-  date: string;
-  version: string;
-  description: string;
-};
-
-export type App = {
-  id: string;
-  title: string;
-  slug: string;
-  description: string;
-  tags: string[];
-  platforms: ('Web' | 'iOS' | 'Android' | 'MacOS' | 'Windows')[];
-  availability: 'Available' | 'In Development' | 'Beta' | 'Retired';
-  releaseDate: string;
-  link: string;
-  galleryImages: GalleryImage[];
-  updateHistory: Update[];
-  coverImage: GalleryImage;
-};
+// Apps & Websites live in showcase.ts (the model plus its helpers).
+export type { App } from './showcase';
 
 export type LegalDocument = {
   id: string;
