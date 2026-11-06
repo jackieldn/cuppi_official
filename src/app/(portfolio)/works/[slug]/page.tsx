@@ -5,13 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { clearFlight, landFlight, startReturnFlight, useFlight } from '@/lib/card-flight';
 import { hideBand, showBand } from '@/lib/title-band';
@@ -52,6 +46,7 @@ export default function ProjectPage() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [password, setPassword] = useState('');
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const { toast } = useToast();
   const params = useParams();
   const slug = params.slug as string;
@@ -400,37 +395,22 @@ export default function ProjectPage() {
                 {galleryImageObjects.map((image, i) => (
                   image.imageUrl && (
                     <Reveal key={image.id} hold={awaitingFlight} stagger={90}>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <div className={`group relative block cursor-pointer overflow-hidden rounded-2xl shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl hover:ring-4 ${GALLERY_RINGS[i % GALLERY_RINGS.length]}`}>
-                          <div className="aspect-video">
-                            <Image
-                              src={getResizedImageUrl(image.imageUrl, '600x338')}
-                              alt={image.description || ''}
-                              fill
-                              className="object-cover transition-transform duration-300 group-hover:scale-105"
-                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                              onError={() => setFailedImages((prev) => new Set(prev).add(image.imageUrl))}
-                              data-ai-hint={image.imageHint}
-                            />
-                          </div>
-                        </div>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl p-0">
-                        <DialogTitle className="sr-only">{project.title}</DialogTitle>
-                        <DialogDescription className="sr-only">
-                          Enlarged gallery image for {project.title}.
-                        </DialogDescription>
-                        <div className="relative aspect-video">
-                           <Image
-                              src={image.imageUrl}
-                              alt={image.description || ''}
-                              fill
-                              className="object-contain"
-                            />
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    <div
+                      onClick={() => setLightboxIndex(i)}
+                      className={`group relative block cursor-pointer overflow-hidden rounded-2xl shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl hover:ring-4 ${GALLERY_RINGS[i % GALLERY_RINGS.length]}`}
+                    >
+                      <div className="aspect-video">
+                        <Image
+                          src={getResizedImageUrl(image.imageUrl, '600x338')}
+                          alt={image.description || ''}
+                          fill
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          onError={() => setFailedImages((prev) => new Set(prev).add(image.imageUrl))}
+                          data-ai-hint={image.imageHint}
+                        />
+                      </div>
+                    </div>
                     </Reveal>
                   )
                 ))}
@@ -439,13 +419,20 @@ export default function ProjectPage() {
           </section>
         )}
 
+        <ImageLightbox
+          images={galleryImageObjects.map((image) => ({ src: image.imageUrl, alt: image.description || '' }))}
+          index={lightboxIndex}
+          onIndexChange={setLightboxIndex}
+          title={`${project.title} gallery`}
+        />
+
         {/* Section 4: Videos */}
         {videoUrls.length > 0 && (
           <section className="py-24 sm:py-32">
             <div className="container mx-auto px-4">
               <Reveal hold={awaitingFlight}>
                 <h2 className="text-center font-headline text-3xl font-bold text-palette-sage sm:text-4xl mb-16">
-                  Final Product
+                  Motion Graphics
                 </h2>
               </Reveal>
               {/* A lone video stays large and centred; two or more go two per row. */}

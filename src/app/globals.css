@@ -395,6 +395,12 @@ body > div:has(iframe[title*="recaptcha"]) {
   with lopsided keyframes), so the combined light never settles into a
   repeating pulse. Only transform and opacity animate.
 */
+/*
+  Shaped like a light leak: each layer is hottest right at the bottom edge, drops
+  off fast over the first ~20px, then trails away as a faint haze. That falloff is
+  in the layers' own gradient stops (roughly 100% / 25% / 8% / 0% of their colour
+  at 0 / 40 / 70 / 100% of the way up), and the mask softens the left and right edges.
+*/
 .bottom-glow {
   -webkit-mask-image: radial-gradient(ellipse 75% 100% at 50% 100%, #000 40%, transparent 100%);
   mask-image: radial-gradient(ellipse 75% 100% at 50% 100%, #000 40%, transparent 100%);
@@ -403,22 +409,54 @@ body > div:has(iframe[title*="recaptcha"]) {
   position: absolute;
   inset: 0;
   will-change: transform, opacity;
+  /* Light adds up rather than stacking like paint, so overlaps burn brighter. */
+  mix-blend-mode: screen;
 }
 .bottom-glow__base {
-  background: radial-gradient(ellipse 60% 100% at 50% 100%, rgba(112, 169, 161, 0.55), transparent 100%);
+  background: radial-gradient(ellipse 60% 100% at 50% 100%, rgba(112, 169, 161, 0.55), rgba(112, 169, 161, 0.14) 40%, rgba(112, 169, 161, 0.04) 70%, transparent 100%);
   animation: bottom-glow-breathe 11s ease-in-out infinite;
 }
 .bottom-glow__ocean {
-  background: radial-gradient(ellipse 28% 100% at 50% 100%, rgba(64, 121, 140, 0.85), transparent 100%);
+  background: radial-gradient(ellipse 28% 100% at 50% 100%, rgba(64, 121, 140, 0.85), rgba(64, 121, 140, 0.21) 40%, rgba(64, 121, 140, 0.065) 70%, transparent 100%);
   animation: bottom-glow-drift-a 17s ease-in-out infinite alternate, bottom-glow-swell-a 7s ease-in-out infinite;
 }
 .bottom-glow__amber {
-  background: radial-gradient(ellipse 14% 100% at 50% 100%, rgba(255, 170, 40, 0.6), transparent 100%);
+  background: radial-gradient(ellipse 14% 100% at 50% 100%, rgba(255, 170, 40, 0.6), rgba(255, 170, 40, 0.15) 40%, rgba(255, 170, 40, 0.045) 70%, transparent 100%);
   animation: bottom-glow-drift-b 19s ease-in-out infinite alternate, bottom-glow-flicker 13s linear infinite;
 }
 .bottom-glow__cream {
-  background: radial-gradient(ellipse 18% 100% at 50% 100%, rgba(246, 241, 209, 0.5), transparent 100%);
+  background: radial-gradient(ellipse 18% 100% at 50% 100%, rgba(246, 241, 209, 0.5), rgba(246, 241, 209, 0.125) 40%, rgba(246, 241, 209, 0.0375) 70%, transparent 100%);
   animation: bottom-glow-drift-c 23s ease-in-out infinite alternate, bottom-glow-swell-b 9s ease-in-out infinite;
+}
+/*
+  The hot core: where the leak is strongest the light blows out towards white,
+  then cools through peach and orange as it falls away. It also gently rises and
+  sinks (scaleY from the bottom edge), like exposure wavering.
+*/
+.bottom-glow__hot {
+  background: radial-gradient(ellipse 10% 60% at 50% 100%, rgba(255, 238, 205, 0.85), rgba(255, 175, 95, 0.42) 25%, rgba(255, 120, 50, 0.06) 55%, transparent 100%);
+  transform-origin: 50% 100%;
+  animation: bottom-glow-drift-d 29s ease-in-out infinite alternate, bottom-glow-rise 8s ease-in-out infinite, bottom-glow-swell-a 11s ease-in-out infinite;
+}
+/* A thin anamorphic streak hugging the very edge, the way lens flares stretch wide. */
+.bottom-glow__streak {
+  inset: auto 0 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 8%, rgba(255, 215, 165, 0.5) 38%, rgba(255, 244, 228, 0.85) 50%, rgba(255, 215, 165, 0.5) 62%, transparent 92%);
+  filter: blur(1px);
+  animation: bottom-glow-drift-c 31s ease-in-out infinite alternate, bottom-glow-flicker 7s linear infinite;
+}
+
+@keyframes bottom-glow-drift-d {
+  0% { transform: translateX(14%) scaleY(1); }
+  50% { transform: translateX(-16%) scaleY(1); }
+  100% { transform: translateX(6%) scaleY(1); }
+}
+@keyframes bottom-glow-rise {
+  0%, 100% { scale: 1 0.8; }
+  35% { scale: 1 1.15; }
+  62% { scale: 1 0.9; }
+  81% { scale: 1 1.25; }
 }
 
 @keyframes bottom-glow-breathe {
@@ -474,4 +512,6 @@ body > div:has(iframe[title*="recaptcha"]) {
   .bottom-glow__layer { animation: none; }
   .bottom-glow__ocean { opacity: 0.7; }
   .bottom-glow__amber, .bottom-glow__cream { opacity: 0.4; }
+  .bottom-glow__hot { opacity: 0.7; }
+  .bottom-glow__streak { opacity: 0.5; }
 }

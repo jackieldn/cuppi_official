@@ -37,6 +37,18 @@ const picture = {
   ...flipped,
 } as const;
 
+// The light leak at the picture's bottom edge, the same recipe as the home-page video
+// and the bottom-of-page glow: a hot rim of the picture's own bottom rows, brightened and
+// screened over its edge, dropping fast below it; plus a thin bright streak right on the
+// edge. Fades are masks on wrappers (never on a blurred element, which would cut its blur off).
+const LEAK_OVER = '1.25rem'; // how far up into the picture the rim is at full strength
+const LEAK_H = '5rem'; // the rim's box: LEAK_OVER above the edge, the rest below it
+const FADE_SIDES = 'linear-gradient(90deg, transparent, black 16%, black 84%, transparent)';
+const FADE_RIM = `linear-gradient(to bottom, transparent, black ${LEAK_OVER}, rgba(0, 0, 0, 0.225) calc(${LEAK_OVER} + 1rem), rgba(0, 0, 0, 0.06) calc(${LEAK_OVER} + 2.25rem), transparent ${LEAK_H})`;
+// Under the cover, the base haze: strongest at the edge, then a fast drop and a faint tail.
+const FADE_BASE =
+  'linear-gradient(to bottom, black 1.5rem, rgba(0, 0, 0, 0.3) 2.75rem, rgba(0, 0, 0, 0.11) 4.5rem, transparent 7rem)';
+
 interface Sweep {
   id: number;
   dir: 'ltr' | 'rtl';
@@ -140,6 +152,66 @@ function GlowSweep({ src, sweep, onDone }: { src: string; sweep: Sweep; onDone: 
   );
 }
 
+/**
+ * The hot rim and the streak, both from the picture's own bottom rows. Sits in the
+ * zero-height line along the picture's bottom edge, so it tilts with the picture.
+ */
+function CoverLeak({ src }: { src: string }) {
+  const strip = { position: 'absolute', left: 0, width: '100%', objectPosition: 'bottom' } as const;
+  return (
+    <div className="absolute inset-0 opacity-0 animate-[glow-in_1.4s_ease-out_forwards]">
+      {/* The rim: the picture's last rows over its edge, and the same rows mirrored below it. */}
+      <div
+        className="absolute inset-x-0 animate-[bottom-glow-swell-a_11s_ease-in-out_infinite]"
+        style={{
+          top: `-${LEAK_OVER}`,
+          height: LEAK_H,
+          mixBlendMode: 'screen',
+          WebkitMaskImage: FADE_RIM,
+          maskImage: FADE_RIM,
+        }}
+      >
+        <div className="absolute inset-0" style={{ WebkitMaskImage: FADE_SIDES, maskImage: FADE_SIDES }}>
+          <div className="absolute inset-0 blur-[14px] brightness-[1.6] saturate-[2]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt=""
+              draggable={false}
+              className="object-cover"
+              style={{ ...strip, top: 0, height: LEAK_OVER }}
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt=""
+              draggable={false}
+              className="object-cover"
+              style={{ ...strip, top: LEAK_OVER, height: `calc(${LEAK_H} - ${LEAK_OVER})`, transform: 'scaleY(-1)' }}
+            />
+          </div>
+        </div>
+      </div>
+      {/* The streak: a thin, bright line right on the edge, flickering like a lens flare. */}
+      <div
+        className="absolute inset-x-5 -bottom-px h-[3px] animate-[bottom-glow-flicker_7s_linear_infinite]"
+        style={{ mixBlendMode: 'screen', WebkitMaskImage: FADE_SIDES, maskImage: FADE_SIDES }}
+      >
+        <div className="h-full w-full blur-[1px] brightness-[1.9] saturate-[1.6]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt=""
+            draggable={false}
+            className="object-cover"
+            style={{ ...strip, top: 0, height: '100%' }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** The stream of highlights at the picture's bottom edge. Up to MAX_SWEEPS can overlap. */
 export function CoverSweeps({ src }: { src: string }) {
   const [sweeps, setSweeps] = useState<Sweep[]>([]);
@@ -176,6 +248,7 @@ export function CoverSweeps({ src }: { src: string }) {
   return (
     // A zero-height line along the picture's bottom edge; the sweep box hangs off it.
     <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-0 motion-reduce:hidden">
+      <CoverLeak src={src} />
       <div
         className="absolute opacity-0 animate-[glow-in_1.4s_ease-out_forwards]"
         style={{
@@ -216,8 +289,8 @@ export function CoverGlow({ src }: { src: string }) {
           right: `-${MARGIN_X}`,
           top: `-${MARGIN_TOP}`,
           height: '9rem',
-          WebkitMaskImage: 'linear-gradient(to bottom, black 1.5rem, transparent 6rem)',
-          maskImage: 'linear-gradient(to bottom, black 1.5rem, transparent 6rem)',
+          WebkitMaskImage: FADE_BASE,
+          maskImage: FADE_BASE,
         }}
       >
         {/* Always-on glow, the picture's own colours. Its opacity runs 0% at the cover's

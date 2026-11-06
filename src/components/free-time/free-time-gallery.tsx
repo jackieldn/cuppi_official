@@ -2,17 +2,12 @@
 
 import Image from "next/image";
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect, useState, useMemo, useCallback } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { useEffect, useState, useMemo } from "react";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { cn, getResizedImageUrl } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Reveal } from "../ui/reveal";
-import { ChevronLeft, ChevronRight, Palette } from "lucide-react";
+import { Palette } from "lucide-react";
 
 type HobbyImage = {
   id: string;
@@ -76,45 +71,11 @@ export function FreeTimeGallery({ initialImages }: FreeTimeGalleryProps) {
 
   const showSkeletons = !isClient;
 
-  const handleNext = useCallback(() => {
-    if (selectedImageIndex === null) return;
-    setSelectedImageIndex((prevIndex) => (prevIndex! + 1) % filteredAndSortedImages.length);
-  }, [selectedImageIndex, filteredAndSortedImages.length]);
+  const lightboxImages = useMemo(
+    () => filteredAndSortedImages.map((item) => ({ src: item.imageUrl, alt: "A hobby image from the gallery" })),
+    [filteredAndSortedImages],
+  );
 
-  const handlePrev = useCallback(() => {
-    if (selectedImageIndex === null) return;
-    setSelectedImageIndex((prevIndex) => (prevIndex! - 1 + filteredAndSortedImages.length) % filteredAndSortedImages.length);
-  }, [selectedImageIndex, filteredAndSortedImages.length]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (selectedImageIndex === null) return;
-      if (e.key === 'ArrowRight') {
-        handleNext();
-      } else if (e.key === 'ArrowLeft') {
-        handlePrev();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [selectedImageIndex, handleNext, handlePrev]);
-
-  useEffect(() => {
-    if (selectedImageIndex !== null && filteredAndSortedImages.length > 1) {
-      const nextIndex = (selectedImageIndex + 1) % filteredAndSortedImages.length;
-      const nextImage = new window.Image();
-      nextImage.src = filteredAndSortedImages[nextIndex].imageUrl;
-      
-      const prevIndex = (selectedImageIndex - 1 + filteredAndSortedImages.length) % filteredAndSortedImages.length;
-      const prevImage = new window.Image();
-      prevImage.src = filteredAndSortedImages[prevIndex].imageUrl;
-    }
-  }, [selectedImageIndex, filteredAndSortedImages]);
-
-  const selectedImage = selectedImageIndex !== null ? filteredAndSortedImages[selectedImageIndex] : null;
 
   return (
     <section className="py-24 sm:py-32">
@@ -187,43 +148,12 @@ export function FreeTimeGallery({ initialImages }: FreeTimeGalleryProps) {
         </div>
       </div>
 
-       <Dialog open={selectedImageIndex !== null} onOpenChange={() => setSelectedImageIndex(null)}>
-        <DialogContent className="max-w-4xl p-0">
-           <DialogTitle className="sr-only">Enlarged image from gallery</DialogTitle>
-           <DialogDescription className="sr-only">
-             Image {selectedImageIndex !== null ? selectedImageIndex + 1 : 0} of {filteredAndSortedImages.length}. Use arrow keys to navigate.
-           </DialogDescription>
-          {selectedImage && (
-             <div className="relative" style={{ aspectRatio: `${selectedImage.width} / ${selectedImage.height}` }}>
-               <Image
-                  src={selectedImage.imageUrl}
-                  alt="A hobby image from the gallery"
-                  fill
-                  className="object-contain"
-                  priority={true}
-                />
-            </div>
-          )}
-           <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handlePrev}
-            className="absolute left-2 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-black/30 text-white hover:bg-black/50 hover:text-white"
-            aria-label="Previous image"
-           >
-             <ChevronLeft className="h-8 w-8" />
-           </Button>
-           <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleNext}
-            className="absolute right-2 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-black/30 text-white hover:bg-black/50 hover:text-white"
-            aria-label="Next image"
-           >
-             <ChevronRight className="h-8 w-8" />
-           </Button>
-        </DialogContent>
-      </Dialog>
+      <ImageLightbox
+        images={lightboxImages}
+        index={selectedImageIndex}
+        onIndexChange={setSelectedImageIndex}
+        title="Enlarged image from gallery"
+      />
     </section>
   );
 }

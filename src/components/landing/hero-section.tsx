@@ -31,69 +31,162 @@ function Words({ text }: { text: string }) {
   );
 }
 
-// Ambient glow under the video: the video is sampled into a tiny canvas, replayed
+// Ambient light leak under the video: the video is sampled into a tiny canvas, replayed
 // GLOW_DELAY_MS later, then blurred and stretched below the box so it lags behind
 // the picture. The sampling canvases are only ever drawn to, never read back, so the
 // cross-origin video doesn't taint anything.
+//
+// The same sampled frame feeds three layers, all in the video's own colours:
+//  - base: the whole frame, blurred behind the video, spilling below it as a soft haze
+//    that is strongest at the edge and trails off faintly (the mask on its wrapper).
+//  - hot: the bottom rows only, brightened and screened over the picture's bottom edge,
+//    so the light blows out right where the picture ends and cools as it falls away.
+//  - streak: the very bottom row stretched into a thin, bright line along the edge,
+//    its colour changing along with the picture, flickering like a lens flare.
 const GLOW_DELAY_MS = 250;
 const GLOW_TICK_MS = 50;
 // How much of each new frame is blended in per tick. Lower is smoother and slower:
 // 0.1 at 20 ticks a second settles in roughly a second.
 const GLOW_SMOOTHING = 0.1;
 
+// The sampled frame is W x H; each layer copies the rows from `sy` down, `sh` of them.
+// The base haze lags the picture (delayed and slow to change), which reads as ambient
+// light. The hot rim and streak sit right on the picture's edge, so they follow the
+// newest frame closely: a rim of a different colour from the picture above it would
+// look wrong.
+const GLOW_W = 24;
+const GLOW_H = 32;
+const GLOW_LAYERS = {
+  base: { sy: 0, sh: GLOW_H, opacity: "0.9", delayed: true, smoothing: GLOW_SMOOTHING },
+  hot: { sy: 22, sh: 10, opacity: "1", delayed: false, smoothing: 0.4 },
+  streak: { sy: 30, sh: 2, opacity: "1", delayed: false, smoothing: 0.5 },
+} as const;
+
+// Fade-outs, as masks on wrappers (a mask on a blurred element would cut its blur off).
+const FADE_SIDES = "linear-gradient(90deg, transparent, black 16%, black 84%, transparent)";
+// Over the picture the hot light ramps up across its last 1.25rem, then below the edge
+// it drops fast (a quarter by 1rem, a faint tail by 3.5rem). The box is 5rem tall with the
+// edge 1.25rem from its top.
+const FADE_HOT =
+  "linear-gradient(to bottom, transparent, black 1.25rem, rgba(0, 0, 0, 0.225) 2.25rem, rgba(0, 0, 0, 0.06) 3.5rem, transparent 5rem)";
+// The base haze box runs 6rem past the video's edge; the edge is `calc(100% - 6rem)`.
+const FADE_BASE =
+  "linear-gradient(to bottom, black calc(100% - 6rem), rgba(0, 0, 0, 0.3) calc(100% - 4.75rem), rgba(0, 0, 0, 0.11) calc(100% - 3rem), transparent)";
+
+// Sideways, the haze is gone at the canvas's own edge (5rem in from the wrapper's, 1rem
+// inside the video's) and eases up towards the middle. Safari doesn't soften a blurred
+// canvas's own edge, so the fade has to reach zero inside it or its box shows.
+const FADE_BASE_SIDES =
+  "linear-gradient(90deg, transparent 5rem, rgba(0, 0, 0, 0.55) 9rem, black 15rem, black calc(100% - 15rem), rgba(0, 0, 0, 0.55) calc(100% - 9rem), transparent calc(100% - 5rem))";
+
 function VideoGlow({ videoRef }: { videoRef: RefObject<HTMLVideoElement> }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const baseRef = useRef<HTMLCanvasElement>(null);
+  const hotRef = useRef<HTMLCanvasElement>(null);
+  const streakRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!video || !canvas || !ctx) return;
+    const layers = (
+      [
+        [baseRef.current, GLOW_LAYERS.base],
+        [hotRef.current, GLOW_LAYERS.hot],
+        [streakRef.current, GLOW_LAYERS.streak],
+      ] as const
+    ).flatMap(([canvas, layer]) => {
+      const ctx = canvas?.getContext("2d");
+      if (!canvas || !ctx) return [];
+      canvas.width = GLOW_W;
+      canvas.height = layer.sh;
+      return [{ canvas, ctx, ...layer }];
+    });
+    if (!video || layers.length === 0) return;
 
-    const W = 24;
-    const H = 32;
-    canvas.width = W;
-    canvas.height = H;
     const frames = Math.round(GLOW_DELAY_MS / GLOW_TICK_MS) + 1;
     const ring = Array.from({ length: frames }, () => {
       const c = document.createElement("canvas");
-      c.width = W;
-      c.height = H;
+      c.width = GLOW_W;
+      c.height = GLOW_H;
       return c;
     });
 
     let next = 0;
     let captured = 0;
     let shown = false;
+    let newest = ring[0];
     const timer = setInterval(() => {
       if (video.readyState < 2) return;
       try {
-        ring[next].getContext("2d")?.drawImage(video, 0, 0, W, H);
+        ring[next].getContext("2d")?.drawImage(video, 0, 0, GLOW_W, GLOW_H);
       } catch {
         return;
       }
+      newest = ring[next];
       captured++;
       next = (next + 1) % frames;
       // `next` now points at the oldest captured frame, from GLOW_DELAY_MS ago
       // (until the ring has filled, show the very first one).
       // Blend into what's already showing rather than replacing it, so a sudden
       // dark-to-bright cut eases in over about a second instead of popping.
-      ctx.globalAlpha = shown ? GLOW_SMOOTHING : 1;
-      ctx.drawImage(ring[captured >= frames ? next : 0], 0, 0);
-      ctx.globalAlpha = 1;
+      const delayedFrame = ring[captured >= frames ? next : 0];
+      for (const { canvas, ctx, sy, sh, opacity, delayed, smoothing } of layers) {
+        ctx.globalAlpha = shown ? smoothing : 1;
+        ctx.drawImage(delayed ? delayedFrame : newest, 0, sy, GLOW_W, sh, 0, 0, GLOW_W, sh);
+        ctx.globalAlpha = 1;
+        canvas.style.opacity = opacity;
+      }
       shown = true;
-      canvas.style.opacity = "0.9";
     }, GLOW_TICK_MS);
 
     return () => clearInterval(timer);
   }, [videoRef]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-x-4 top-[55%] h-[calc(45%+3.5rem)] w-[calc(100%-2rem)] opacity-0 blur-[36px] saturate-150 transition-opacity duration-1000"
-    />
+    <>
+      {/* Base haze, behind the video. The wrapper reaches 4rem past the video on each
+          side so its masks never cut the blur off at the picture's edge (that showed as
+          a hard vertical edge under a light scene); the side mask then fades the haze
+          out softly instead. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -inset-x-16 top-[55%] -bottom-24"
+        style={{ WebkitMaskImage: FADE_BASE, maskImage: FADE_BASE }}
+      >
+        <div className="absolute inset-0" style={{ WebkitMaskImage: FADE_BASE_SIDES, maskImage: FADE_BASE_SIDES }}>
+          <canvas
+            ref={baseRef}
+            className="absolute inset-x-20 top-0 h-full w-[calc(100%-10rem)] opacity-0 blur-[36px] saturate-150 transition-opacity duration-1000"
+          />
+        </div>
+      </div>
+
+      {/* Over the picture's bottom edge. Screened, so it adds light rather than covering it. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-0 motion-reduce:hidden"
+        style={{ mixBlendMode: "screen" }}
+      >
+        <div
+          className="absolute inset-x-0 animate-[bottom-glow-swell-a_11s_ease-in-out_infinite]"
+          style={{ top: "-1.25rem", height: "5rem", WebkitMaskImage: FADE_HOT, maskImage: FADE_HOT }}
+        >
+          <div className="absolute inset-0" style={{ WebkitMaskImage: FADE_SIDES, maskImage: FADE_SIDES }}>
+            <canvas
+              ref={hotRef}
+              className="absolute inset-0 h-full w-full opacity-0 blur-[14px] brightness-[1.6] saturate-[2] transition-opacity duration-1000"
+            />
+          </div>
+        </div>
+        <div
+          className="absolute inset-x-5 -bottom-px h-[3px] animate-[bottom-glow-flicker_7s_linear_infinite]"
+          style={{ WebkitMaskImage: FADE_SIDES, maskImage: FADE_SIDES }}
+        >
+          <canvas
+            ref={streakRef}
+            className="h-full w-full opacity-0 blur-[1px] brightness-[1.9] saturate-[1.6] transition-opacity duration-1000"
+          />
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -155,7 +248,7 @@ export function HeroSection() {
 
   return (
     <section
-      className="flex min-h-screen items-center bg-background/70 py-24 sm:py-32 lg:overflow-x-clip lg:py-[clamp(2rem,7cqh,8rem)]"
+      className="flex min-h-screen items-center bg-background/70 py-24 sm:py-32 overflow-x-clip lg:py-[clamp(2rem,7cqh,8rem)]"
       // Fills the window the page is in (the screen, when it's full screen), not always the whole screen.
       style={{ minHeight: '100cqh' }}
     >
