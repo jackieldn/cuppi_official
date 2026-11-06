@@ -3,6 +3,7 @@ import '../globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
 import { Dock } from '@/components/layout/dock';
+import { BottomGlow } from '@/components/layout/bottom-glow';
 import { CardFlightLayer } from '@/components/works/card-flight-layer';
 import { TitleBandLayer } from '@/components/works/title-band-layer';
 import { DesktopProvider } from '@/components/desktop/desktop-context';
@@ -43,7 +44,10 @@ export default function PortfolioRootLayout({
         <FirebaseClientProvider>
           <DesktopProvider>
             <TitleBandLayer />
-            <PageWindow>{children}</PageWindow>
+            <PageWindow>
+              {children}
+              <BottomGlow />
+            </PageWindow>
             <Dock />
             <CardFlightLayer />
             <Toaster />

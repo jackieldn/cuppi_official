@@ -69,16 +69,19 @@ export default function AppDetailsPage() {
 
   return (
     <div className="relative flex flex-col">
+      {/* Zero-height sticky rail so the button follows the page as it scrolls. */}
+      <div className="pointer-events-none sticky top-8 z-10 h-0">
        <Button
         asChild
         variant="outline"
-        className="absolute top-8 left-8 z-10 h-12 w-12 rounded-full"
+        className="pointer-events-auto absolute left-8 top-0 h-12 w-12 rounded-full"
         aria-label="Back to apps"
       >
         <Link href="/apps">
           <ChevronLeft className="h-6 w-6" />
         </Link>
       </Button>
+      </div>
       <main className="flex-1">
         <section className="bg-card py-24 sm:py-32">
           <div className="container mx-auto px-4">

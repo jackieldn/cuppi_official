@@ -77,6 +77,22 @@ const formSchema = z.object({
 
 type ProjectFormValues = z.infer<typeof formSchema>;
 
+function slugify(text: string): string {
+  return text
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// Object URLs for local files, revoked when the files change or the form unmounts.
+function useObjectUrls(files: File[]): string[] {
+  const urls = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
+  useEffect(() => () => urls.forEach((u) => URL.revokeObjectURL(u)), [urls]);
+  return urls;
+}
+
 interface ProjectFormProps {
   project?: Project | null;
   onFinished: () => void;
@@ -91,6 +107,12 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const [videosToDelete, setVideosToDelete] = useState<string[]>([]);
+  // Files picked for upload. Kept in state (not read off the <input>) so picking again
+  // adds to the earlier picks instead of replacing them.
+  const [pendingGallery, setPendingGallery] = useState<File[]>([]);
+  const [pendingVideos, setPendingVideos] = useState<File[]>([]);
+  // Once the slug is edited by hand, stop overwriting it from the title.
+  const [slugTouched, setSlugTouched] = useState(false);
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(formSchema),
@@ -138,6 +160,10 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
       setVideoPreviews(project.videoUrls || []);
       setImagesToDelete([]);
       setVideosToDelete([]);
+      setPendingGallery([]);
+      setPendingVideos([]);
+      // Existing projects keep their slug: it is the page URL.
+      setSlugTouched(true);
     } else {
       form.reset({
         title: '',
@@ -167,8 +193,31 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
       setVideoPreviews([]);
       setImagesToDelete([]);
       setVideosToDelete([]);
+      setPendingGallery([]);
+      setPendingVideos([]);
+      setSlugTouched(false);
     }
   }, [project, form]);
+
+  const coverFile = form.watch('image')?.[0] as File | undefined;
+  const blurredFile = form.watch('blurredImage')?.[0] as File | undefined;
+  const coverFiles = useMemo(() => (coverFile ? [coverFile] : []), [coverFile]);
+  const blurredFiles = useMemo(() => (blurredFile ? [blurredFile] : []), [blurredFile]);
+  const coverPreview = useObjectUrls(coverFiles)[0] ?? project?.imageUrl;
+  const blurredPreview = useObjectUrls(blurredFiles)[0] ?? project?.blurredImageUrl;
+  const pendingGalleryUrls = useObjectUrls(pendingGallery);
+  const pendingVideoUrls = useObjectUrls(pendingVideos);
+
+  const addFiles = (setter: React.Dispatch<React.SetStateAction<File[]>>, input: HTMLInputElement) => {
+    const picked = Array.from(input.files ?? []);
+    // Clear the input so the same file can be picked again after removing it.
+    input.value = '';
+    if (picked.length === 0) return;
+    setter((prev) => {
+      const seen = new Set(prev.map((f) => `${f.name}:${f.size}:${f.lastModified}`));
+      return [...prev, ...picked.filter((f) => !seen.has(`${f.name}:${f.size}:${f.lastModified}`))];
+    });
+  };
 
   const handleFileUpload = async (file: File, path: string): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -266,9 +315,9 @@ const deleteFilesFromStorage = async (urls: string[]) => {
         }
 
         let newVideoUrls: string[] = [];
-        if (data.videos && data.videos.length > 0) {
-            const uploadPromises = Array.from(data.videos).map((file: any) =>
-                handleFileUpload(file, `projects/videos/${Date.now()}_${file.name}`)
+        if (pendingVideos.length > 0) {
+            const uploadPromises = pendingVideos.map((file, i) =>
+                handleFileUpload(file, `projects/videos/${Date.now()}_${i}_${file.name}`)
             );
             newVideoUrls = await Promise.all(uploadPromises);
         }
@@ -276,8 +325,8 @@ const deleteFilesFromStorage = async (urls: string[]) => {
         const finalVideoUrls = [...videoPreviews, ...newVideoUrls];
 
         let newGalleryImageUrls: string[] = [];
-        if (data.newGalleryImages && data.newGalleryImages.length > 0) {
-            const uploadPromises = Array.from<File>(data.newGalleryImages).map((file, i) =>
+        if (pendingGallery.length > 0) {
+            const uploadPromises = pendingGallery.map((file, i) =>
                 handleFileUpload(file, `projects/gallery/${Date.now()}_${i}_${file.name}`)
             );
             newGalleryImageUrls = await Promise.all(uploadPromises);
@@ -359,7 +408,7 @@ const deleteFilesFromStorage = async (urls: string[]) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 border p-8 rounded-lg">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="min-w-0 space-y-8 border p-8 rounded-lg">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <FormField
               control={form.control}
@@ -368,7 +417,14 @@ const deleteFilesFromStorage = async (urls: string[]) => {
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Project Title" {...field} />
+                    <Input
+                      placeholder="Project Title"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        if (!slugTouched) form.setValue('slug', slugify(e.target.value), { shouldValidate: form.formState.isSubmitted });
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -381,8 +437,19 @@ const deleteFilesFromStorage = async (urls: string[]) => {
                 <FormItem>
                   <FormLabel>Slug</FormLabel>
                   <FormControl>
-                    <Input placeholder="project-title" {...field} />
+                    <Input
+                      placeholder="project-title"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        // Emptying the field hands control back to the title.
+                        setSlugTouched(e.target.value !== '');
+                      }}
+                    />
                   </FormControl>
+                  {!project && (
+                    <FormDescription>Generated from the title. Edit it to override.</FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -427,9 +494,10 @@ const deleteFilesFromStorage = async (urls: string[]) => {
                   <FormControl>
                     <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
                   </FormControl>
-                  <FormDescription>
-                    {project?.imageUrl && `Current image: ${project.imageUrl.substring(0,30)}...`}
-                  </FormDescription>
+                  {coverPreview && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={coverPreview} alt="Cover preview" className="mt-2 h-32 w-32 rounded-md object-cover" />
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -443,9 +511,12 @@ const deleteFilesFromStorage = async (urls: string[]) => {
                   <FormControl>
                     <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
                   </FormControl>
-                  <FormDescription>
-                    {project?.blurredImageUrl ? `Current image: ${project.blurredImageUrl.substring(0,30)}...` : "For locked projects."}
-                  </FormDescription>
+                  {blurredPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={blurredPreview} alt="Blurred cover preview" className="mt-2 h-32 w-32 rounded-md object-cover" />
+                  ) : (
+                    <FormDescription>For locked projects.</FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -542,22 +613,35 @@ const deleteFilesFromStorage = async (urls: string[]) => {
                     ))}
                 </div>
             )}
-             <FormField
-                control={form.control}
-                name="videos"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Add New Videos</FormLabel>
-                    <FormControl>
-                      <Input type="file" accept="video/*" multiple onChange={(e) => field.onChange(e.target.files)} />
-                    </FormControl>
-                     <FormDescription>
-                        You can select multiple videos.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {pendingVideos.length > 0 && (
+                <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">To upload on save ({pendingVideos.length})</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {pendingVideos.map((file, index) => (
+                            <div key={`${file.name}-${file.lastModified}`} className="relative group bg-muted rounded-md aspect-video">
+                                <video src={pendingVideoUrls[index]} className="w-full h-full object-cover rounded-md" />
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    aria-label={`Remove ${file.name}`}
+                                    onClick={() => setPendingVideos((prev) => prev.filter((_, i) => i !== index))}
+                                >
+                                    <XCircle className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+            <div className="space-y-2">
+                <Label htmlFor="project-new-videos">Add New Videos</Label>
+                <Input id="project-new-videos" type="file" accept="video/*" multiple onChange={(e) => addFiles(setPendingVideos, e.target)} />
+                <p className="text-sm text-muted-foreground">
+                    You can select multiple videos, and pick more than once: new picks are added to the earlier ones.
+                </p>
+            </div>
         </div>
         <div className="space-y-4 rounded-lg border p-4">
             <h3 className="font-medium">Gallery Images</h3>
@@ -579,22 +663,36 @@ const deleteFilesFromStorage = async (urls: string[]) => {
                     ))}
                 </div>
             )}
-             <FormField
-                control={form.control}
-                name="newGalleryImages"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Add New Gallery Images</FormLabel>
-                    <FormControl>
-                      <Input type="file" accept="image/*" multiple onChange={(e) => field.onChange(e.target.files)} />
-                    </FormControl>
-                     <FormDescription>
-                        You can select multiple images.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {pendingGallery.length > 0 && (
+                <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">To upload on save ({pendingGallery.length})</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {pendingGallery.map((file, index) => (
+                            <div key={`${file.name}-${file.lastModified}`} className="relative group">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={pendingGalleryUrls[index]} alt={file.name} className="rounded-md object-cover aspect-square w-full" />
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    aria-label={`Remove ${file.name}`}
+                                    onClick={() => setPendingGallery((prev) => prev.filter((_, i) => i !== index))}
+                                >
+                                    <XCircle className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+            <div className="space-y-2">
+                <Label htmlFor="project-new-gallery">Add New Gallery Images</Label>
+                <Input id="project-new-gallery" type="file" accept="image/*" multiple onChange={(e) => addFiles(setPendingGallery, e.target)} />
+                <p className="text-sm text-muted-foreground">
+                    You can select multiple images, and pick more than once: new picks are added to the earlier ones.
+                </p>
+            </div>
         </div>
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
              <FormField

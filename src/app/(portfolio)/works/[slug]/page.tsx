@@ -242,15 +242,20 @@ export default function ProjectPage() {
 
   return (
     <div className="relative flex flex-col">
+      {/* Zero-height sticky rail: the button stays in the top-left corner while the page
+          scrolls, without taking up any space in the layout. */}
+      <div
+        className={cn(
+          "pointer-events-none sticky z-10 h-0",
+          // Full screen on a desktop: the traffic lights float in the top-left corner (and grow
+          // under the cursor), so the back button sits underneath them.
+          desktop.available && desktop.mode === 'full' ? "top-24" : "top-8",
+        )}
+      >
        <Button
         asChild
         variant="outline"
-        // Full screen on a desktop: the traffic lights float in the top-left corner (and grow
-        // under the cursor), so the back button sits underneath them.
-        className={cn(
-          "absolute left-8 z-10 h-12 w-12 rounded-full",
-          desktop.available && desktop.mode === 'full' ? "top-24" : "top-8",
-        )}
+        className="pointer-events-auto absolute left-8 top-0 h-12 w-12 rounded-full"
         aria-label="Back to works"
       >
         <Link
@@ -270,6 +275,7 @@ export default function ProjectPage() {
           <ChevronLeft className="h-6 w-6" />
         </Link>
       </Button>
+      </div>
       <main className="flex-1 transition-opacity duration-300 ease-out" style={{ opacity: leaving ? 0 : 1 }}>
         {/* Section 1: Project Info */}
         <section ref={topSectionRef} className="py-24 sm:py-32">
