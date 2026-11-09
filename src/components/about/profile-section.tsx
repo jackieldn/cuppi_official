@@ -2,6 +2,8 @@
 
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
+import { Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { AboutProfile } from '@/lib/about-types';
 
 interface ProfileSectionProps {
@@ -122,6 +124,16 @@ export function ProfileSection({ profile }: ProfileSectionProps) {
       <p className="mt-4 max-w-3xl text-lg text-foreground/80 leading-relaxed">
         {profile.aboutText}
       </p>
+      {/* Only shown once a CV has been uploaded in the admin. The file is served as an
+          attachment, so the browser downloads it instead of navigating away. */}
+      {profile.cvUrl && (
+        <Button asChild size="lg" className="mt-8">
+          <a href={profile.cvUrl} download={profile.cvFileName || 'CV.pdf'}>
+            <Download aria-hidden="true" />
+            Download CV
+          </a>
+        </Button>
+      )}
     </section>
   );
 }

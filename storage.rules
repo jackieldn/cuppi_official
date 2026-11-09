@@ -102,6 +102,16 @@ service firebase.storage {
             && request.resource.contentType.matches('image/.*')));
     }
 
+    // The CV shown as the About page's "Download CV" button. PDFs only, up to
+    // 10 MB. A delete has no request.resource, so it only needs the admin check.
+    match /cv/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && (request.resource == null
+          || (request.resource.size < 10 * 1024 * 1024
+            && request.resource.contentType == 'application/pdf'));
+    }
+
     // Match all files for technical skills icons.
     match /skills/{allPaths=**} {
       allow read: if true;

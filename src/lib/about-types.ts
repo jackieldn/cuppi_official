@@ -3,6 +3,10 @@ export type AboutProfile = {
   name: string;
   aboutText: string;
   profilePictureUrl: string;
+  /** Download URL of the uploaded CV (a PDF). Unset until one is uploaded in the admin. */
+  cvUrl?: string;
+  /** The CV's original file name, shown in the admin and used as the downloaded name. */
+  cvFileName?: string;
 };
 
 export type TechnicalSkill = {

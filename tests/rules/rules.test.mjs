@@ -166,6 +166,18 @@ describe('Storage rules', () => {
     await assertFails(uploadString(ref(admin.storage(), 'journal_images/a.html'), 'x', 'raw', { contentType: 'text/html' }));
   });
 
+  test('CV file: public to read, admins only to change, PDFs under 10 MB only', async () => {
+    const pdf = { contentType: 'application/pdf' };
+    await assertFails(uploadString(ref(anon.storage(), 'cv/cv.pdf'), 'x', 'raw', pdf));
+    await assertFails(uploadString(ref(stranger.storage(), 'cv/cv.pdf'), 'x', 'raw', pdf));
+    await assertSucceeds(uploadString(ref(admin.storage(), 'cv/cv.pdf'), 'x', 'raw', pdf));
+    await assertSucceeds(getBytes(ref(anon.storage(), 'cv/cv.pdf')));
+    await assertFails(uploadString(ref(admin.storage(), 'cv/cv.pdf'), 'x', 'raw', { contentType: 'text/html' }));
+    await assertFails(uploadString(ref(admin.storage(), 'cv/cv.pdf'), 'x', 'raw', { contentType: 'image/png' }));
+    const tooBig = 'x'.repeat(10 * 1024 * 1024);
+    await assertFails(uploadString(ref(admin.storage(), 'cv/big.pdf'), tooBig, 'raw', pdf));
+  });
+
   test('nobody can upload outside the known folders', async () => {
     await assertFails(uploadString(ref(admin.storage(), 'random/a.txt'), 'x'));
   });

@@ -233,7 +233,9 @@
         "id": { "type": "string" },
         "name": { "type": "string" },
         "aboutText": { "type": "string" },
-        "profilePictureUrl": { "type": "string", "format": "uri" }
+        "profilePictureUrl": { "type": "string", "format": "uri" },
+        "cvUrl": { "type": "string", "format": "uri", "description": "Download URL of the uploaded CV (PDF). Optional: the Download CV button only shows when set." },
+        "cvFileName": { "type": "string", "description": "The CV's original file name." }
       },
       "required": ["id", "name", "aboutText", "profilePictureUrl"]
     },
