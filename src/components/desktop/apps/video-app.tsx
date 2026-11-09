@@ -1,11 +1,14 @@
 'use client';
 /* eslint-disable @next/next/no-img-element -- a tiny YouTube still on a desktop icon; next/image would need every thumbnail host allowed. */
 
-// The desktop's videos: files on the desktop that open in this window. It wears
+// The desktop's videos: files in the Favourites and Portfolio videos folders
+// open in this window, and the folder they came from is the playlist. It wears
 // the same skin as the music player (cover, seek bar, big accent play button,
-// playlist underneath). A video file gets those controls; a YouTube video keeps
-// YouTube's own inside the frame, because an embed can't be reskinned. Either
-// way it starts playing as soon as it opens. Managed at /admin/videos.
+// playlist underneath). A video file (every Portfolio video, since those are
+// uploads) gets those controls; a YouTube video keeps YouTube's own inside the
+// frame, because an embed can't be reskinned. Either way it starts playing as
+// soon as it opens. Favourites are managed at /admin/videos; Portfolio videos
+// are the ones uploaded to the Work projects.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Film, Maximize, Pause, Play, Volume2, VolumeX } from 'lucide-react';
@@ -14,16 +17,15 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Slider } from '@/components/ui/slider';
 import { formatTime } from '@/lib/music-player-types';
-import { videoSource, videoThumbnail } from '@/lib/desktop-video-source';
-import type { DesktopVideo } from '@/lib/desktop-videos-types';
+import { videoSource } from '@/lib/desktop-video-source';
 import { AppWindow } from '../app-window';
 import { useDesktop } from '../desktop-context';
-import { useDesktopVideos } from '../use-desktop-videos';
+import { FOLDERS, useFolderVideos } from '../use-folder-videos';
 import { iconButton } from './music-app';
 
-/** A video file on the desktop: a YouTube still where there is one, with a play badge. */
-export function VideoFileIcon({ video }: { video: DesktopVideo }) {
-  const thumb = videoThumbnail(video.url);
+/** A video file in a folder: a still where there is one (a YouTube frame, a project's cover), with a play badge. */
+export function VideoFileIcon({ thumbnail }: { thumbnail?: string | null }) {
+  const thumb = thumbnail ?? null;
   return (
     <span className="relative flex size-14 items-center justify-center overflow-hidden rounded-[14px] bg-[linear-gradient(145deg,#334155_0%,#0f172a_100%)] shadow-[0_6px_16px_-4px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.2)]">
       {thumb ? (
@@ -168,10 +170,10 @@ function FilePlayer({ src, title }: { src: string; title: string }) {
 }
 
 export function VideoApp() {
-  const { videoId, openVideo } = useDesktop();
-  const { videos, failed } = useDesktopVideos('2026');
-  // Only videos with a link the player can use.
-  const playlist = (videos ?? []).filter((v) => videoSource(v.url));
+  const { videoId, videoFolder, openVideo } = useDesktop();
+  // The folder the video came from is the playlist (every file in it has a link the player can use).
+  const { videos, failed } = useFolderVideos(videoFolder);
+  const playlist = videos ?? [];
   const current = playlist.find((v) => v.id === videoId) ?? playlist[0];
   // The visitor just double-clicked, so the sound is allowed to start.
   const source = current ? videoSource(current.url, true) : null;
@@ -191,7 +193,7 @@ export function VideoApp() {
 
       {videos && !current && (
         <p className="flex min-h-0 flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground">
-          {failed ? 'The videos could not be opened.' : 'No videos yet. Check back soon.'}
+          {failed ? 'The videos could not be opened.' : FOLDERS[videoFolder].empty}
         </p>
       )}
 
@@ -233,7 +235,7 @@ export function VideoApp() {
                     'flex w-full items-center gap-3 px-4 py-1.5 text-left text-[13px] transition-colors hover:bg-secondary/60 focus-visible:bg-secondary/60 focus-visible:outline-none',
                     isCurrent && 'text-accent',
                   )}
-                  onClick={() => !isCurrent && openVideo(v.id)}
+                  onClick={() => !isCurrent && openVideo(v.id, videoFolder)}
                 >
                   <span className="flex w-4 shrink-0 justify-center text-xs tabular-nums text-muted-foreground">
                     {isCurrent ? <Play className="size-3" fill="currentColor" /> : i + 1}

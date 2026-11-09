@@ -3,12 +3,15 @@
 // Every desktop app, by id. To add one: write its window component, add its id
 // to `AppId` in desktop-context, and list it here. Apps in DESKTOP_ICONS also
 // get an icon on the desktop, in that order down the right-hand side. (The
-// Videos app has no icon of its own: each video file on the desktop opens it.)
+// Videos app has no icon of its own: each video file in the Favourites and
+// Portfolio videos folders opens it.)
 
 import type { ComponentType } from 'react';
 import { Music2 } from 'lucide-react';
 
 import { useDesktop, type AppId } from '../desktop-context';
+import { FOLDERS } from '../use-folder-videos';
+import { FavouritesFolder, FavouritesIcon, PortfolioVideosFolder, PortfolioVideosIcon } from './folder-app';
 import { JournalApp, JournalIcon } from './journal-app';
 import { MusicApp } from './music-app';
 import { VideoApp } from './video-app';
@@ -19,6 +22,8 @@ const APPS: Record<AppId, ComponentType> = {
   music: MusicApp,
   journal: JournalApp,
   video: VideoApp,
+  favourites: FavouritesFolder,
+  'portfolio-videos': PortfolioVideosFolder,
 };
 
 // App-icon art: a rounded tile, like a macOS app icon.
@@ -34,6 +39,8 @@ function MusicIcon() {
 export const DESKTOP_ICONS: { id: AppId; label: string; Icon: () => JSX.Element }[] = [
   { id: 'music', label: 'Music', Icon: MusicIcon },
   { id: 'journal', label: 'Journal', Icon: JournalIcon },
+  { id: 'favourites', label: FOLDERS.favourites.label, Icon: FavouritesIcon },
+  { id: 'portfolio-videos', label: FOLDERS['portfolio-videos'].label, Icon: PortfolioVideosIcon },
 ];
 
 export function DesktopApps() {

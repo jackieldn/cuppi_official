@@ -1,6 +1,6 @@
 'use client';
 
-// App icons and video files on the desktop. By default they line up down the
+// App and folder icons on the desktop. By default they line up down the
 // right-hand side, top to bottom, and carry on in the next column along when
 // the column is full. Drag one anywhere and it stays there (remembered in this
 // browser). Click selects, double-click (or Enter) opens, like macOS.
@@ -8,12 +8,9 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
-import { videoSource } from '@/lib/desktop-video-source';
 import { DESKTOP_ICONS } from './apps';
-import { VideoFileIcon } from './apps/video-app';
 import { MENU_BAR_HEIGHT, useDesktop } from './desktop-context';
 import { clampGroupDelta, isAdditive } from './marquee-select';
-import { useDesktopVideos } from './use-desktop-videos';
 
 const CELL_W = 88;
 const CELL_H = 104;
@@ -79,7 +76,7 @@ interface GroupDrag {
   delta: Point;
 }
 
-/** One icon on the desktop: an app, or a video file. */
+/** One icon on the desktop: an app or a folder. */
 interface Entry {
   /** Also the key its position is remembered under. */
   id: string;
@@ -89,8 +86,7 @@ interface Entry {
 }
 
 export function DesktopIcons({ selected, onSelect }: DesktopIconsProps) {
-  const { openApp, openVideo } = useDesktop();
-  const { videos } = useDesktopVideos('2026');
+  const { openApp } = useDesktop();
   const [positions, setPositions] = useState<Positions>({});
   // Re-render on resize so default and clamped positions follow the screen.
   const [, setViewport] = useState(0);
@@ -102,18 +98,13 @@ export function DesktopIcons({ selected, onSelect }: DesktopIconsProps) {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // The apps, then the videos tagged for 2026 as files (only ones the player can open).
-  const entries: Entry[] = [
-    ...DESKTOP_ICONS.map(({ id, label, Icon }) => ({ id, label, art: <Icon />, open: () => openApp(id) })),
-    ...(videos ?? [])
-      .filter((v) => videoSource(v.url))
-      .map((v) => ({
-        id: `video:${v.id}`,
-        label: `${v.title}.mp4`,
-        art: <VideoFileIcon video={v} />,
-        open: () => openVideo(v.id),
-      })),
-  ];
+  // The apps and the folders. The videos themselves live inside the folders.
+  const entries: Entry[] = DESKTOP_ICONS.map(({ id, label, Icon }) => ({
+    id,
+    label,
+    art: <Icon />,
+    open: () => openApp(id),
+  }));
 
   const positionOf = (id: string): Point => {
     const index = entries.findIndex((entry) => entry.id === id);

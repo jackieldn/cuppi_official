@@ -4,8 +4,10 @@
 //   2006: PootTorrent, the fake BitTorrent client, lists them as downloaded
 //         files (plus a couple that are still slowly downloading). Opening one
 //         plays it in the Poot Media Player.
-//   2026: they sit on the desktop as video files and play in the Videos window,
-//         which wears the same skin as the music player.
+//   2026: they are the video files in the desktop's Favourites folder and play in
+//         the Videos window, which wears the same skin as the music player.
+//         (The desktop's other folder, Portfolio videos, holds the videos
+//         uploaded to the Work projects; see portfolio-videos.ts.)
 //
 // Managed at /admin/videos. Firestore: desktop_videos/{id}. Public read, admin write.
 

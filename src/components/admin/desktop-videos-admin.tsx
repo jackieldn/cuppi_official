@@ -2,7 +2,7 @@
 
 // Manages the videos on the desktop easter egg. Each is a link (YouTube or a
 // video file) tagged with the era it shows up in: 2006 puts it in the fake
-// BitTorrent client, 2026 puts it on the desktop as a video file. Both can be
+// BitTorrent client, 2026 puts it in the desktop's Favourites folder. Both can be
 // ticked. For 2006 you can also dress it up as a torrent: a messy file name, a
 // size, seeds and peers, or make it a slow download that never quite finishes.
 
@@ -75,7 +75,7 @@ const EMPTY: Form = {
 
 const ERA_LABEL: Record<VideoEra, string> = {
   '2006': '2006 – torrent client',
-  '2026': '2026 – desktop file',
+  '2026': '2026 – Favourites folder',
 };
 
 const num = (text: string): number | undefined => {
@@ -263,8 +263,7 @@ export function DesktopVideosAdmin() {
         order: lastOrder + 1,
         createdAt: serverTimestamp(),
       });
-      toast({ title: 'Video added', description: `${form.title.trim()} is on the desktop.` });
-      // Keep the era ticks: several videos in a row are usually for the same desktop.
+      toast({ title: 'Video added', description: `${form.title.trim()} is on the desktop.` });      // Keep the era ticks: several videos in a row are usually for the same desktop.
       setForm({ ...EMPTY, eras: form.eras });
     } catch (error) {
       console.error('Video add failed:', error);
@@ -319,8 +318,9 @@ export function DesktopVideosAdmin() {
         <h2 className="font-headline text-2xl font-bold">Add a Video</h2>
         <p className="text-sm text-muted-foreground">
           Paste a YouTube link (or the https address of a video file) and pick the desktop it belongs on. In 2006 it
-          appears in the torrent client and plays in the media player when double-clicked; in 2026 it sits on the
-          desktop as a video file. New videos go to the end of the list.
+          appears in the torrent client and plays in the media player when double-clicked; in 2026 it goes in the
+          Favourites folder on the desktop. New videos go to the end of the list. (The Portfolio videos folder
+          fills itself from the videos uploaded to your Work projects, so it is not managed here.)
         </p>
         <VideoFields id="new-video" form={form} onChange={setForm} />
         <Button onClick={handleAdd} disabled={saving || !form.title.trim()}>

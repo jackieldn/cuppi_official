@@ -22,8 +22,10 @@ import { DEFAULT_WALLPAPER, isWallpaperId, type WallpaperId } from './wallpapers
 
 export type WindowMode = 'full' | 'window';
 export type WindowState = 'open' | 'minimised' | 'closed';
+/** The folders on the desktop. Each holds video files that open in the Videos window. */
+export type FolderId = 'favourites' | 'portfolio-videos';
 /** Small apps that open in their own windows on the desktop. */
-export type AppId = 'wallpaper' | 'music' | 'journal' | 'video';
+export type AppId = 'wallpaper' | 'music' | 'journal' | 'video' | FolderId;
 /** Everything that can be in front: the page window or an app. */
 export type WindowId = 'page' | AppId;
 /** The Time Machine (the menu bar clock): which era the desktop is in. */
@@ -119,10 +121,12 @@ interface DesktopValue {
   /** Opens an app, or brings it to the front if it's already open. */
   openApp: (id: AppId) => void;
   closeApp: (id: AppId) => void;
-  /** The video the Videos window is playing (a desktop_videos id), or null when it isn't open. */
+  /** The video the Videos window is playing (an id from its folder), or null when it isn't open. */
   videoId: string | null;
-  /** Plays a video file from the desktop: opens the Videos window on it, or switches the open one. */
-  openVideo: (videoId: string) => void;
+  /** The folder that video came from: the Videos window plays that folder's files as its playlist. */
+  videoFolder: FolderId;
+  /** Plays a video file from a folder: opens the Videos window on it, or switches the open one. */
+  openVideo: (videoId: string, folder: FolderId) => void;
   /** Open apps whose window is minimised to the Dock. */
   minimisedApps: AppId[];
   /** Yellow button on an app window: shrink it to the Dock. Opening the app again restores it. */
@@ -156,6 +160,7 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
   const [openApps, setOpenApps] = useState<AppId[]>([]);
   const [minimisedApps, setMinimisedApps] = useState<AppId[]>([]);
   const [videoId, setVideoId] = useState<string | null>(null);
+  const [videoFolder, setVideoFolder] = useState<FolderId>('favourites');
   // Back to front.
   const [stack, setStack] = useState<WindowId[]>(['page']);
   const [era, setEra] = useState<Era>('now');
@@ -318,8 +323,9 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
   );
 
   const openVideo = useCallback(
-    (id: string) => {
+    (id: string, folder: FolderId) => {
       setVideoId(id);
+      setVideoFolder(folder);
       openApp('video');
     },
     [openApp],
@@ -362,6 +368,7 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
       openApp,
       closeApp,
       videoId,
+      videoFolder,
       openVideo,
       minimisedApps,
       minimiseApp,
@@ -389,6 +396,7 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
       openApp,
       closeApp,
       videoId,
+      videoFolder,
       openVideo,
       minimisedApps,
       minimiseApp,

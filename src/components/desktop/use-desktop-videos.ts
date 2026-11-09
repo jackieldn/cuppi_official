@@ -1,7 +1,7 @@
 'use client';
 
 // The desktop's videos (see src/lib/desktop-videos-types.ts), read once per
-// visit and shared: the 2026 desktop icons, the Videos window and the 2006
+// visit and shared: the 2026 Favourites folder, the Videos window and the 2006
 // torrent client all ask for them and only the first one hits Firestore.
 
 import { useEffect, useState } from 'react';
@@ -29,14 +29,15 @@ function loadAll(firestore: Firestore): Promise<DesktopVideo[]> {
  * The videos tagged for an era, in order. `videos` is null until they have
  * loaded. A failure stays here (`failed`) rather than going to the site-wide
  * error listener, which would take the whole page down for a bonus feature.
+ * With `enabled` false nothing is read (for a caller that only sometimes needs them).
  */
-export function useDesktopVideos(era: VideoEra) {
+export function useDesktopVideos(era: VideoEra, enabled = true) {
   const firestore = useFirestore();
   const [all, setAll] = useState<DesktopVideo[] | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!firestore) return;
+    if (!firestore || !enabled) return;
     let live = true;
     loadAll(firestore)
       .then((videos) => live && setAll(videos))
@@ -50,7 +51,7 @@ export function useDesktopVideos(era: VideoEra) {
     return () => {
       live = false;
     };
-  }, [firestore]);
+  }, [firestore, enabled]);
 
   return { videos: all ? all.filter((v) => hasEra(v, era)) : null, failed };
 }
