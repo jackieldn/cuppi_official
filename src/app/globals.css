@@ -72,6 +72,72 @@
     --chart-4: 52 67% 89%;
     --chart-5: 36 100% 50%;
   }
+  /*
+    Cuppi brand theme (cuppi.co.uk only; the portfolio has its own above).
+    Set on <body> in the (cuppi) layout. Two layers:
+      --c-*   the raw brand palette as space-separated RGB channels, so Tailwind
+              can do opacity (bg-cuppi-honey/40). Defined once, used everywhere.
+      shadcn  the semantic variables the existing pages already use (bg-background,
+              text-primary, border...), pointed at the palette, so every Cuppi page
+              re-skins without touching its markup.
+    Mood: the calm of a farm at 7am. Warm paper, espresso ink, meadow colours,
+    and Cuppi's own orange used sparingly for the one thing to click.
+    Palette source: "Golden Meadow" + the app's AccentColor (see docs/cuppi-brand.md).
+  */
+  .theme-cuppi {
+    --c-paper: 251 244 230;      /* page background: warm cream            #FBF4E6 */
+    --c-paper-deep: 244 232 208; /* sunken areas, wells                    #F4E8D0 */
+    --c-card: 255 250 240;       /* raised surfaces                        #FFFAF0 */
+    --c-ink: 43 33 24;           /* text: espresso, never pure black       #2B2118 */
+    --c-ink-soft: 107 90 74;     /* secondary text                         #6B5A4A */
+    --c-line: 230 215 188;       /* hairlines and borders                  #E6D7BC */
+
+    --c-brand: 214 90 31;        /* AccentColor (light): Cuppi orange      #D65A1F */
+    --c-brand-deep: 184 70 26;   /* buttons with light text (AA contrast)  #B8461A */
+    --c-brand-bright: 255 107 0; /* AccentColor (dark): glows, highlights  #FF6B00 */
+
+    --c-lake: 46 90 124;         /* deep blue: trust, security             #2E5A7C */
+    --c-sky: 127 177 209;        /* calm blue                              #7FB1D1 */
+    --c-moss: 107 132 73;        /* meadow green: growth, money            #6B8449 */
+    --c-moss-deep: 78 98 51;     /* moss with light text (AA contrast)     #4E6233 */
+    --c-honey: 242 165 59;       /* warm gold: celebration                 #F2A53B */
+
+    /* Soft tints of the above, for colour-block cards. */
+    --c-sky-soft: 211 230 241;   /* #D3E6F1 */
+    --c-moss-soft: 220 229 200;  /* #DCE5C8 */
+    --c-honey-soft: 252 230 190; /* #FCE6BE */
+    --c-clay-soft: 246 211 191;  /* #F6D3BF */
+
+    --font-headline: Fraunces;
+    --font-body: 'DM Sans';
+    color-scheme: light;
+
+    --background: 40 72% 94%;
+    --foreground: 28 28% 13%;
+    --card: 40 100% 97%;
+    --card-foreground: 28 28% 13%;
+    --popover: 40 100% 97%;
+    --popover-foreground: 28 28% 13%;
+    --primary: 17 75% 41%;
+    --primary-foreground: 40 100% 97%;
+    --secondary: 40 60% 88%;
+    --secondary-foreground: 28 28% 13%;
+    --muted: 40 55% 88%;
+    --muted-foreground: 29 18% 35%;
+    --accent: 35 88% 59%;
+    --accent-foreground: 28 28% 13%;
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 40 100% 97%;
+    --border: 40 50% 80%;
+    --input: 40 50% 80%;
+    --ring: 19 75% 48%;
+    --radius: 1rem;
+    --chart-1: 206 46% 33%;
+    --chart-2: 203 47% 66%;
+    --chart-3: 85 29% 35%;
+    --chart-4: 35 88% 59%;
+    --chart-5: 19 75% 48%;
+  }
   .dark {
     --background: 228 10% 10%;
     --foreground: 233 30% 90%;
@@ -514,4 +580,54 @@ body > div:has(iframe[title*="recaptcha"]) {
   .bottom-glow__amber, .bottom-glow__cream { opacity: 0.4; }
   .bottom-glow__hot { opacity: 0.7; }
   .bottom-glow__streak { opacity: 0.5; }
+}
+
+/*
+  Cuppi motion vocabulary (cuppi.co.uk). Three ideas, reused everywhere so the
+  whole site moves the same way:
+    rise  things grow up into place, like a seedling: ease out with a tiny overshoot
+    bob   ambient shapes drift slowly, so the page feels alive but never busy
+    pop   menus and panels unfold from where they were opened
+  The easing curves are the brand's "spring". Everything switches off for
+  prefers-reduced-motion.
+*/
+.theme-cuppi {
+  --ease-spring: cubic-bezier(0.22, 1.2, 0.36, 1);
+  --ease-calm: cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+@keyframes cuppi-rise {
+  from { opacity: 0; transform: translateY(8%) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes cuppi-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes cuppi-bob {
+  0%, 100% { transform: translateY(0) rotate(var(--bob-rot, 0deg)); }
+  50%      { transform: translateY(var(--bob-dist, -10px)) rotate(calc(var(--bob-rot, 0deg) * -1)); }
+}
+@keyframes cuppi-pop {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* On load (heroes). */
+.cuppi-rise    { animation: cuppi-rise 1s var(--ease-spring) both; animation-delay: var(--d, 0ms); }
+.cuppi-fade-up { animation: cuppi-fade-up 0.8s var(--ease-calm) both; animation-delay: var(--d, 0ms); }
+.cuppi-bob     { animation: cuppi-bob var(--bob-dur, 7s) ease-in-out infinite; animation-delay: var(--d, 0ms); }
+.cuppi-pop     { animation: cuppi-pop 0.28s var(--ease-calm) both; transform-origin: top center; }
+
+/* On scroll: waits for the Reveal wrapper to mark itself revealed. */
+.cuppi-on-reveal .cuppi-rise-scroll { opacity: 0; }
+[data-revealed] .cuppi-rise-scroll {
+  animation: cuppi-rise 1s var(--ease-spring) both;
+  animation-delay: calc(var(--reveal-delay, 0ms) + 120ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cuppi-rise, .cuppi-fade-up, .cuppi-bob, .cuppi-pop,
+  [data-revealed] .cuppi-rise-scroll { animation: none; }
+  .cuppi-on-reveal .cuppi-rise-scroll { opacity: 1; }
 }

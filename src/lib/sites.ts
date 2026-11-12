@@ -40,6 +40,7 @@ export function originForSite(site: Site, currentHost: string, protocol: string)
 // Top-level path segments that belong to each site. The middleware uses these
 // to keep each domain serving only its own pages.
 export const CUPPI_PATHS = [
+  'features',
   'blog',
   'faq',
   'support',

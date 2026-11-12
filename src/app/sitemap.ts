@@ -21,6 +21,7 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticRoutes = [
     '/',
+    '/features',
     '/blog',
     '/support',
     '/terms',
@@ -55,7 +56,15 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
     faqUrls = [{ url: `${baseUrl}/faq`, changeFrequency: 'weekly' as 'weekly', priority: 0.7 }];
   }
 
-  return [...staticUrls, ...faqUrls, ...postUrls];
+  const { getFeatures } = await import('@/lib/features');
+  const featureUrls = (await getFeatures()).map(f => ({
+    url: `${baseUrl}/features/${f.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as 'monthly',
+    priority: 0.7,
+  }));
+
+  return [...staticUrls, ...featureUrls, ...faqUrls, ...postUrls];
 }
 
 async function portfolioSitemap(): Promise<MetadataRoute.Sitemap> {

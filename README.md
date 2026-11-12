@@ -43,6 +43,20 @@ Set `PORTFOLIO_ENABLED` to `"false"` in `apphosting.yaml` and redeploy.
 jackiepoot.co.uk then shows a "Back soon" page and tells search engines to stay
 away; `/admin` still works. Set it back to `"true"` to restore the site.
 
+## Cuppi's look and feature pages
+
+Cuppi has its own design system, separate from the portfolio's: the `.theme-cuppi`
+block in `src/app/globals.css` (palette, fonts, motion) and the `cuppi` colours in
+`tailwind.config.ts`. The brand notes (colours, type, motion, the rules for using
+orange) are in [`docs/cuppi-brand.md`](docs/cuppi-brand.md).
+
+`/features` and `/features/<slug>` are built from reusable blocks
+(`src/components/cuppi/blocks`) driven by plain data (`src/lib/features-types.ts`).
+For now the data is `src/lib/features-seed.ts`; `getFeatures()` in
+`src/lib/features.ts` is the one place that will switch to the admin's data. The
+header's Features menu and the footer are built from the same list, so a new
+feature appears everywhere at once.
+
 ## Content
 
 - Cuppi home page, blog, FAQ and legal pages: Sanity (project `0uvqbyjc`).
