@@ -6,6 +6,9 @@ import { AppTile } from '@/components/cuppi/feature-icon';
 import { useAssetsReady } from '@/lib/use-assets-ready';
 import type { Feature } from '@/lib/features-types';
 
+/** The layout has room for this many icons; any further features are left out of the fan. */
+const FAN_MAX = 8;
+
 type Tile = Pick<Feature, 'slug' | 'name' | 'iconUrl' | 'icon' | 'tile'>;
 
 /**
@@ -74,7 +77,7 @@ export function AppFan({
             className="h-full w-full"
           />
         </div>
-        {features.map((f, i) => {
+        {features.slice(0, FAN_MAX).map((f, i) => {
           const side = i % 2 === 0 ? 1 : -1; // right, left, right, left...
           const k = Math.floor(i / 2) + 1; // 1 is the closest to Cuppi
           // Phone: k 1-2 in the first row beside Cuppi, k 3-4 in a second row below it.

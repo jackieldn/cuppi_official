@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrowRight, ChevronDown, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { APP_STORE_URL } from '@/lib/invite';
+import { isExternal, type DownloadButton, type MenuLink } from '@/lib/menu-settings';
 import { GROUP_LABELS, MENU_GROUPS, hasPage, type Feature, type FeatureGroup } from '@/lib/features-types';
 import { ActionButton } from '../action-button';
 import { AppTile } from '../feature-icon';
@@ -17,19 +17,13 @@ const ICON_URL =
 type MenuKey = 'features' | 'yours';
 type Group = { group: FeatureGroup; items: Feature[] };
 
-// The row of links, left to right. The two with `menu` open a panel of features.
-const LINKS: { key: string; label: string; href: string; menu?: MenuKey }[] = [
-  { key: 'features', label: 'Features', href: '/features', menu: 'features' },
-  { key: 'yours', label: 'Your Home', href: '/features', menu: 'yours' },
-  { key: 'blog', label: 'The Cosy Corner', href: '/blog' },
-  { key: 'faq', label: 'FAQ', href: '/faq' },
-  { key: 'support', label: 'Support', href: '/support' },
-];
+// The row of links, left to right, comes from the admin (see menu-settings.ts). The two with
+// a `panel` open a panel of features.
 
 // Width of each panel, in px, used to centre it under its button.
 const PANEL_WIDTH: Record<MenuKey, number> = { features: 720, yours: 288 };
 
-export function SiteHeader({ groups }: { groups: Group[] }) {
+export function SiteHeader({ groups, links: configured, download }: { groups: Group[]; links: MenuLink[]; download: DownloadButton }) {
   const pathname = usePathname();
   const [open, setOpen] = useState<MenuKey | null>(null); // desktop panel
   const [panelLeft, setPanelLeft] = useState(0);
@@ -46,6 +40,13 @@ export function SiteHeader({ groups }: { groups: Group[] }) {
 
   const byGroup = (keys: FeatureGroup[]) => groups.filter((g) => keys.includes(g.group));
 
+  // A panel link with nothing to show (every feature in it switched off) becomes a plain link to /features.
+  const links = configured.map((l) => {
+    const panel = l.panel;
+    const hasItems = panel ? byGroup(MENU_GROUPS.find((m) => m.key === panel)?.groups ?? []).some((g) => g.items.length > 0) : false;
+    return panel && !hasItems ? { ...l, panel: undefined } : l;
+  });
+
   // Which link is "current": a feature page belongs to the menu its feature lives in.
   const slug = pathname.startsWith('/features/') ? pathname.split('/')[2] : null;
   const current = slug ? groups.flatMap((g) => g.items).find((f) => f.slug === slug) : null;
@@ -53,8 +54,8 @@ export function SiteHeader({ groups }: { groups: Group[] }) {
     ? current.group === 'yours'
       ? 'yours'
       : 'features'
-    : (LINKS.find((l) => !l.menu && (pathname === l.href || pathname.startsWith(`${l.href}/`)))?.key ??
-      (pathname === '/features' ? 'features' : null));
+    : (links.find((l) => !l.panel && !isExternal(l.href) && (pathname === l.href || pathname.startsWith(`${l.href}/`)))?.key ??
+      (pathname === '/features' ? (links.find((l) => l.panel === 'features') ?? links.find((l) => l.href === '/features'))?.key ?? null : null));
 
   // The highlight rests on the current page's link and glides to whichever one is hovered.
   const moveTo = useCallback((key: string | null) => {
@@ -134,8 +135,8 @@ export function SiteHeader({ groups }: { groups: Group[] }) {
               )}
               style={{ transform: `translateX(${pill?.x ?? 0}px)`, width: pill?.w ?? 0 }}
             />
-            {LINKS.map((l) => {
-              const menu = l.menu;
+            {links.map((l) => {
+              const menu = l.panel;
               return menu ? (
                 <div key={l.key} onMouseEnter={() => openMenu(menu)} onMouseLeave={closeSoon}>
                   <button
@@ -169,6 +170,7 @@ export function SiteHeader({ groups }: { groups: Group[] }) {
                 <Link
                   key={l.key}
                   href={l.href}
+                  {...(isExternal(l.href) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                   ref={(el) => {
                     itemRefs.current[l.key] = el;
                   }}
@@ -187,9 +189,11 @@ export function SiteHeader({ groups }: { groups: Group[] }) {
           </div>
 
           <div className="flex items-center gap-1.5">
-            <ActionButton href={APP_STORE_URL} external>
-              Download
-            </ActionButton>
+            {download.visible && (
+              <ActionButton href={download.href} external={isExternal(download.href)}>
+                {download.label}
+              </ActionButton>
+            )}
             <button
               type="button"
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-cuppi-honey-soft lg:hidden"
@@ -245,43 +249,48 @@ export function SiteHeader({ groups }: { groups: Group[] }) {
         {mobileOpen && (
           <div className="cuppi-pop absolute left-0 right-0 top-full z-50 mt-2 lg:hidden">
             <div className="max-h-[75vh] overflow-y-auto rounded-[2rem] border border-cuppi-line bg-cuppi-card p-3 shadow-[0_24px_60px_-24px_rgba(43,33,24,0.45)]">
-              {MENU_GROUPS.map((m) => (
-                <div key={m.key}>
-                  <button
-                    type="button"
-                    onClick={() => setMobileSection((cur) => (cur === m.key ? null : m.key))}
-                    aria-expanded={mobileSection === m.key}
-                    className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-lg font-medium hover:bg-cuppi-honey-soft"
-                  >
-                    {m.label}
-                    <ChevronDown className={cn('h-5 w-5 transition-transform duration-300', mobileSection === m.key && 'rotate-180')} aria-hidden />
-                  </button>
-                  {mobileSection === m.key && (
-                    <div className="px-1 pb-2">
-                      {byGroup(m.groups).map(({ group, items }) => (
-                        <div key={group} className="pb-1">
-                          {m.key === 'features' && (
-                            <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-[0.14em] text-cuppi-ink-soft">{GROUP_LABELS[group].title}</p>
-                          )}
-                          {items.map((f) => (
-                            <MenuItem key={f.slug} feature={f} />
-                          ))}
-                        </div>
-                      ))}
-                      {m.key === 'features' && (
-                        <Link href="/features" className="block px-3 py-2 text-sm font-semibold text-cuppi-brand-deep">
-                          See every feature →
-                        </Link>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-              {LINKS.filter((l) => !l.menu).map((l) => (
-                <Link key={l.key} href={l.href} className="block rounded-2xl px-4 py-3 text-lg font-medium hover:bg-cuppi-honey-soft">
-                  {l.label}
-                </Link>
-              ))}
+              {links.map((l) => {
+                const m = l.panel ? MENU_GROUPS.find((g) => g.key === l.panel) : undefined;
+                if (!m) {
+                  return (
+                    <Link key={l.key} href={l.href} {...(isExternal(l.href) ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="block rounded-2xl px-4 py-3 text-lg font-medium hover:bg-cuppi-honey-soft">
+                      {l.label}
+                    </Link>
+                  );
+                }
+                return (
+                  <div key={l.key}>
+                    <button
+                      type="button"
+                      onClick={() => setMobileSection((cur) => (cur === m.key ? null : m.key))}
+                      aria-expanded={mobileSection === m.key}
+                      className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-lg font-medium hover:bg-cuppi-honey-soft"
+                    >
+                      {l.label}
+                      <ChevronDown className={cn('h-5 w-5 transition-transform duration-300', mobileSection === m.key && 'rotate-180')} aria-hidden />
+                    </button>
+                    {mobileSection === m.key && (
+                      <div className="px-1 pb-2">
+                        {byGroup(m.groups).map(({ group, items }) => (
+                          <div key={group} className="pb-1">
+                            {m.key === 'features' && (
+                              <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-[0.14em] text-cuppi-ink-soft">{GROUP_LABELS[group].title}</p>
+                            )}
+                            {items.map((f) => (
+                              <MenuItem key={f.slug} feature={f} />
+                            ))}
+                          </div>
+                        ))}
+                        {m.key === 'features' && (
+                          <Link href="/features" className="block px-3 py-2 text-sm font-semibold text-cuppi-brand-deep">
+                            See every feature →
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

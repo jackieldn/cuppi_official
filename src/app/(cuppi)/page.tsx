@@ -5,13 +5,20 @@ import { WhatsNew } from '@/components/cuppi/whats-new';
 import { AppFan } from '@/components/cuppi/home/app-fan';
 import { getFeatures } from '@/lib/features';
 import { homeHero } from '@/lib/home-hero';
+import { refreshMetadata, refreshPage } from '@/components/cuppi/section-gate';
 
 // "What's new" re-checks the latest Cosy Corner posts every minute. The hero is
 // set in src/lib/home-hero.ts; everything else that used to live on this page
 // now has its own page under /features.
 export const revalidate = 60;
 
+export const generateMetadata = () => refreshMetadata('home');
+
 export default async function CuppiPage() {
+  // The home page can be switched to "refresh in progress" in the admin (Cuppi pages).
+  const holding = await refreshPage('home');
+  if (holding) return holding;
+
   // The icons that slide out of Cuppi: every feature in the Features menu, in menu order.
   const features = (await getFeatures()).filter((f) => f.group !== 'yours');
 

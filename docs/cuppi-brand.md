@@ -248,3 +248,34 @@ The support page uses it at the top of its hero, centred above the title (`PageH
 `align="center"`, `top` and `pattern`). There it opens once the page, fonts, icons and the hero's pattern
 have all downloaded (`when="loaded"`, using the same `useAssetsReady` hook as the home hero's opening shot)
 rather than on scroll.
+
+## Editing the site from the admin
+
+The admin (jackiepoot.co.uk/admin, signed in as an admin) has a "Cuppi website" section in its sidebar.
+
+- **Cuppi menu** (`/admin/cuppi-menu`): the order, names, addresses and on/off switch of every link in the
+  top menu, up to four extra links of your own, and the Download button (name, link, on/off). Saved as one
+  document, `cuppi_menu/main`. "Features" and "Your Home" open the feature panels, so only their names can change.
+- **Cuppi features** (`/admin/cuppi-features`): every in-app feature, listed by where it appears. Per feature:
+  **In menu** (off hides it from the top menu only), **Published** (off removes it from the whole site),
+  reorder, edit, and **Add a feature**: a name, a tile colour and the icon picture (a transparent PNG glyph)
+  are enough for it to appear in the menu on its own, as "Coming soon" until it is given a page (headline,
+  intro, picture). Each is a document in `cuppi_features/{slug}`; for a built-in feature it holds only the
+  fields changed, and "Undo my changes" deletes it.
+
+- **Cuppi pages** (`/admin/cuppi-pages`): a switch per section (Home, Cosy Corner, FAQ, Support, Features) between
+  **Live** and **Refresh in progress**, for while it is being updated. A switched-off section shows a friendly holding
+  page (menu and footer kept, links to the live parts), is marked noindex and left out of the sitemap. Saved as
+  `cuppi_pages/status`; with nothing saved, Features shows the holding page and the rest are live. The legal pages
+  (Privacy, Terms, Family Safety, Security) are not sections, so they are always reachable. Wired in with
+  `SectionGate` in each section's `layout.tsx` (and `refreshPage()` for the home page).
+
+How it reaches the site: `getFeatures()` (`src/lib/features.ts`) merges those documents over the built-in list
+(`mergeFeatures`), and the header reads the menu (`src/lib/cuppi-site-data.ts`). Pages re-check every minute.
+If the database cannot be reached, the built-in features and the default menu are used, so the site never
+depends on it. Everything read back goes through `readOverride` / `resolveMenu`, which keep only fields of the
+right type and addresses that are safe (a path on this site, or https), so a bad document cannot break a page.
+
+Limits for now: the sections lower down a feature page (cards, callouts) are still written in code (an
+added feature's page has just its top block); the icon fan on the home page holds eight features; the
+firestore.rules and storage.rules changes must be deployed before saving works.

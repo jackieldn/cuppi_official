@@ -1,14 +1,16 @@
+import { getFeatureOverrides } from './cuppi-site-data';
 import { featuresSeed } from './features-seed';
-import { GROUP_ORDER, hasPage, validateFeatures, type Feature, type FeatureGroup, type PageFeature } from './features-types';
+import { GROUP_ORDER, hasPage, isPublished, mergeFeatures, validateFeatures, type Feature, type FeatureGroup, type PageFeature } from './features-types';
 
-// One place the site asks for features. Today it returns the seed. When the
-// admin arrives this becomes "read the cuppi_features collection, and fall back
-// to the seed if it is empty or unreachable" (the same pattern as the home
-// page), and nothing that calls it has to change.
+// One place the site asks for features: the seed (features-seed.ts) with the admin's edits
+// applied (the cuppi_features collection), keeping only the published ones. If the database
+// cannot be reached the seed is used as it is, so the site always has its features.
+// Menu visibility is a separate switch: see inMenu() in features-types.
 export async function getFeatures(): Promise<Feature[]> {
-  const problems = validateFeatures(featuresSeed);
+  const features = mergeFeatures(featuresSeed, await getFeatureOverrides());
+  const problems = validateFeatures(features);
   if (problems.length > 0) console.error(`Cuppi features have problems:\n- ${problems.join('\n- ')}`);
-  return [...featuresSeed].sort((a, b) => a.order - b.order);
+  return features.filter(isPublished);
 }
 
 /** Only the features that have a page of their own. */

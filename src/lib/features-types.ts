@@ -99,11 +99,19 @@ export type Feature = {
   /** A feature with status 'soon' has no page yet: it shows in menus, but does not link. */
   hero?: FeatureHero;
   blocks?: FeatureBlock[];
+  /** Off hides the feature everywhere (menus, overview, footer, its page). Missing means on. */
+  published?: boolean;
+  /** Off keeps the feature out of the top menu only; its page and the overview still show it. Missing means on. */
+  showInMenu?: boolean;
 };
 
 /** A feature that has a page of its own. */
 export type PageFeature = Feature & { hero: FeatureHero; blocks: FeatureBlock[] };
 export const hasPage = (f: Feature): f is PageFeature => f.status !== 'soon' && !!f.hero && !!f.blocks;
+
+export const isPublished = (f: Feature): boolean => f.published !== false;
+/** Listed in the top menu: published, and not switched off for the menu. */
+export const inMenu = (f: Feature): boolean => isPublished(f) && f.showInMenu !== false;
 
 export const GROUP_LABELS: Record<FeatureGroup, { title: string; blurb: string }> = {
   family: { title: 'Family life', blurb: 'The people and pets you share a home with' },
@@ -154,4 +162,119 @@ export function validateFeatures(features: Feature[]): string[] {
     }
   }
   return problems;
+}
+
+// ---------------------------------------------------------------------------
+// Edits made in the admin. The seed above is the starting point; a document in the
+// cuppi_features collection (one per slug) changes a seed feature field by field, or,
+// for a slug the seed does not have, is a whole new feature. Everything read from the
+// database goes through readOverride, which keeps only fields of the right type, so a
+// bad value can hide a field's edit but never break a page.
+// ---------------------------------------------------------------------------
+
+export const FEATURE_ICONS: FeatureIcon[] = ['home', 'cake', 'bin', 'paw', 'receipt', 'wallet', 'palette', 'shield', 'user', 'users', 'star', 'sparkles'];
+export const TILE_COLOURS_LIST: TileColour[] = ['pink', 'green', 'blue', 'amber'];
+export const FEATURE_STATUSES: FeatureStatus[] = ['live', 'preview', 'soon'];
+const TINTS_LIST: FeatureTint[] = ['honey', 'sky', 'moss', 'clay', 'lake'];
+
+/** The page tint a new feature gets from its tile colour. */
+export const TILE_TINT: Record<TileColour, FeatureTint> = { pink: 'clay', green: 'moss', blue: 'sky', amber: 'honey' };
+
+export type FeatureOverride = Partial<Feature> & { slug: string };
+
+const STORAGE_PREFIX = 'https://firebasestorage.googleapis.com/v0/b/studio-5700093446-89b93.firebasestorage.app/';
+
+/**
+ * A picture address that is safe to give next/image: a file on this site, or one in the site's
+ * own Firebase Storage bucket (where admin uploads go). next/image refuses any other host, so
+ * letting one through here would break the page instead of just hiding the picture.
+ */
+export function safeImageUrl(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const v = value.trim();
+  if (v.startsWith('/') && !v.startsWith('//') && !/\s/.test(v)) return v;
+  return v.startsWith(STORAGE_PREFIX) && !/\s/.test(v) ? v : undefined;
+}
+
+const str = (v: unknown, max = 600): string | undefined => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : undefined);
+
+/** Turns a stored document into an override, dropping anything that is not the right type. */
+export function readOverride(slug: string, raw: unknown): FeatureOverride | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const o: FeatureOverride = { slug };
+  const name = str(r.name, 60);
+  if (name) o.name = name;
+  if (typeof r.tagline === 'string') o.tagline = r.tagline.trim().slice(0, 200);
+  if (FEATURE_ICONS.includes(r.icon as FeatureIcon)) o.icon = r.icon as FeatureIcon;
+  if (TINTS_LIST.includes(r.tint as FeatureTint)) o.tint = r.tint as FeatureTint;
+  if (GROUP_ORDER.includes(r.group as FeatureGroup)) o.group = r.group as FeatureGroup;
+  if (FEATURE_STATUSES.includes(r.status as FeatureStatus)) o.status = r.status as FeatureStatus;
+  if (TILE_COLOURS_LIST.includes(r.tile as TileColour)) o.tile = r.tile as TileColour;
+  if (typeof r.order === 'number' && Number.isFinite(r.order)) o.order = r.order;
+  const iconUrl = safeImageUrl(r.iconUrl);
+  if (iconUrl) o.iconUrl = iconUrl;
+  if (typeof r.published === 'boolean') o.published = r.published;
+  if (typeof r.showInMenu === 'boolean') o.showInMenu = r.showInMenu;
+  const h = r.hero as Record<string, unknown> | undefined;
+  const heroImage = h && typeof h === 'object' ? (h.image as Record<string, unknown> | undefined) : undefined;
+  const heroImageUrl = safeImageUrl(heroImage?.url);
+  if (h && typeof h === 'object' && str(h.headline, 200) && heroImageUrl) {
+    o.hero = {
+      headline: str(h.headline, 200)!,
+      intro: typeof h.intro === 'string' ? h.intro.trim().slice(0, 600) : '',
+      image: { url: heroImageUrl, alt: str(heroImage?.alt, 200) ?? '', ...(heroImage?.fit === 'photo' ? { fit: 'photo' as const } : {}) },
+      ...(h.imageStyle === 'wide' ? { imageStyle: 'wide' as const } : {}),
+    };
+  }
+  if (Array.isArray(r.blocks)) o.blocks = r.blocks as FeatureBlock[];
+  return o;
+}
+
+/**
+ * The seed with the admin's edits applied, in menu order. A seed feature takes whatever
+ * fields its override has. An override for a slug the seed lacks is a new feature, kept
+ * only if it has a name. A feature with a page needs `blocks` (an empty list is fine), so
+ * one is supplied whenever an edit gives a feature its first hero.
+ */
+export function mergeFeatures(seed: Feature[], overrides: FeatureOverride[]): Feature[] {
+  const bySlug = new Map(overrides.map((o) => [o.slug, o]));
+  const merged: Feature[] = seed.map((f) => {
+    const o = bySlug.get(f.slug);
+    if (!o) return f;
+    const m: Feature = { ...f, ...o };
+    if (m.hero && !m.blocks) m.blocks = [];
+    return m;
+  });
+  const known = new Set(seed.map((f) => f.slug));
+  for (const o of overrides) {
+    if (known.has(o.slug) || !o.name) continue;
+    const tile = o.tile ?? 'amber';
+    merged.push({
+      ...o,
+      slug: o.slug,
+      name: o.name,
+      tagline: o.tagline ?? '',
+      icon: o.icon ?? 'sparkles',
+      tile,
+      tint: o.tint ?? TILE_TINT[tile],
+      group: o.group ?? 'home',
+      status: o.status ?? 'live',
+      order: o.order ?? 1000,
+      ...(o.hero ? { blocks: o.blocks ?? [] } : {}),
+    });
+  }
+  return merged.sort((a, b) => a.order - b.order);
+}
+
+/** A slug for a new feature from its name: lowercase words joined by hyphens. */
+export function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+    .replace(/-+$/, '');
 }
