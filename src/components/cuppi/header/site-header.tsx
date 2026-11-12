@@ -8,6 +8,7 @@ import { ArrowRight, ChevronDown, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { APP_STORE_URL } from '@/lib/invite';
 import { GROUP_LABELS, MENU_GROUPS, hasPage, type Feature, type FeatureGroup } from '@/lib/features-types';
+import { ActionButton } from '../action-button';
 import { AppTile } from '../feature-icon';
 
 const ICON_URL =
@@ -116,7 +117,7 @@ export function SiteHeader({ groups }: { groups: Group[] }) {
       <div className="relative mx-auto max-w-6xl" ref={frameRef}>
         <nav
           aria-label="Main"
-          className="flex items-center justify-between gap-2 rounded-full border border-cuppi-line bg-cuppi-card/85 py-2 pl-3 pr-2 backdrop-blur-md"
+          className="flex items-center justify-between gap-2 rounded-full border border-cuppi-line bg-cuppi-card/85 py-2 pl-[29px] pr-2 backdrop-blur-md"
         >
           <Link href="/" aria-label="Cuppi Home, home page" className="flex shrink-0 items-center gap-2.5 pr-2">
             <Image src={ICON_URL} alt="" width={38} height={38} />
@@ -186,14 +187,9 @@ export function SiteHeader({ groups }: { groups: Group[] }) {
           </div>
 
           <div className="flex items-center gap-1.5">
-            <a
-              href={APP_STORE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full bg-cuppi-brand px-5 py-2.5 text-[0.95rem] font-semibold text-cuppi-card transition-transform duration-300 [transition-timing-function:var(--ease-spring)] hover:scale-105"
-            >
+            <ActionButton href={APP_STORE_URL} external>
               Download
-            </a>
+            </ActionButton>
             <button
               type="button"
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-cuppi-honey-soft lg:hidden"

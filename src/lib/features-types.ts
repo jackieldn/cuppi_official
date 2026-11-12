@@ -18,6 +18,9 @@ export type FeatureIcon =
   | 'wallet'
   | 'palette'
   | 'shield'
+  | 'user'
+  | 'users'
+  | 'star'
   | 'sparkles';
 
 /**

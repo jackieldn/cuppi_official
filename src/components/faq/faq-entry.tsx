@@ -11,15 +11,15 @@ import type { FaqEntry } from '@/lib/faq-model';
  */
 export function FaqEntryItem({ entry }: { entry: FaqEntry }) {
   return (
-    <details id={entry.slug} data-faq-entry className="group/entry scroll-mt-4 border-b border-secondary">
-      <summary className="group/summary grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 rounded-lg px-1 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-        <h3 className="col-start-1 text-base font-semibold leading-snug group-hover/summary:text-primary sm:text-lg">{entry.question}</h3>
+    <details id={entry.slug} data-faq-entry className="group/entry scroll-mt-24 border-b border-cuppi-line">
+      <summary className="group/summary grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 rounded-2xl px-1 py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cuppi-brand [&::-webkit-details-marker]:hidden">
+        <h3 className="col-start-1 text-lg font-semibold leading-snug transition-colors group-hover/summary:text-cuppi-brand-deep">{entry.question}</h3>
         {entry.preview && (
-          <span className="col-start-1 block truncate text-sm text-muted-foreground group-open/entry:hidden">{entry.preview}</span>
+          <span className="col-start-1 block truncate text-sm text-cuppi-ink-soft group-open/entry:hidden">{entry.preview}</span>
         )}
         <ChevronDown
           aria-hidden="true"
-          className="col-start-2 row-span-2 row-start-1 h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open/entry:rotate-180"
+          className="col-start-2 row-span-2 row-start-1 h-5 w-5 shrink-0 text-cuppi-ink-soft transition-transform group-open/entry:rotate-180"
         />
       </summary>
 
@@ -28,11 +28,11 @@ export function FaqEntryItem({ entry }: { entry: FaqEntry }) {
           <PortableText value={entry.answer} variant="answer" />
         </div>
         <FaqFeedback answerId={entry.id} />
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-cuppi-ink-soft">
           <a
             href={`#${entry.slug}`}
             data-faq-permalink
-            className="group/link inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1 font-medium hover:border-primary hover:text-primary"
+            className="group/link inline-flex items-center gap-1.5 rounded-full border border-cuppi-line bg-cuppi-card px-3 py-1 font-medium hover:bg-cuppi-honey-soft"
           >
             <Link2 aria-hidden="true" className="h-3.5 w-3.5" />
             <span className="group-data-[copied=true]/link:hidden">Copy link</span>

@@ -1,5 +1,6 @@
 import { CuppiFooter } from '@/components/cuppi/footer';
 import { CuppiHeader } from '@/components/cuppi/header';
+import { ActionButton } from '@/components/cuppi/action-button';
 import { Button } from '@/components/ui/button';
 import { APP_STORE_URL, inviteDeepLink } from '@/lib/invite';
 
@@ -22,9 +23,9 @@ export function InviteLanding({ token }: { token: string | null }) {
 
               <div className="bg-card border rounded-2xl p-6 mb-6 text-left">
                 <h2 className="font-headline text-xl font-bold mb-3">Already have Cuppi?</h2>
-                <Button asChild size="lg" className="w-full bg-[#f97316] hover:bg-[#ea580c] text-white font-bold">
-                  <a href={inviteDeepLink(token)}>Open in Cuppi</a>
-                </Button>
+                <ActionButton href={inviteDeepLink(token)} plain size="lg" className="w-full">
+                  Open in Cuppi
+                </ActionButton>
               </div>
 
               <div className="bg-card border rounded-2xl p-6 mb-6 text-left">

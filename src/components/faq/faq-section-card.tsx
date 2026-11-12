@@ -1,31 +1,26 @@
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { entryPath, sectionPath, type FaqSection } from '@/lib/faq-model';
+import { ArrowUpRight } from 'lucide-react';
+import { AppTile } from '@/components/cuppi/feature-icon';
+import { FALLBACK_TILE, FAQ_TILES } from '@/lib/faq-visuals';
+import { sectionPath, type FaqSection } from '@/lib/faq-model';
 
-/** A topic on the FAQ home page: its name, what it covers, and its first few questions. */
+/** A help topic on the help page: its tile, its name and one line. The questions are one click away. */
 export function FaqSectionCard({ section }: { section: FaqSection }) {
-  const count = section.entries.length;
+  const tile = FAQ_TILES[section.id] ?? FALLBACK_TILE;
   return (
-    <article className="flex min-w-0 flex-col gap-2.5 rounded-2xl border bg-card p-5 transition-colors hover:border-primary sm:p-6">
-      <h3 className="font-headline text-xl font-bold leading-tight sm:text-2xl">
-        <Link href={sectionPath(section.id)} className="hover:text-primary">
-          {section.label}
-        </Link>
-      </h3>
-      {section.blurb && <p className="text-sm text-muted-foreground sm:text-base">{section.blurb}</p>}
-      <ul className="mt-1 grid">
-        {section.entries.slice(0, 3).map((entry) => (
-          <li key={entry.id} className="border-t border-secondary">
-            <Link href={entryPath(entry)} className="block py-1.5 text-sm text-foreground/80 hover:text-primary sm:text-base">
-              {entry.question}
-            </Link>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-auto pt-2 text-xs tabular-nums text-muted-foreground">
-        {count} {count === 1 ? 'answer' : 'answers'}
-        {section.updatedAt ? ` · Updated ${format(new Date(section.updatedAt), 'd MMM yyyy')}` : ''}
-      </p>
-    </article>
+    <Link
+      href={sectionPath(section.id)}
+      className="group flex items-center gap-5 rounded-[2rem] border border-cuppi-line bg-cuppi-card p-5 transition-transform duration-500 [transition-timing-function:var(--ease-spring)] hover:-translate-y-1 sm:p-6"
+    >
+      <AppTile feature={{ ...tile, name: section.label }} className="h-16 w-16" />
+      <div className="min-w-0 flex-1">
+        <h3 className="font-headline text-2xl leading-tight">{section.label}</h3>
+        {section.blurb && <p className="mt-1 line-clamp-2 text-cuppi-ink-soft">{section.blurb}</p>}
+      </div>
+      <ArrowUpRight
+        aria-hidden="true"
+        className="h-5 w-5 shrink-0 text-cuppi-ink-soft transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-cuppi-brand-deep"
+      />
+    </Link>
   );
 }

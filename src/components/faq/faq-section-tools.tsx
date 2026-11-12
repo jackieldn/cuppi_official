@@ -90,7 +90,7 @@ export function ExpandAllButton({ className }: { className?: string }) {
         setExpanded(next);
       }}
       className={cn(
-        'inline-flex items-center rounded-lg border bg-card px-3.5 py-2 text-sm font-semibold transition-colors hover:border-primary hover:text-primary',
+        'inline-flex min-h-12 items-center rounded-full border border-cuppi-line bg-cuppi-card px-5 text-sm font-semibold transition-colors hover:bg-cuppi-honey-soft',
         className,
       )}
     >

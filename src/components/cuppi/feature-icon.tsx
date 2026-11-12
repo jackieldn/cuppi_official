@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { Cake, House, PawPrint, Receipt, ShieldCheck, Sparkles, Trash2, Wallet, Palette, type LucideIcon } from 'lucide-react';
+import { Cake, House, PawPrint, Receipt, ShieldCheck, Sparkles, Star, Trash2, User, Users, Wallet, Palette, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Feature, FeatureIcon, TileColour } from '@/lib/features-types';
 
@@ -12,6 +12,9 @@ const ICONS: Record<FeatureIcon, LucideIcon> = {
   wallet: Wallet,
   palette: Palette,
   shield: ShieldCheck,
+  user: User,
+  users: Users,
+  star: Star,
   sparkles: Sparkles,
 };
 

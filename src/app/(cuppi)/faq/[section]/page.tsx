@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { format } from 'date-fns';
 import type { Metadata } from 'next';
 import { CuppiFooter } from '@/components/cuppi/footer';
 import { CuppiHeader } from '@/components/cuppi/header';
+import { AppTile } from '@/components/cuppi/feature-icon';
+import { PageHero } from '@/components/cuppi/page-hero';
 import { FaqEntryItem } from '@/components/faq/faq-entry';
 import { FaqHelpCta } from '@/components/faq/faq-help-cta';
 import { FaqSearch } from '@/components/faq/faq-search';
@@ -14,6 +14,7 @@ import { JsonLd } from '@/components/faq/json-ld';
 import { getFaqModel } from '@/lib/faq';
 import { buildSectionJsonLd } from '@/lib/faq-jsonld';
 import { faqMetadata } from '@/lib/faq-metadata';
+import { FALLBACK_TILE, FAQ_TILES, TINT_FOR_TILE } from '@/lib/faq-visuals';
 import { findSection } from '@/lib/faq-model';
 import { SITE_ORIGINS } from '@/lib/sites';
 
@@ -59,36 +60,26 @@ export default async function FaqSectionPage({ params }: Props) {
     (s, i, all) => s.id !== section.id && all.indexOf(s) === i,
   );
 
+  const tile = FAQ_TILES[section.id] ?? FALLBACK_TILE;
+
   return (
     <div className="bg-background text-foreground flex flex-col min-h-screen">
       <CuppiHeader />
-      <main className="w-full flex flex-col items-center p-4 flex-grow">
-        <div key={section.id} className="max-w-4xl mx-auto container px-4 pb-24 sm:pb-32 w-full">
-          <header className="grid gap-3 border-b border-secondary pb-6">
-            <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground">
-              <ol className="flex flex-wrap items-center gap-x-1.5">
-                <li>
-                  <Link href="/faq" className="font-medium text-primary hover:underline">
-                    FAQ
-                  </Link>
-                </li>
-                <li aria-hidden="true">›</li>
-                <li aria-current="page">{section.label}</li>
-              </ol>
-            </nav>
-            <h1 className="font-headline text-4xl font-bold leading-tight sm:text-5xl">{section.label}</h1>
-            {section.blurb && <p className="max-w-[62ch] text-lg text-muted-foreground">{section.blurb}</p>}
-            <p className="text-sm tabular-nums text-muted-foreground">
-              {count} {count === 1 ? 'answer' : 'answers'}
-              {section.updatedAt ? ` · Updated ${format(new Date(section.updatedAt), 'd MMM yyyy')}` : ''}
-            </p>
-          </header>
+      <main className="flex-grow">
+        <PageHero
+          tint={TINT_FOR_TILE[tile.tile]}
+          back={{ href: '/faq', label: 'All help' }}
+          tile={<AppTile feature={{ ...tile, name: section.label }} className="h-16 w-16 sm:h-20 sm:w-20" />}
+          title={section.label}
+          intro={section.blurb || undefined}
+        />
 
-          <div className="mt-6 grid items-start gap-6 md:grid-cols-[13rem_minmax(0,1fr)] md:gap-10">
+        <div key={section.id} className="mx-auto w-full max-w-6xl px-3 pb-24 sm:px-6 sm:pb-32">
+          <div className="mt-10 grid items-start gap-6 md:grid-cols-[14rem_minmax(0,1fr)] md:gap-12">
             <FaqToc section={section} />
 
             <div className="min-w-0">
-              <div className="mb-6 flex flex-wrap items-center gap-3">
+              <div className="mb-8 flex flex-wrap items-center gap-3">
                 <div className="min-w-0 flex-1 basis-64">
                   <FaqSearch size="compact" placeholder={`Search all ${model.entries.length} answers`} />
                 </div>
@@ -97,14 +88,14 @@ export default async function FaqSectionPage({ params }: Props) {
 
               {section.topics.length > 0 ? (
                 section.topics.map((topic) => (
-                  <section key={topic.id} id={topic.id} data-faq-topic aria-labelledby={`${topic.id}-heading`} className="mt-8 scroll-mt-4 first:mt-0">
-                    <h2 id={`${topic.id}-heading`} className="flex flex-wrap items-baseline gap-x-3 font-headline text-2xl font-bold">
+                  <section key={topic.id} id={topic.id} data-faq-topic aria-labelledby={`${topic.id}-heading`} className="mt-14 scroll-mt-24 first:mt-0">
+                    <h2 id={`${topic.id}-heading`} className="flex flex-wrap items-baseline gap-x-3 font-headline text-3xl">
                       {topic.label}
-                      <span className="text-sm font-normal text-muted-foreground">
+                      <span className="font-body text-sm text-cuppi-ink-soft">
                         {topic.entries.length} {topic.entries.length === 1 ? 'answer' : 'answers'}
                       </span>
                     </h2>
-                    <div className="mt-1">
+                    <div className="mt-2">
                       {topic.entries.map((entry) => (
                         <FaqEntryItem key={entry.id} entry={entry} />
                       ))}
@@ -120,11 +111,11 @@ export default async function FaqSectionPage({ params }: Props) {
               )}
 
               {related.length > 0 && (
-                <section aria-labelledby="more-topics" className="mt-14">
-                  <h2 id="more-topics" className="font-headline text-2xl font-bold">
+                <section aria-labelledby="more-topics" className="mt-20">
+                  <h2 id="more-topics" className="font-headline text-3xl">
                     More topics
                   </h2>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
                     {related.map((s) => (
                       <FaqSectionCard key={s.id} section={s} />
                     ))}
@@ -132,7 +123,7 @@ export default async function FaqSectionPage({ params }: Props) {
                 </section>
               )}
 
-              <div className="mt-10">
+              <div className="mt-16">
                 <FaqHelpCta />
               </div>
             </div>

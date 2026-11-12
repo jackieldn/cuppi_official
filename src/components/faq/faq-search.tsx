@@ -114,12 +114,12 @@ export function FaqSearch({ placeholder, size = 'large', defaultValue = '' }: Pr
       <form action="/faq/search" method="get" role="search" onSubmit={() => setOpen(false)}>
         <div
           className={cn(
-            'flex items-center gap-3 border-foreground bg-card px-4 focus-within:border-primary focus-within:ring-4 focus-within:ring-secondary',
-            size === 'large' ? 'min-h-14 rounded-2xl border-2' : 'min-h-11 rounded-xl border',
+            'flex items-center gap-3 rounded-full border border-cuppi-line bg-cuppi-card px-6 focus-within:border-cuppi-brand focus-within:ring-4 focus-within:ring-cuppi-brand/20',
+            size === 'large' ? 'min-h-16' : 'min-h-12',
           )}
         >
           <button type="submit" aria-label="Search the FAQ" className="text-muted-foreground hover:text-primary">
-            <Search className={size === 'large' ? 'h-5 w-5' : 'h-4 w-4'} aria-hidden="true" />
+            <Search className={size === 'large' ? 'h-6 w-6' : 'h-5 w-5'} aria-hidden="true" />
           </button>
           <input
             ref={inputRef}
@@ -149,7 +149,7 @@ export function FaqSearch({ placeholder, size = 'large', defaultValue = '' }: Pr
             onKeyDown={onKeyDown}
             className={cn(
               'min-w-0 flex-1 bg-transparent font-medium text-foreground outline-none placeholder:text-muted-foreground',
-              size === 'large' ? 'py-3.5 text-base sm:text-lg' : 'py-2.5 text-base',
+              size === 'large' ? 'py-4 text-base sm:text-xl' : 'py-2.5 text-base',
             )}
           />
           {size === 'large' && (
@@ -165,7 +165,7 @@ export function FaqSearch({ placeholder, size = 'large', defaultValue = '' }: Pr
         role="listbox"
         aria-label="Matching answers"
         hidden={!expanded}
-        className="absolute left-0 right-0 top-full z-30 mt-2 max-h-[min(28rem,70vh)] overflow-auto rounded-2xl border bg-card p-1.5 shadow-xl"
+        className="absolute left-0 right-0 top-full z-30 mt-2 max-h-[min(28rem,70vh)] overflow-auto rounded-[1.75rem] border border-cuppi-line bg-cuppi-card p-2"
       >
         {expanded && total === 0 && (
           <p className="px-3 py-3 text-sm text-muted-foreground">
@@ -186,7 +186,7 @@ export function FaqSearch({ placeholder, size = 'large', defaultValue = '' }: Pr
                 event.preventDefault();
                 goTo(doc);
               }}
-              className="flex flex-col gap-0.5 rounded-xl px-3 py-2.5 aria-selected:bg-secondary"
+              className="flex flex-col gap-0.5 rounded-2xl px-4 py-3 aria-selected:bg-cuppi-honey-soft"
             >
               <span className="font-semibold">
                 <Highlight text={doc.question} terms={outcome?.terms ?? []} />
@@ -208,7 +208,7 @@ export function FaqSearch({ placeholder, size = 'large', defaultValue = '' }: Pr
             onMouseDown={(event) => event.preventDefault()}
             onMouseEnter={() => setActive(suggestions.length)}
             onClick={() => setOpen(false)}
-            className="mt-1 block rounded-xl border-t px-3 py-2.5 text-sm font-semibold text-primary aria-selected:bg-secondary"
+            className="mt-1 block rounded-2xl border-t border-cuppi-line px-4 py-3 text-sm font-semibold text-cuppi-brand-deep aria-selected:bg-cuppi-honey-soft"
           >
             See all {total} {total === 1 ? 'result' : 'results'} →
           </Link>

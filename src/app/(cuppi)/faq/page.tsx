@@ -7,7 +7,7 @@ import { FaqSearch } from '@/components/faq/faq-search';
 import { FaqSectionCard } from '@/components/faq/faq-section-card';
 import { FaqHelpCta } from '@/components/faq/faq-help-cta';
 import { JsonLd } from '@/components/faq/json-ld';
-import { ChevronDown } from 'lucide-react';
+import { ArrowUpRight, ChevronDown } from 'lucide-react';
 import { getFaqModel } from '@/lib/faq';
 import { buildHubJsonLd } from '@/lib/faq-jsonld';
 import { faqMetadata } from '@/lib/faq-metadata';
@@ -17,7 +17,7 @@ import { SITE_ORIGINS } from '@/lib/sites';
 // Answers are edited in Sanity. Re-check them every minute.
 export const revalidate = 60;
 
-const SUGGESTED_SEARCHES = ['bin day', 'cancel pro', 'referral code', 'budget approval', 'receipt pdf', 'child account'];
+const SUGGESTED_SEARCHES = ['bin day', 'cancel pro', 'referral code', 'child account'];
 
 export async function generateMetadata(): Promise<Metadata> {
   const model = await getFaqModel();
@@ -35,43 +35,55 @@ export default async function FaqPage() {
   return (
     <div className="bg-background text-foreground flex flex-col min-h-screen">
       <CuppiHeader />
-      <main className="w-full flex flex-col items-center p-4 flex-grow">
-        <div className="max-w-4xl mx-auto container px-4 pb-24 sm:pb-32 w-full">
-          <header className="grid gap-4 pb-10">
-            <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Frequently asked questions</p>
-            <h1 className="font-headline text-4xl font-bold leading-tight sm:text-5xl">How can we help?</h1>
-            <p className="max-w-[60ch] text-lg text-muted-foreground">
-              {total} answers across {model.sections.length} topics
-              {model.updatedAt ? `. Updated ${format(new Date(model.updatedAt), 'd MMM yyyy')}.` : '.'}
+      <main className="flex-grow">
+        {/* One question, one search box, and room to breathe. */}
+        <section className="px-3 pt-3 sm:px-6">
+          <div className="mx-auto max-w-6xl rounded-[2.5rem] bg-cuppi-sky-soft px-6 py-16 text-center sm:py-24">
+            <h1 className="cuppi-fade-up font-headline text-5xl font-normal leading-[1.05] tracking-tight sm:text-7xl">
+              How can we <em className="text-cuppi-lake">help?</em>
+            </h1>
+            <p className="cuppi-fade-up mx-auto mt-5 max-w-md text-lg text-cuppi-ink-soft" style={{ '--d': '100ms' } as React.CSSProperties}>
+              Search the answers, or pick a topic below.
             </p>
-            <FaqSearch placeholder={`Search ${total} answers, e.g. “bin day”, “refund”, “PIN”`} />
-            <div className="flex flex-wrap items-center gap-2" aria-label="Suggested searches">
-              <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Try</span>
+            <div className="cuppi-fade-up relative z-20 mx-auto mt-10 max-w-2xl text-left" style={{ '--d': '200ms' } as React.CSSProperties}>
+              <FaqSearch placeholder={`Search ${total} answers`} />
+            </div>
+            <div
+              className="cuppi-fade-up mt-6 flex flex-wrap items-center justify-center gap-2"
+              aria-label="Suggested searches"
+              style={{ '--d': '300ms' } as React.CSSProperties}
+            >
+              <span className="mr-1 text-sm text-cuppi-ink-soft">Try</span>
               {SUGGESTED_SEARCHES.map((term) => (
                 <Link
                   key={term}
                   href={`/faq/search?q=${encodeURIComponent(term)}`}
                   rel="nofollow"
                   prefetch={false}
-                  className="rounded-full border bg-card px-3.5 py-1.5 text-sm font-medium transition-colors hover:border-primary hover:text-primary"
+                  className="rounded-full bg-cuppi-paper/80 px-4 py-1.5 text-sm font-medium transition-colors hover:bg-cuppi-paper"
                 >
                   {term}
                 </Link>
               ))}
             </div>
-          </header>
+          </div>
+        </section>
 
+        <div className="mx-auto w-full max-w-6xl px-3 pb-24 sm:px-6 sm:pb-32">
           {model.popular.length > 0 && (
-            <section aria-labelledby="popular-questions">
-              <h2 id="popular-questions" className="font-headline text-2xl font-bold">
+            <section aria-labelledby="popular-questions" className="mt-20">
+              <h2 id="popular-questions" className="px-2 font-headline text-3xl sm:text-4xl">
                 Popular questions
               </h2>
-              <ul className="mt-3 grid gap-x-8 sm:grid-cols-2">
+              <ul className="mt-6 grid gap-x-10 sm:grid-cols-2">
                 {model.popular.map((entry) => (
-                  <li key={entry.id} className="border-b border-secondary">
-                    <Link href={entryPath(entry)} className="group flex flex-col gap-0.5 py-3.5">
-                      <span className="font-semibold leading-snug group-hover:text-primary">{entry.question}</span>
-                      <span className="text-sm text-muted-foreground">{model.sections.find((s) => s.id === entry.sectionId)?.label}</span>
+                  <li key={entry.id} className="border-b border-cuppi-line">
+                    <Link href={entryPath(entry)} className="group flex items-center justify-between gap-4 px-2 py-5 text-lg">
+                      <span className="leading-snug transition-colors group-hover:text-cuppi-brand-deep">{entry.question}</span>
+                      <ArrowUpRight
+                        aria-hidden="true"
+                        className="h-5 w-5 shrink-0 text-cuppi-ink-soft transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                      />
                     </Link>
                   </li>
                 ))}
@@ -80,11 +92,11 @@ export default async function FaqPage() {
           )}
 
           {model.groups.map((group, i) => (
-            <section key={group.label} aria-labelledby={`group-${i}`} className="mt-12">
-              <h2 id={`group-${i}`} className="font-headline text-2xl font-bold">
+            <section key={group.label} aria-labelledby={`group-${i}`} className="mt-20">
+              <h2 id={`group-${i}`} className="px-2 font-headline text-3xl sm:text-4xl">
                 {group.label}
               </h2>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 {group.sections.map((section) => (
                   <FaqSectionCard key={section.id} section={section} />
                 ))}
@@ -92,28 +104,28 @@ export default async function FaqPage() {
             </section>
           ))}
 
-          <div className="mt-12">
+          <div className="mt-24">
             <FaqHelpCta />
           </div>
 
-          {/* Every question as a plain link: one place that reaches all answers. */}
-          <details className="group mt-8 border-t border-secondary">
-            <summary className="flex cursor-pointer list-none items-center justify-between py-4 font-semibold [&::-webkit-details-marker]:hidden">
+          {/* Every question as a plain link: one place that reaches all answers. Closed by default, so it adds no clutter. */}
+          <details className="group mt-10">
+            <summary className="flex cursor-pointer list-none items-center justify-center gap-2 py-4 text-sm font-semibold text-cuppi-ink-soft hover:text-cuppi-brand-deep [&::-webkit-details-marker]:hidden">
               Browse all {total} questions
-              <ChevronDown aria-hidden="true" className="h-5 w-5 text-muted-foreground transition-transform group-open:rotate-180" />
+              <ChevronDown aria-hidden="true" className="h-4 w-4 transition-transform group-open:rotate-180" />
             </summary>
-            <div className="gap-x-10 pb-4 sm:columns-2">
+            <div className="gap-x-10 border-t border-cuppi-line pt-6 sm:columns-2">
               {model.sections.map((section) => (
-                <div key={section.id} className="mb-5 break-inside-avoid">
-                  <h3 className="mb-1 font-headline text-base font-bold">
-                    <Link href={`/faq/${section.id}`} className="hover:text-primary">
+                <div key={section.id} className="mb-6 break-inside-avoid">
+                  <h3 className="mb-1 font-headline text-lg">
+                    <Link href={`/faq/${section.id}`} className="hover:text-cuppi-brand-deep">
                       {section.label}
                     </Link>
                   </h3>
                   <ul>
                     {section.entries.map((entry) => (
                       <li key={entry.id}>
-                        <Link href={entryPath(entry)} className="block py-0.5 text-sm text-foreground/80 hover:text-primary hover:underline">
+                        <Link href={entryPath(entry)} className="block py-0.5 text-sm text-cuppi-ink-soft hover:text-cuppi-brand-deep hover:underline">
                           {entry.question}
                         </Link>
                       </li>
@@ -122,6 +134,9 @@ export default async function FaqPage() {
                 </div>
               ))}
             </div>
+            {model.updatedAt && (
+              <p className="pt-2 text-center text-xs text-cuppi-ink-soft">Answers last updated {format(new Date(model.updatedAt), 'd MMM yyyy')}.</p>
+            )}
           </details>
         </div>
       </main>

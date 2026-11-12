@@ -135,3 +135,39 @@ Screenshots: the hero shows the top part of the screen, so crop the file before 
 it (the tab bar shows your profile photo, and the car's plate is readable). Pass the
 app's background colour as `bg` to fill any part of the screen the screenshot does not
 cover.
+
+## Help pages
+
+`/faq` (the help centre), each topic page (`/faq/<topic>`), search results and `/support`
+share one look. Inner pages open with `PageHero` (`src/components/cuppi/page-hero.tsx`):
+a tinted colour block with a "back" pill, an optional app tile beside the title, a line
+of text and a search box or button. The help front page has its own centred version.
+
+- The search box is a large pill with an orange focus ring; results open in a bordered
+  card (no shadow).
+- Each help topic wears a tile and a tint (`src/lib/faq-visuals.ts`): the feature topics
+  reuse the in-app icons, the general ones a line icon on a coloured tile. A new topic
+  added in Sanity gets a default tile automatically.
+- Topic cards show only a tile, a name and one line. Counts, dates and question lists live
+  on the topic page.
+- Server components only: `CuppiHeader` and `CuppiFooter` are async, so a page that imports
+  them must not be a client component. Anything that needs the browser (the support form's
+  pop-up) goes in a small client component, as `SupportMessage` does.
+
+## The main action button
+
+`ActionButton` (`src/components/cuppi/action-button.tsx`) is the one orange button: the menu's
+Download, "Message us", the closing "Download on the App Store" and the invite page's
+"Open in Cuppi". It is built like the app's icons: a flat AccentColor fill, a 1px deeper
+outline, and a thin bright shine at the top and bottom that curves into the pill's ends.
+Use it for the single main action on a page and nowhere else. Secondary buttons ("Explore
+features", the "back" pills) stay plain on purpose. It renders a link (in the same tab, in a
+new tab, or a plain link for app deep links) or a button, and works as a dialog trigger.
+
+Cream text on the AccentColor is 3.8:1, below the usual 4.5:1 for small text, so the label
+is always semibold and at least 15px.
+
+## The menu bar
+
+The logo's left edge sits where the bar's rounded end finishes (half the bar's height, so
+about 30px in), not hard against the curve.
