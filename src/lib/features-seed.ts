@@ -6,9 +6,12 @@ import type { Feature, FeatureCard, FeatureImage } from './features-types';
 // page, so nothing here is new marketing copy. Only the short menu taglines and
 // the callout lines are new, and each callout is a sentence lifted from a card.
 //
-// Chores, Car, Shopping, Celebrations, Siri and the Companion exist in the app
-// but have no website copy or screenshots yet. They arrive through the admin
-// once it exists; nothing is invented for them here.
+// Chores, Shopping and Car exist in the app but have no website copy or
+// screenshots yet, so they are listed as "soon" with no page. Siri and the
+// Companion are not listed at all yet. Nothing is invented for any of them.
+//
+// Groups mirror the app's Apps tab: Family life and Home fill the Features menu,
+// and "yours" (the feed, personalisation, privacy) fills the second menu.
 
 type Carousel = Extract<(typeof homePageFallback.sections)[number], { kind: 'carousel' }>;
 type ImageSection = Extract<(typeof homePageFallback.sections)[number], { kind: 'image' }>;
@@ -54,9 +57,10 @@ export const featuresSeed: Feature[] = [
     tagline: 'Your household’s private feed',
     icon: 'home',
     tint: 'honey',
-    group: 'together',
+    group: 'yours',
     status: 'live',
     order: 10,
+    tile: 'amber',
     hero: { headline: homeFeed.heading, intro: homeFeed.intro, image: firstImage(homeFeed) },
     blocks: [
       { id: 'hf-cards', type: 'cards', title: 'Social media, but make it home', cards: homeFeed.cards.map(toCard) },
@@ -74,9 +78,11 @@ export const featuresSeed: Feature[] = [
     tagline: 'Health, meds and appointments',
     icon: 'paw',
     tint: 'sky',
-    group: 'together',
+    group: 'family',
     status: 'live',
     order: 20,
+    iconUrl: '/icons/medical-report.png',
+    tile: 'green',
     hero: { headline: pets.heading, intro: pets.intro, image: firstImage(pets) },
     blocks: [
       {
@@ -92,14 +98,16 @@ export const featuresSeed: Feature[] = [
     ],
   },
   {
-    slug: 'birthdays',
-    name: 'Birthdays',
-    tagline: 'Never miss a big day',
+    slug: 'celebrations',
+    name: 'Celebrations',
+    tagline: 'Birthdays and big days, never missed',
     icon: 'cake',
     tint: 'clay',
-    group: 'daily',
+    group: 'family',
     status: 'live',
-    order: 30,
+    order: 10,
+    iconUrl: '/icons/confetti-ball.png',
+    tile: 'pink',
     hero: { headline: birthdays.heading, intro: birthdays.intro, image: firstImage(birthdays) },
     blocks: [
       {
@@ -134,9 +142,11 @@ export const featuresSeed: Feature[] = [
     tagline: 'A gentle nudge the night before',
     icon: 'bin',
     tint: 'moss',
-    group: 'daily',
+    group: 'home',
     status: 'live',
-    order: 40,
+    order: 30,
+    iconUrl: '/icons/trash-bin.png',
+    tile: 'blue',
     hero: { headline: binDay.heading, intro: binDay.intro, image: firstImage(binDay) },
     blocks: [
       {
@@ -163,9 +173,11 @@ export const featuresSeed: Feature[] = [
     tagline: 'Your shopping, itemised',
     icon: 'receipt',
     tint: 'honey',
-    group: 'money',
+    group: 'home',
     status: 'live',
-    order: 50,
+    order: 40,
+    iconUrl: '/icons/receiptAppIcon.png',
+    tile: 'amber',
     hero: { headline: receipts.heading, intro: receipts.intro, image: firstImage(receipts) },
     blocks: [
       {
@@ -183,9 +195,11 @@ export const featuresSeed: Feature[] = [
     tagline: 'Budgets built for Britain',
     icon: 'wallet',
     tint: 'lake',
-    group: 'money',
+    group: 'home',
     status: 'live',
-    order: 60,
+    order: 20,
+    iconUrl: '/icons/007-3d-wallet.png',
+    tile: 'amber',
     hero: { headline: budget.heading, intro: budget.intro, image: firstImage(budget) },
     blocks: [
       {
@@ -216,7 +230,8 @@ export const featuresSeed: Feature[] = [
     tint: 'clay',
     group: 'yours',
     status: 'live',
-    order: 70,
+    order: 20,
+    tile: 'pink',
     hero: {
       headline: personalisation.heading,
       intro: personalisation.intro,
@@ -235,7 +250,8 @@ export const featuresSeed: Feature[] = [
     tint: 'lake',
     group: 'yours',
     status: 'live',
-    order: 80,
+    order: 30,
+    tile: 'blue',
     hero: {
       headline: security.heading,
       intro: security.intro,
@@ -254,5 +270,44 @@ export const featuresSeed: Feature[] = [
         ],
       },
     ],
+  },
+
+  // In the app, with an icon, but no website copy or screenshots yet. They show in
+  // the menus as "Soon" and have no page until the admin adds one.
+  {
+    slug: 'chores',
+    name: 'Chores',
+    tagline: 'Coming soon',
+    icon: 'sparkles',
+    iconUrl: '/icons/spring-cleaning.png',
+    tile: 'blue',
+    tint: 'sky',
+    group: 'family',
+    status: 'soon',
+    order: 30,
+  },
+  {
+    slug: 'shopping',
+    name: 'Shopping',
+    tagline: 'Coming soon',
+    icon: 'sparkles',
+    iconUrl: '/icons/groceryAppIcon.png',
+    tile: 'green',
+    tint: 'moss',
+    group: 'home',
+    status: 'soon',
+    order: 10,
+  },
+  {
+    slug: 'car',
+    name: 'Car',
+    tagline: 'Coming soon',
+    icon: 'sparkles',
+    iconUrl: '/icons/3d-car.png',
+    tile: 'blue',
+    tint: 'sky',
+    group: 'home',
+    status: 'soon',
+    order: 50,
   },
 ];

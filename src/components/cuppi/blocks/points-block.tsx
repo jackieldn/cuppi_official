@@ -10,7 +10,7 @@ export function PointsBlock({ block }: { block: Points }) {
     <section className="mx-auto max-w-6xl px-3 py-10 sm:px-6">
       {block.title && (
         <Reveal className="px-4 pb-8 sm:px-6">
-          <h2 className="font-headline text-3xl font-semibold tracking-tight [font-variation-settings:'SOFT'_100] sm:text-4xl">{block.title}</h2>
+          <h2 className="font-headline font-normal text-3xl tracking-tight sm:text-4xl">{block.title}</h2>
         </Reveal>
       )}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -20,7 +20,7 @@ export function PointsBlock({ block }: { block: Points }) {
               <span className="mb-4 grid h-9 w-9 place-items-center rounded-full bg-cuppi-moss-deep text-cuppi-paper">
                 <Check className="h-4 w-4" aria-hidden />
               </span>
-              <h3 className="font-headline text-xl font-semibold [font-variation-settings:'SOFT'_100]">{item.title}</h3>
+              <h3 className="font-headline font-normal text-xl">{item.title}</h3>
               <p className="mt-2 leading-relaxed text-cuppi-ink-soft">{item.body}</p>
             </div>
           </Reveal>

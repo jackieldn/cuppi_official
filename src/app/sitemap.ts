@@ -56,8 +56,8 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
     faqUrls = [{ url: `${baseUrl}/faq`, changeFrequency: 'weekly' as 'weekly', priority: 0.7 }];
   }
 
-  const { getFeatures } = await import('@/lib/features');
-  const featureUrls = (await getFeatures()).map(f => ({
+  const { getPageFeatures } = await import('@/lib/features');
+  const featureUrls = (await getPageFeatures()).map(f => ({
     url: `${baseUrl}/features/${f.slug}`,
     lastModified: new Date(),
     changeFrequency: 'monthly' as 'monthly',

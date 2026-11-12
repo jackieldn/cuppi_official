@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { Reveal } from '@/components/ui/reveal';
 import type { FeatureBlock } from '@/lib/features-types';
-import { Phone, Shapes } from './phone';
+import { Phone } from './phone';
 import { TINTS } from './tints';
 
 type Showcase = Extract<FeatureBlock, { type: 'showcase' }>;
@@ -24,13 +24,12 @@ export function ShowcaseBlock({ block }: { block: Showcase }) {
               {block.eyebrow}
             </span>
           )}
-          <h2 className="font-headline text-3xl font-semibold leading-tight tracking-tight [font-variation-settings:'SOFT'_100] sm:text-4xl">
+          <h2 className="font-headline font-normal text-3xl leading-tight tracking-tight sm:text-4xl">
             {block.title}
           </h2>
           <p className="max-w-lg whitespace-pre-line text-lg leading-relaxed text-cuppi-ink-soft">{block.body}</p>
         </div>
         <div className={cn('relative min-h-[22rem] overflow-hidden rounded-[2rem] md:min-h-[30rem]', tint.surface, textRight && 'md:order-1')}>
-          <Shapes shape={tint.shape} />
           <div className="cuppi-rise-scroll absolute inset-0">
             <Phone image={block.image} sizes="(max-width: 768px) 92vw, 46vw" sink={3} />
           </div>

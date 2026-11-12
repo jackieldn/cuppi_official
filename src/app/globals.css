@@ -108,9 +108,11 @@
     --c-honey-soft: 252 230 190; /* #FCE6BE */
     --c-clay-soft: 246 211 191;  /* #F6D3BF */
 
-    --font-headline: Fraunces;
+    --font-headline: 'DM Serif Display';
     --font-body: 'DM Sans';
     color-scheme: light;
+    /* DM Serif Display only has Regular and Italic. Never fake a bold. */
+    font-synthesis: none;
 
     --background: 40 72% 94%;
     --foreground: 28 28% 13%;
@@ -583,10 +585,9 @@ body > div:has(iframe[title*="recaptcha"]) {
 }
 
 /*
-  Cuppi motion vocabulary (cuppi.co.uk). Three ideas, reused everywhere so the
+  Cuppi motion vocabulary (cuppi.co.uk). Two ideas, reused everywhere so the
   whole site moves the same way:
     rise  things grow up into place, like a seedling: ease out with a tiny overshoot
-    bob   ambient shapes drift slowly, so the page feels alive but never busy
     pop   menus and panels unfold from where they were opened
   The easing curves are the brand's "spring". Everything switches off for
   prefers-reduced-motion.
@@ -604,10 +605,6 @@ body > div:has(iframe[title*="recaptcha"]) {
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes cuppi-bob {
-  0%, 100% { transform: translateY(0) rotate(var(--bob-rot, 0deg)); }
-  50%      { transform: translateY(var(--bob-dist, -10px)) rotate(calc(var(--bob-rot, 0deg) * -1)); }
-}
 @keyframes cuppi-pop {
   from { opacity: 0; transform: translateY(-8px) scale(0.97); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -616,7 +613,6 @@ body > div:has(iframe[title*="recaptcha"]) {
 /* On load (heroes). */
 .cuppi-rise    { animation: cuppi-rise 1s var(--ease-spring) both; animation-delay: var(--d, 0ms); }
 .cuppi-fade-up { animation: cuppi-fade-up 0.8s var(--ease-calm) both; animation-delay: var(--d, 0ms); }
-.cuppi-bob     { animation: cuppi-bob var(--bob-dur, 7s) ease-in-out infinite; animation-delay: var(--d, 0ms); }
 .cuppi-pop     { animation: cuppi-pop 0.28s var(--ease-calm) both; transform-origin: top center; }
 
 /* On scroll: waits for the Reveal wrapper to mark itself revealed. */
@@ -627,7 +623,7 @@ body > div:has(iframe[title*="recaptcha"]) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cuppi-rise, .cuppi-fade-up, .cuppi-bob, .cuppi-pop,
+  .cuppi-rise, .cuppi-fade-up, .cuppi-pop,
   [data-revealed] .cuppi-rise-scroll { animation: none; }
   .cuppi-on-reveal .cuppi-rise-scroll { opacity: 1; }
 }

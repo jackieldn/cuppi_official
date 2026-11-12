@@ -1,5 +1,5 @@
 import { featuresSeed } from './features-seed';
-import { GROUP_ORDER, validateFeatures, type Feature, type FeatureGroup } from './features-types';
+import { GROUP_ORDER, hasPage, validateFeatures, type Feature, type FeatureGroup, type PageFeature } from './features-types';
 
 // One place the site asks for features. Today it returns the seed. When the
 // admin arrives this becomes "read the cuppi_features collection, and fall back
@@ -11,8 +11,13 @@ export async function getFeatures(): Promise<Feature[]> {
   return [...featuresSeed].sort((a, b) => a.order - b.order);
 }
 
-export async function getFeature(slug: string): Promise<Feature | null> {
-  return (await getFeatures()).find((f) => f.slug === slug) ?? null;
+/** Only the features that have a page of their own. */
+export async function getPageFeatures(): Promise<PageFeature[]> {
+  return (await getFeatures()).filter(hasPage);
+}
+
+export async function getFeature(slug: string): Promise<PageFeature | null> {
+  return (await getPageFeatures()).find((f) => f.slug === slug) ?? null;
 }
 
 export function groupFeatures(features: Feature[]): { group: FeatureGroup; items: Feature[] }[] {

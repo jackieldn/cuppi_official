@@ -53,19 +53,3 @@ export function Phone({
     </div>
   );
 }
-
-/** Soft decorative shapes for the corners of colour blocks. Purely ornamental. */
-export function Shapes({ className, shape }: { className?: string; shape: string }) {
-  return (
-    <div aria-hidden className={cn('pointer-events-none absolute inset-0 overflow-hidden', className)}>
-      <span
-        className={cn('cuppi-bob absolute -right-10 -top-10 h-44 w-44 rounded-full', shape)}
-        style={{ '--bob-dist': '8px', '--bob-dur': '9s' } as React.CSSProperties}
-      />
-      <span
-        className={cn('cuppi-bob absolute -left-6 bottom-16 h-24 w-14 rounded-t-full', shape)}
-        style={{ '--bob-dist': '-6px', '--bob-dur': '8s', '--d': '-3s' } as React.CSSProperties}
-      />
-    </div>
-  );
-}

@@ -20,8 +20,14 @@ export type FeatureIcon =
   | 'shield'
   | 'sparkles';
 
-/** Where a feature sits in the Features menu. */
-export type FeatureGroup = 'together' | 'daily' | 'money' | 'yours';
+/**
+ * Where a feature sits. 'family' and 'home' mirror the two sections of the app's
+ * own Apps tab and fill the Features menu; 'yours' fills the second menu.
+ */
+export type FeatureGroup = 'family' | 'home' | 'yours';
+
+/** The colour of a feature's app-icon tile, as in the app's Apps tab. */
+export type TileColour = 'pink' | 'green' | 'blue' | 'amber';
 
 export type FeatureStatus = 'live' | 'preview' | 'soon';
 
@@ -62,6 +68,16 @@ export type FeatureBlock =
   // Three or four short reasons, no images.
   | { id: string; type: 'points'; title?: string; items: { title: string; body: string }[] };
 
+export type FeatureHero = {
+  headline: string;
+  intro: string;
+  /** A phone crop that peeks up out of the bottom of the hero card. */
+  image: FeatureImage;
+  /** 'peek': a phone crop rising from the card's bottom edge (default).
+   *  'wide': a landscape picture shown whole, e.g. a fan of phones. */
+  imageStyle?: 'peek' | 'wide';
+};
+
 export type Feature = {
   slug: string;
   /** Short name for the menu and cards, e.g. "Bin Day". */
@@ -74,26 +90,31 @@ export type Feature = {
   status: FeatureStatus;
   /** Position in the menu and overview (lowest first). */
   order: number;
-  hero: {
-    headline: string;
-    intro: string;
-    /** A phone crop that peeks up out of the bottom of the hero card. */
-    image: FeatureImage;
-    /** 'peek': a phone crop rising from the card's bottom edge (default).
-     *  'wide': a landscape picture shown whole, e.g. a fan of phones. */
-    imageStyle?: 'peek' | 'wide';
-  };
-  blocks: FeatureBlock[];
+  /** The app's own icon for this feature (a transparent glyph in /public/icons). */
+  iconUrl?: string;
+  tile: TileColour;
+  /** A feature with status 'soon' has no page yet: it shows in menus, but does not link. */
+  hero?: FeatureHero;
+  blocks?: FeatureBlock[];
 };
+
+/** A feature that has a page of its own. */
+export type PageFeature = Feature & { hero: FeatureHero; blocks: FeatureBlock[] };
+export const hasPage = (f: Feature): f is PageFeature => f.status !== 'soon' && !!f.hero && !!f.blocks;
 
 export const GROUP_LABELS: Record<FeatureGroup, { title: string; blurb: string }> = {
-  together: { title: 'Together', blurb: 'Your household, in one place' },
-  daily: { title: 'Every day', blurb: 'The small things that add up' },
-  money: { title: 'Money', blurb: 'Clear, calm and British' },
-  yours: { title: 'Made yours', blurb: 'Private, and personal' },
+  family: { title: 'Family life', blurb: 'The people and pets you share a home with' },
+  home: { title: 'Home', blurb: 'Money, shopping and the everyday jobs' },
+  yours: { title: 'Your Home', blurb: 'The feed, your colours and your privacy' },
 };
 
-export const GROUP_ORDER: FeatureGroup[] = ['together', 'daily', 'money', 'yours'];
+export const GROUP_ORDER: FeatureGroup[] = ['family', 'home', 'yours'];
+
+/** Which groups open from which menu button in the header. */
+export const MENU_GROUPS: { key: 'features' | 'yours'; label: string; groups: FeatureGroup[] }[] = [
+  { key: 'features', label: 'Features', groups: ['family', 'home'] },
+  { key: 'yours', label: 'Your Home', groups: ['yours'] },
+];
 
 export const STATUS_LABELS: Record<FeatureStatus, string | null> = {
   live: null,
@@ -115,8 +136,10 @@ export function validateFeatures(features: Feature[]): string[] {
     if (slugs.has(f.slug)) problems.push(`${where}: slug "${f.slug}" is used twice.`);
     slugs.add(f.slug);
     if (!GROUP_ORDER.includes(f.group)) problems.push(`${where}: unknown group "${f.group}".`);
-    if (!f.hero?.headline?.trim()) problems.push(`${where}: the hero has no headline.`);
-    if (!f.hero?.image?.url) problems.push(`${where}: the hero has no image.`);
+    if (f.status !== 'soon') {
+      if (!f.hero?.headline?.trim()) problems.push(`${where}: the hero has no headline.`);
+      if (!f.hero?.image?.url) problems.push(`${where}: the hero has no image.`);
+    }
     const blockIds = new Set<string>();
     for (const b of f.blocks ?? []) {
       if (blockIds.has(b.id)) problems.push(`${where}: block id "${b.id}" is used twice.`);

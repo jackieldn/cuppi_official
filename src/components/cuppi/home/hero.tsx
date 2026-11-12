@@ -1,47 +1,77 @@
-'use client';
-
-import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { HomePage } from '@/lib/home-page-types';
+import { splitEmphasis, type HomeHero as HomeHeroData } from '@/lib/home-hero';
+import { PhoneMockup } from '../blocks/phone-mockup';
+import { TINTS } from '../blocks/tints';
 
-export function HomeHero({ hero }: { hero: HomePage['hero'] }) {
-  const [isLoaded, setIsLoaded] = useState(false);
+const delay = (ms: number) => ({ '--d': `${ms}ms` }) as React.CSSProperties;
 
-  useEffect(() => {
-    // Using a short timeout to ensure the animation starts after the initial paint.
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-
+/** The home page's opening block: what's new, in a big colour block, with the app on show. */
+export function HomeHero({ hero }: { hero: HomeHeroData }) {
+  const tint = TINTS[hero.tint];
+  const { screenshot: shot } = hero;
   return (
-    <section className="w-full max-w-6xl">
-      <div className="relative w-full overflow-hidden rounded-[2rem] aspect-[1.5/2] md:aspect-[16/9]">
-        <div className={cn("absolute inset-0 opacity-0", isLoaded && "animate-fade-in-up")}>
-            <Image
-              src={hero.image.url}
-              alt={hero.image.alt}
-              fill
-              sizes="1000vw"
-              priority
-              className={cn(
-                "object-cover transition-transform ease-out",
-                "duration-4000",
-                isLoaded ? "scale-150 md:scale-130" : "scale-[1.45] md:scale-[1.25]",
-                "translate-x-[-80px] md:translate-x-[100px] md:-translate-y-[50px]"
+    <section className="w-full px-3 pt-3 sm:px-6">
+      <div className={cn('relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem]', tint.surface, tint.text)}>
+        <div className="grid items-stretch md:grid-cols-[1.1fr_1fr]">
+          <div className="flex flex-col justify-center gap-6 px-7 pb-6 pt-12 sm:px-12 md:py-20">
+            <span
+              className="cuppi-fade-up inline-flex w-fit items-center gap-2 rounded-full bg-cuppi-paper/90 px-4 py-1.5 text-sm font-semibold text-cuppi-ink"
+              style={delay(0)}
+            >
+              <span aria-hidden className="h-2 w-2 rounded-full bg-cuppi-brand" />
+              {hero.badge}
+            </span>
+
+            <h1
+              className="cuppi-fade-up font-headline text-5xl font-normal leading-[1.02] tracking-tight text-balance sm:text-6xl lg:text-7xl"
+              style={delay(100)}
+            >
+              {splitEmphasis(hero.headline).map((part, i) =>
+                part.em ? (
+                  <em key={i} className="whitespace-nowrap text-cuppi-brand">
+                    {part.text}
+                  </em>
+                ) : (
+                  <span key={i}>{part.text}</span>
+                ),
               )}
-            />
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center text-center md:text-left bg-black/20">
-          <div className="relative text-white text-center md:text-center bottom-[60px] md:bottom-auto md:right-[200px]">
-            <h1 className="font-sf-pro text-xl md:text-2xl font-normal tracking-wide opacity-0 animate-fade-in-right [text-shadow:0_2px_8px_rgba(0,0,0,0.6)]">
-              {hero.line1}
             </h1>
-            <p className="relative font-serif text-5xl md:text-5xl italic -mt-2 opacity-0 animate-fade-in-right delay-2000 [text-shadow:0_2px_8px_rgba(0,0,0,0.6)] md:pr-[20px]">
-              {hero.line2}
+
+            <p className={cn('cuppi-fade-up max-w-md text-xl leading-relaxed', tint.muted)} style={delay(220)}>
+              {hero.body}
             </p>
+
+            {hero.link && (
+              <div className="cuppi-fade-up" style={delay(340)}>
+                <Link
+                  href={hero.link.href}
+                  className="group inline-flex items-center gap-2 rounded-full bg-cuppi-paper/90 px-6 py-3 text-lg font-semibold text-cuppi-ink transition-colors hover:bg-cuppi-paper"
+                >
+                  {hero.link.label}
+                  <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" aria-hidden />
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* The phone is sized from the block's height (taller than the block), so the same part of the screen shows at any width. */}
+          <div className="relative min-h-[30rem] md:min-h-[36rem]">
+            <div className="cuppi-rise absolute inset-0" style={delay(200)}>
+              <PhoneMockup
+                kind={hero.mockup}
+                flip={hero.flip}
+                src={shot.url}
+                alt={shot.alt}
+                imageWidth={shot.width}
+                imageHeight={shot.height}
+                bg={shot.bg}
+                sizes="(max-width: 768px) 60vw, 30vw"
+                priority
+                className="absolute left-1/2 top-[5%] h-[175%] -translate-x-1/2"
+              />
+            </div>
           </div>
         </div>
       </div>

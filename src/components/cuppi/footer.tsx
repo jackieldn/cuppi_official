@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { getFeatures } from '@/lib/features';
+import { getPageFeatures } from '@/lib/features';
 import { APP_STORE_URL } from '@/lib/invite';
 
 const ICON_URL =
@@ -40,16 +40,16 @@ const LEGAL = [
 const linkClass = 'text-cuppi-ink-soft transition-colors hover:text-cuppi-brand-deep';
 
 export async function CuppiFooter() {
-  const features = await getFeatures();
+  const features = await getPageFeatures();
 
   return (
     <footer className="mt-10 px-3 pb-3 sm:px-6 sm:pb-6">
       <div className="mx-auto max-w-6xl rounded-[2.5rem] bg-cuppi-paper-deep px-7 py-12 sm:px-12">
         <div className="grid gap-10 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
           <div className="space-y-4">
-            <Link href="/" className="inline-flex items-center gap-3" aria-label="Cuppi home">
-              <Image src={ICON_URL} alt="" width={44} height={44} className="rounded-[0.95rem]" />
-              <span className="font-headline text-2xl font-semibold [font-variation-settings:'SOFT'_100]">Cuppi</span>
+            <Link href="/" className="inline-flex items-center gap-3" aria-label="Cuppi Home, home page">
+              <Image src={ICON_URL} alt="" width={44} height={44} />
+              <span className="whitespace-nowrap font-headline font-normal text-2xl">Cuppi Home</span>
             </Link>
             <p className="max-w-xs text-cuppi-ink-soft">Your calm and private household app.</p>
             <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" aria-label="Download on the App Store" className="inline-block transition-transform duration-300 [transition-timing-function:var(--ease-spring)] hover:scale-105">

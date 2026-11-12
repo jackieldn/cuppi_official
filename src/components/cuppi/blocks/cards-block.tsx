@@ -21,7 +21,7 @@ export function CardsBlock({ block }: { block: Cards }) {
       <Carousel opts={{ align: 'start' }} setApi={setApi} className="mx-auto w-full max-w-6xl">
         <div className="flex items-end justify-between gap-6 px-4 pb-6 sm:px-6">
           <div className="max-w-2xl">
-            <h2 className="font-headline text-3xl font-semibold leading-tight tracking-tight [font-variation-settings:'SOFT'_100] sm:text-4xl">
+            <h2 className="font-headline font-normal text-3xl leading-tight tracking-tight sm:text-4xl">
               {block.title}
             </h2>
             {block.intro && <p className="mt-3 text-lg text-cuppi-ink-soft">{block.intro}</p>}
@@ -41,7 +41,7 @@ export function CardsBlock({ block }: { block: Cards }) {
                 <CarouselItem key={card.title} className="basis-[86%] pl-4 sm:basis-[58%] lg:basis-[40%]">
                   <article className={cn('relative flex h-full min-h-[34rem] flex-col overflow-hidden rounded-[2rem]', tint.surface)}>
                     <div className="px-6 pb-2 pt-7">
-                      <h3 className="font-headline text-2xl font-semibold leading-snug [font-variation-settings:'SOFT'_100]">{card.title}</h3>
+                      <h3 className="font-headline font-normal text-2xl leading-snug">{card.title}</h3>
                       <p className="mt-2 whitespace-pre-line text-[0.95rem] leading-relaxed text-cuppi-ink-soft">{card.body}</p>
                     </div>
                     <div className="relative mt-auto min-h-[24rem] flex-1">

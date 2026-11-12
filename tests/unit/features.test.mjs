@@ -9,7 +9,7 @@ const feature = (slug, extra = {}) => ({
   tagline: 'A tagline',
   icon: 'home',
   tint: 'honey',
-  group: 'together',
+  group: 'family',
   status: 'live',
   order: 1,
   hero: { headline: 'A headline', intro: 'An intro', image },
@@ -43,6 +43,10 @@ describe('validateFeatures', () => {
     assert.match(validateFeatures([feature('pets', { group: 'nonsense' })])[0], /unknown group/);
   });
 
+  test('a feature that is coming soon needs no hero', () => {
+    assert.deepEqual(validateFeatures([feature('chores', { status: 'soon', hero: undefined, blocks: undefined })]), []);
+  });
+
   test('catches a hero with no headline or image', () => {
     const f = feature('pets', { hero: { headline: '  ', intro: '', image: { url: '', alt: '' } } });
     const problems = validateFeatures([f]);
@@ -63,6 +67,6 @@ describe('validateFeatures', () => {
   });
 
   test('every group in the menu order has a label slot', () => {
-    assert.deepEqual([...GROUP_ORDER].sort(), ['daily', 'money', 'together', 'yours']);
+    assert.deepEqual([...GROUP_ORDER].sort(), ['family', 'home', 'yours']);
   });
 });

@@ -6,14 +6,14 @@ import { BlockRenderer } from '@/components/cuppi/blocks/block-renderer';
 import { DownloadStrip } from '@/components/cuppi/blocks/download-strip';
 import { FeatureHero } from '@/components/cuppi/blocks/feature-hero';
 import { KeepExploring } from '@/components/cuppi/blocks/keep-exploring';
-import { getFeature, getFeatures } from '@/lib/features';
+import { getFeature, getPageFeatures } from '@/lib/features';
 
 export const revalidate = 60;
 
 type Params = { slug: string };
 
 export async function generateStaticParams(): Promise<Params[]> {
-  return (await getFeatures()).map((f) => ({ slug: f.slug }));
+  return (await getPageFeatures()).map((f) => ({ slug: f.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 export default async function FeaturePage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
-  const [feature, all] = await Promise.all([getFeature(slug), getFeatures()]);
+  const [feature, all] = await Promise.all([getFeature(slug), getPageFeatures()]);
   if (!feature) notFound();
 
   // The next two features in order, wrapping round, so every page leads somewhere.

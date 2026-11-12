@@ -60,7 +60,10 @@ feature appears everywhere at once.
 ## Content
 
 - Cuppi home page, blog, FAQ and legal pages: Sanity (project `0uvqbyjc`).
-  - The home page is the single "Home page" document: a top banner plus an
+  - The home page now shows only the hero (the "Home page" document's banner) and
+    "What's new" (the three latest Cosy Corner posts). Everything else it used to
+    show moved to the feature pages under `/features`, so the document's sections
+    are no longer displayed. The notes below describe the document as it was: a top banner plus an
     ordered list of sections (swipeable cards, or one large image). Edit,
     reorder, add or remove sections in the Studio; the site picks up published
     changes within about a minute. If the document is missing or incomplete the
