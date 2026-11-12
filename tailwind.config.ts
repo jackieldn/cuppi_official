@@ -10,7 +10,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
+        // Cuppi sets --font-body (DM Sans) in .theme-cuppi; the portfolio keeps Inter.
+        body: ['var(--font-body, Inter)', 'sans-serif'],
         // Cuppi keeps Space Grotesk; the portfolio theme sets --font-headline.
         headline: ['var(--font-headline, "Space Grotesk")', 'sans-serif'],
         code: ['monospace'],
@@ -55,6 +56,27 @@ export default {
           lagoon: '#70a9a1',
           sage: '#cfd7c7',
           cream: '#f6f1d1',
+        },
+        // Cuppi brand palette (values live in .theme-cuppi in globals.css).
+        cuppi: {
+          paper: 'rgb(var(--c-paper) / <alpha-value>)',
+          'paper-deep': 'rgb(var(--c-paper-deep) / <alpha-value>)',
+          card: 'rgb(var(--c-card) / <alpha-value>)',
+          ink: 'rgb(var(--c-ink) / <alpha-value>)',
+          'ink-soft': 'rgb(var(--c-ink-soft) / <alpha-value>)',
+          line: 'rgb(var(--c-line) / <alpha-value>)',
+          brand: 'rgb(var(--c-brand) / <alpha-value>)',
+          'brand-deep': 'rgb(var(--c-brand-deep) / <alpha-value>)',
+          'brand-bright': 'rgb(var(--c-brand-bright) / <alpha-value>)',
+          lake: 'rgb(var(--c-lake) / <alpha-value>)',
+          sky: 'rgb(var(--c-sky) / <alpha-value>)',
+          moss: 'rgb(var(--c-moss) / <alpha-value>)',
+          'moss-deep': 'rgb(var(--c-moss-deep) / <alpha-value>)',
+          honey: 'rgb(var(--c-honey) / <alpha-value>)',
+          'sky-soft': 'rgb(var(--c-sky-soft) / <alpha-value>)',
+          'moss-soft': 'rgb(var(--c-moss-soft) / <alpha-value>)',
+          'honey-soft': 'rgb(var(--c-honey-soft) / <alpha-value>)',
+          'clay-soft': 'rgb(var(--c-clay-soft) / <alpha-value>)',
         },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

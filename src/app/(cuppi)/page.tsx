@@ -1,32 +1,46 @@
 import { CuppiFooter } from '@/components/cuppi/footer';
 import { CuppiHeader } from '@/components/cuppi/header';
 import { HomeHero } from '@/components/cuppi/home/hero';
-import { HomeNav } from '@/components/cuppi/home/nav';
-import { HomeCarouselSection } from '@/components/cuppi/home/carousel-section';
-import { HomeImageSection } from '@/components/cuppi/home/image-section';
 import { WhatsNew } from '@/components/cuppi/whats-new';
-import { getHomePage } from '@/lib/home-page';
+import { AppFan } from '@/components/cuppi/home/app-fan';
+import { getFeatures } from '@/lib/features';
+import { homeHero } from '@/lib/home-hero';
+import { refreshMetadata, refreshPage } from '@/components/cuppi/section-gate';
 
-// The page content is edited in Sanity ("Home page"). Re-check it every minute.
+// "What's new" re-checks the latest Cosy Corner posts every minute. The hero is
+// set in src/lib/home-hero.ts; everything else that used to live on this page
+// now has its own page under /features.
 export const revalidate = 60;
 
+export const generateMetadata = () => refreshMetadata('home');
+
 export default async function CuppiPage() {
-  const home = await getHomePage();
+  // The home page can be switched to "refresh in progress" in the admin (Cuppi pages).
+  const holding = await refreshPage('home');
+  if (holding) return holding;
+
+  // The icons that slide out of Cuppi: every feature in the Features menu, in menu order.
+  const features = (await getFeatures()).filter((f) => f.group !== 'yours');
 
   return (
     <div className="bg-background text-foreground flex flex-col min-h-screen">
       <CuppiHeader />
-      <main className="flex-grow w-full flex flex-col items-center p-4">
-        <HomeHero hero={home.hero} />
-        <HomeNav sections={home.sections} />
+      <main className="flex-grow w-full flex flex-col items-center">
+        <HomeHero hero={homeHero} />
+
         <WhatsNew />
-        {home.sections.map((section) =>
-          section.kind === 'carousel' ? (
-            <HomeCarouselSection key={section.id} section={section} />
-          ) : (
-            <HomeImageSection key={section.id} section={section} />
-          ),
-        )}
+
+        {/* One line on what Cuppi is. Cuppi's icon sits alone until it scrolls into view, then the in-app icons slide out of it. */}
+        <section className="mx-auto w-full max-w-5xl px-6 pb-4 pt-24 text-center">
+          <AppFan features={features} />
+          <p className="mx-auto mt-12 max-w-3xl font-headline text-4xl leading-tight tracking-tight text-balance sm:text-5xl">
+            Reminders that care as much <em className="text-cuppi-brand">as you do.</em>
+          </p>
+          <p className="mx-auto mt-5 max-w-xl text-lg text-cuppi-ink-soft">
+            Cuppi is your calm and private household app where you save information once and get reminded gently forever.
+          </p>
+        </section>
+
         <div className="py-16" />
       </main>
       <CuppiFooter />

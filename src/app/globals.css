@@ -72,6 +72,74 @@
     --chart-4: 52 67% 89%;
     --chart-5: 36 100% 50%;
   }
+  /*
+    Cuppi brand theme (cuppi.co.uk only; the portfolio has its own above).
+    Set on <body> in the (cuppi) layout. Two layers:
+      --c-*   the raw brand palette as space-separated RGB channels, so Tailwind
+              can do opacity (bg-cuppi-honey/40). Defined once, used everywhere.
+      shadcn  the semantic variables the existing pages already use (bg-background,
+              text-primary, border...), pointed at the palette, so every Cuppi page
+              re-skins without touching its markup.
+    Mood: the calm of a farm at 7am. Warm paper, espresso ink, meadow colours,
+    and Cuppi's own orange used sparingly for the one thing to click.
+    Palette source: "Golden Meadow" + the app's AccentColor (see docs/cuppi-brand.md).
+  */
+  .theme-cuppi {
+    --c-paper: 251 244 230;      /* page background: warm cream            #FBF4E6 */
+    --c-paper-deep: 244 232 208; /* sunken areas, wells                    #F4E8D0 */
+    --c-card: 255 250 240;       /* raised surfaces                        #FFFAF0 */
+    --c-ink: 43 33 24;           /* text: espresso, never pure black       #2B2118 */
+    --c-ink-soft: 107 90 74;     /* secondary text                         #6B5A4A */
+    --c-line: 230 215 188;       /* hairlines and borders                  #E6D7BC */
+
+    --c-brand: 214 90 31;        /* AccentColor (light): Cuppi orange      #D65A1F */
+    --c-brand-deep: 184 70 26;   /* buttons with light text (AA contrast)  #B8461A */
+    --c-brand-bright: 255 107 0; /* AccentColor (dark): glows, highlights  #FF6B00 */
+
+    --c-lake: 46 90 124;         /* deep blue: trust, security             #2E5A7C */
+    --c-sky: 127 177 209;        /* calm blue                              #7FB1D1 */
+    --c-moss: 107 132 73;        /* meadow green: growth, money            #6B8449 */
+    --c-moss-deep: 78 98 51;     /* moss with light text (AA contrast)     #4E6233 */
+    --c-honey: 242 165 59;       /* warm gold: celebration                 #F2A53B */
+
+    /* Soft tints of the above, for colour-block cards. */
+    --c-sky-soft: 211 230 241;   /* #D3E6F1 */
+    --c-moss-soft: 220 229 200;  /* #DCE5C8 */
+    --c-honey-soft: 252 230 190; /* #FCE6BE */
+    --c-clay-soft: 246 211 191;  /* #F6D3BF */
+
+    --font-headline: 'DM Serif Display';
+    --font-body: 'DM Sans';
+    color-scheme: light;
+    /* DM Serif Display only has Regular and Italic. Never fake a bold. */
+    font-synthesis: none;
+
+    --background: 40 72% 94%;
+    --foreground: 28 28% 13%;
+    --card: 40 100% 97%;
+    --card-foreground: 28 28% 13%;
+    --popover: 40 100% 97%;
+    --popover-foreground: 28 28% 13%;
+    --primary: 17 75% 41%;
+    --primary-foreground: 40 100% 97%;
+    --secondary: 40 60% 88%;
+    --secondary-foreground: 28 28% 13%;
+    --muted: 40 55% 88%;
+    --muted-foreground: 29 18% 35%;
+    --accent: 35 88% 59%;
+    --accent-foreground: 28 28% 13%;
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 40 100% 97%;
+    --border: 40 50% 80%;
+    --input: 40 50% 80%;
+    --ring: 19 75% 48%;
+    --radius: 1rem;
+    --chart-1: 206 46% 33%;
+    --chart-2: 203 47% 66%;
+    --chart-3: 85 29% 35%;
+    --chart-4: 35 88% 59%;
+    --chart-5: 19 75% 48%;
+  }
   .dark {
     --background: 228 10% 10%;
     --foreground: 233 30% 90%;
@@ -514,4 +582,153 @@ body > div:has(iframe[title*="recaptcha"]) {
   .bottom-glow__amber, .bottom-glow__cream { opacity: 0.4; }
   .bottom-glow__hot { opacity: 0.7; }
   .bottom-glow__streak { opacity: 0.5; }
+}
+
+/*
+  Cuppi motion vocabulary (cuppi.co.uk). Two ideas, reused everywhere so the
+  whole site moves the same way:
+    rise  things grow up into place, like a seedling: ease out with a tiny overshoot
+    pop   menus and panels unfold from where they were opened
+  The easing curves are the brand's "spring". Everything switches off for
+  prefers-reduced-motion.
+*/
+.theme-cuppi {
+  --ease-spring: cubic-bezier(0.22, 1.2, 0.36, 1);
+  --ease-calm: cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+@keyframes cuppi-rise {
+  from { opacity: 0; transform: translateY(8%) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes cuppi-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes cuppi-pop {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* On load (heroes). */
+.cuppi-rise    { animation: cuppi-rise 1s var(--ease-spring) both; animation-delay: var(--d, 0ms); }
+.cuppi-fade-up { animation: cuppi-fade-up 0.8s var(--ease-calm) both; animation-delay: var(--d, 0ms); }
+.cuppi-pop     { animation: cuppi-pop 0.28s var(--ease-calm) both; transform-origin: top center; }
+
+/* On scroll: waits for the Reveal wrapper to mark itself revealed. */
+.cuppi-on-reveal .cuppi-rise-scroll { opacity: 0; }
+[data-revealed] .cuppi-rise-scroll {
+  animation: cuppi-rise 1s var(--ease-spring) both;
+  animation-delay: calc(var(--reveal-delay, 0ms) + 120ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cuppi-rise, .cuppi-fade-up, .cuppi-pop,
+  [data-revealed] .cuppi-rise-scroll { animation: none; }
+  .cuppi-on-reveal .cuppi-rise-scroll { opacity: 1; }
+}
+
+/*
+  The icon fan on the home page (AppFan): Cuppi's icon with the in-app icons sliding out of it.
+  Everything is positioned in "units" (--u), scaled to the width available and never bigger than
+  1px, so the layout is a fixed picture that shrinks to fit. There are two pictures:
+    phone  344 units wide: Cuppi (80) with two icons (56) each side, four more in a row below
+    wide   960 units wide: Cuppi (128) in the middle, four icons (88) each side
+  Each icon is placed by --x (its centre, from the middle) and --y (its top); "closed" parks it
+  behind Cuppi, unseen. They leave in order of --k, the nearest first.
+*/
+.fan { container-type: inline-size; }
+.fan-stage {
+  --u: min(1px, calc(100cqw / 344));
+  --size: 56; --cuppi: 80; --y0: 12; --h: 148;
+  position: relative; isolation: isolate;
+  height: calc(var(--h) * var(--u));
+}
+@media (min-width: 640px) {
+  .fan-stage { --u: min(1px, calc(100cqw / 960)); --size: 88; --cuppi: 128; --y0: 20; --h: 128; }
+}
+.fan-cuppi {
+  position: absolute; z-index: 2; top: 0; left: 50%;
+  width: calc(var(--cuppi) * var(--u)); height: calc(var(--cuppi) * var(--u));
+  margin-left: calc(var(--cuppi) * var(--u) / -2);
+}
+.fan-icon {
+  --x: var(--mx); --y: var(--my);
+  position: absolute; z-index: 1; top: 0; left: 50%;
+  width: calc(var(--size) * var(--u)); height: calc(var(--size) * var(--u));
+  transform: translate(calc((var(--x) - var(--size) / 2) * var(--u)), calc(var(--y) * var(--u)));
+  transition: transform 1.1s var(--ease-spring), opacity 0.5s ease-out;
+  transition-delay: calc(var(--k) * 110ms);
+}
+@media (min-width: 640px) {
+  .fan-icon { --x: var(--dx); --y: var(--y0); }
+}
+[data-fan='closed'] .fan-icon {
+  opacity: 0;
+  transform: translate(calc(var(--size) * var(--u) / -2), calc(var(--y0) * var(--u))) scale(0.4);
+  transition: none;
+}
+/* No JavaScript, or it never got going: open after 6 seconds regardless. */
+@keyframes fan-failsafe {
+  to { opacity: 1; transform: translate(calc((var(--x) - var(--size) / 2) * var(--u)), calc(var(--y) * var(--u))); }
+}
+[data-fan='closed'] .fan-icon { animation: fan-failsafe 0.01s 6s forwards; }
+@media (prefers-reduced-motion: reduce) {
+  [data-fan] .fan-icon { opacity: 1 !important; transform: translate(calc((var(--x) - var(--size) / 2) * var(--u)), calc(var(--y) * var(--u))) !important; transition: none !important; animation: none !important; }
+}
+
+/*
+  Home hero intro: the camera pulls back out of the hero (HeroIntro sets data-intro).
+  Three layers at three depths, so it reads as depth rather than a zoom. Parallax is the SAME
+  move on the SAME timeline at different distances, so the layers share one duration and one
+  curve and arrive together; they differ only in how far they travel:
+    far   the pattern: starts 8% closer, so it drifts back slowly
+    mid   the text: starts 30% closer, so it sweeps back about four times faster
+    near  the phone: starts 90% closer, so it flies back about eleven times faster
+    late  the button: fades up once the move has mostly settled
+  Mid and near are separate columns, each scaling from the hero's centre (not its own), so
+  they travel along the same lines as one camera move would.
+  (Give the layers different durations and they cross over, which flattens the depth.)
+  In "prep" the hero shows only its colour. In "play" each layer eases to its natural
+  state; the end state is simply "no transform, fully visible", so there is nothing to keep in sync.
+*/
+.theme-cuppi {
+  /* One shared curve for every layer in the shot: parallax is the same move at different distances. */
+  --ease-camera: cubic-bezier(0.3, 0.55, 0.25, 1);
+}
+
+.intro-far,
+.intro-mid,
+.intro-near { will-change: transform, opacity; }
+.intro-far { transform-origin: 50% 50%; }
+/* The hero's centre, in each column's own terms: stacked on a phone, side by side from md up. */
+.intro-mid  { transform-origin: 50% 100%; }
+.intro-near { transform-origin: 50% 0%; }
+@media (min-width: 768px) {
+  .intro-mid  { transform-origin: 95% 50%; }
+  .intro-near { transform-origin: -5% 50%; }
+}
+
+[data-intro='prep'] .intro-far  { opacity: 0; transform: scale(1.08); }
+[data-intro='prep'] .intro-mid  { opacity: 0; transform: scale(1.3); }
+[data-intro='prep'] .intro-near { opacity: 0; transform: scale(1.9); }
+[data-intro='prep'] .intro-late { opacity: 0; transform: translateY(16px); }
+
+[data-intro='play'] .intro-far  { transition: transform 4.4s var(--ease-camera), opacity 1.8s ease-out; }
+[data-intro='play'] .intro-mid  { transition: transform 4.4s var(--ease-camera), opacity 1.2s ease-out; }
+[data-intro='play'] .intro-near { transition: transform 4.4s var(--ease-camera), opacity 1.2s ease-out; }
+[data-intro='play'] .intro-late { transition: transform 0.9s var(--ease-calm) 2.6s, opacity 0.9s ease-out 2.6s; }
+
+/* No JavaScript, or it never got going: show everything after 8 seconds regardless. */
+@keyframes intro-failsafe { to { opacity: 1; transform: none; } }
+[data-intro='prep'] .intro-far,
+[data-intro='prep'] .intro-mid,
+[data-intro='prep'] .intro-near,
+[data-intro='prep'] .intro-late { animation: intro-failsafe 0.01s 8s forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-intro] .intro-far,
+  [data-intro] .intro-mid,
+  [data-intro] .intro-near,
+  [data-intro] .intro-late { opacity: 1 !important; transform: none !important; transition: none !important; animation: none !important; }
 }

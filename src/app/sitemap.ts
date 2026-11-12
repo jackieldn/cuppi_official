@@ -4,9 +4,13 @@ import { sanityClient } from '@/lib/sanity-client';
 import { CosyCornerPost } from '@/lib/blog-types';
 import { SITE_ORIGINS, hostFromHeaders, portfolioEnabled, siteForHost } from '@/lib/sites';
 import { getFaqModel } from '@/lib/faq';
+import { getPageStatus } from '@/lib/cuppi-site-data';
+import { isLive } from '@/lib/page-status';
 
 async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = SITE_ORIGINS.cuppi;
+  // Sections showing "refresh in progress" are left out, so search engines do not list a holding page.
+  const status = await getPageStatus();
 
   // Blog posts from Sanity
   const posts = await sanityClient.fetch<Pick<CosyCornerPost, 'slug' | '_createdAt'>[]>(
@@ -21,6 +25,7 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticRoutes = [
     '/',
+    '/features',
     '/blog',
     '/support',
     '/terms',
@@ -29,7 +34,8 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
     '/security'
   ];
 
-  const staticUrls = staticRoutes.map(route => ({
+  const sectionOf: Record<string, Parameters<typeof isLive>[1]> = { '/': 'home', '/features': 'features', '/blog': 'blog', '/support': 'support' };
+  const staticUrls = staticRoutes.filter(route => !sectionOf[route] || isLive(status, sectionOf[route])).map(route => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
     changeFrequency: 'weekly' as 'weekly',
@@ -55,7 +61,20 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
     faqUrls = [{ url: `${baseUrl}/faq`, changeFrequency: 'weekly' as 'weekly', priority: 0.7 }];
   }
 
-  return [...staticUrls, ...faqUrls, ...postUrls];
+  const { getPageFeatures } = await import('@/lib/features');
+  const featureUrls = (await getPageFeatures()).map(f => ({
+    url: `${baseUrl}/features/${f.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as 'monthly',
+    priority: 0.7,
+  }));
+
+  return [
+    ...staticUrls,
+    ...(isLive(status, 'features') ? featureUrls : []),
+    ...(isLive(status, 'faq') ? faqUrls : []),
+    ...(isLive(status, 'blog') ? postUrls : []),
+  ];
 }
 
 async function portfolioSitemap(): Promise<MetadataRoute.Sitemap> {

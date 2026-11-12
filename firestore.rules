@@ -185,6 +185,25 @@ service cloud.firestore {
     }
 
     /**
+     * @description What the admin has set up on the Cuppi site: the top menu (cuppi_menu/main)
+     * and edits to, or new, feature pages (cuppi_features/{slug}). Public read (the site reads
+     * them on the server), admin write.
+     */
+    match /cuppi_menu/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /cuppi_features/{slug} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    // Which sections are live and which show "refresh in progress" (cuppi_pages/status).
+    match /cuppi_pages/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
      * @description Beta signups. Public create is disabled, must go through backend flow.
      * @path /beta_signups/{signupId}
      */

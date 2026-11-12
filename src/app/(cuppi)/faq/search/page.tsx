@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { CuppiFooter } from '@/components/cuppi/footer';
 import { CuppiHeader } from '@/components/cuppi/header';
+import { PageHero } from '@/components/cuppi/page-hero';
 import { FaqHelpCta } from '@/components/faq/faq-help-cta';
 import { FaqSearch } from '@/components/faq/faq-search';
 import { Highlight } from '@/components/faq/highlight';
@@ -29,29 +30,25 @@ export default async function FaqSearchPage({ searchParams }: Props) {
   return (
     <div className="bg-background text-foreground flex flex-col min-h-screen">
       <CuppiHeader />
-      <main className="w-full flex flex-col items-center p-4 flex-grow">
-        <div className="max-w-4xl mx-auto container px-4 pb-24 sm:pb-32 w-full">
-          <header className="grid gap-4 pb-6">
-            <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground">
-              <Link href="/faq" className="font-medium text-primary hover:underline">
-                FAQ
-              </Link>{' '}
-              › Search
-            </nav>
-            <h1 className="font-headline text-4xl font-bold leading-tight sm:text-5xl">Search results</h1>
+      <main className="flex-grow">
+        <PageHero tint="sky" back={{ href: '/faq', label: 'All help' }} title="Search results">
+          <div className="max-w-2xl">
             <FaqSearch defaultValue={query} placeholder={`Search ${model.entries.length} answers`} />
-          </header>
+          </div>
+        </PageHero>
 
-          {!outcome && <p className="text-muted-foreground">Type a word or two above to search every question and answer.</p>}
+        <div className="mx-auto w-full max-w-6xl px-3 pb-24 pt-10 sm:px-6 sm:pb-32">
+<div className="max-w-4xl px-4 sm:px-6">
+          {!outcome && <p className="text-lg text-cuppi-ink-soft">Type a word or two above to search every question and answer.</p>}
 
           {outcome && outcome.results.length === 0 && (
-            <div className="grid gap-4 rounded-2xl border border-dashed bg-card p-6">
-              <h2 className="font-headline text-2xl font-bold">No answers match “{query}”</h2>
-              <p className="text-muted-foreground">Try fewer or simpler words, or browse a topic.</p>
+            <div className="grid gap-4 rounded-[2rem] border border-dashed border-cuppi-line bg-cuppi-card p-7">
+              <h2 className="font-headline text-3xl">No answers match “{query}”</h2>
+              <p className="text-cuppi-ink-soft">Try fewer or simpler words, or browse a topic.</p>
               <ul className="flex flex-wrap gap-2">
                 {model.sections.map((s) => (
                   <li key={s.id}>
-                    <Link href={`/faq/${s.id}`} className="inline-block rounded-full border bg-background px-3.5 py-1.5 text-sm font-medium hover:border-primary hover:text-primary">
+                    <Link href={`/faq/${s.id}`} className="inline-block rounded-full border border-cuppi-line bg-cuppi-paper px-4 py-1.5 text-sm font-medium hover:bg-cuppi-honey-soft">
                       {s.label}
                     </Link>
                   </li>
@@ -62,22 +59,22 @@ export default async function FaqSearchPage({ searchParams }: Props) {
 
           {outcome && outcome.results.length > 0 && (
             <section aria-labelledby="results-heading">
-              <h2 id="results-heading" className="text-sm text-muted-foreground">
+              <h2 id="results-heading" className="text-sm text-cuppi-ink-soft">
                 {outcome.partial ? 'No answer has every word. Showing ' : ''}
                 {outcome.results.length === MAX_RESULTS ? `the best ${MAX_RESULTS} results` : `${outcome.results.length} ${outcome.results.length === 1 ? 'result' : 'results'}`} for “{query}”
               </h2>
               <ol className="mt-2">
                 {outcome.results.map(({ doc }) => (
-                  <li key={doc.slug} className="border-b border-secondary">
-                    <Link href={`/faq/${doc.sectionId}#${doc.slug}`} className="group grid gap-0.5 px-1 py-4">
-                      <span className="text-xs font-medium text-muted-foreground">
+                  <li key={doc.slug} className="border-b border-cuppi-line">
+                    <Link href={`/faq/${doc.sectionId}#${doc.slug}`} className="group grid gap-1 px-1 py-5">
+                      <span className="text-xs font-medium text-cuppi-ink-soft">
                         {doc.sectionLabel}
                         {doc.topic ? ` › ${doc.topic}` : ''}
                       </span>
-                      <span className="text-lg font-semibold leading-snug group-hover:text-primary">
+                      <span className="text-lg font-semibold leading-snug transition-colors group-hover:text-cuppi-brand-deep">
                         <Highlight text={doc.question} terms={outcome.terms} />
                       </span>
-                      <span className="max-w-[75ch] text-sm text-foreground/80">
+                      <span className="max-w-[75ch] text-sm text-cuppi-ink-soft">
                         <Highlight text={snippet(doc.text, outcome.terms)} terms={outcome.terms} />
                       </span>
                     </Link>
@@ -87,9 +84,10 @@ export default async function FaqSearchPage({ searchParams }: Props) {
             </section>
           )}
 
-          <div className="mt-12">
+          <div className="mt-16">
             <FaqHelpCta />
           </div>
+        </div>
         </div>
       </main>
       <CuppiFooter />
