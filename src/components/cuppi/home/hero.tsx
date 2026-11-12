@@ -32,9 +32,9 @@ export function HomeHero({ hero }: { hero: HomeHeroData }) {
             />
           </div>
         )}
-        {/* Near layer: the words and the phone, together. `relative` keeps them above the pattern. */}
-        <div className="intro-near relative grid items-stretch md:grid-cols-[1.1fr_1fr]">
-          <div className="flex flex-col justify-center gap-6 px-7 pb-6 pt-12 sm:px-12 md:py-20">
+        {/* The words (middle layer) and the phone (nearest layer) are separate layers so the phone travels faster. `relative` keeps them above the pattern. */}
+        <div className="relative grid items-stretch md:grid-cols-[1.1fr_1fr]">
+          <div className="intro-mid flex flex-col justify-center gap-6 px-7 pb-6 pt-12 sm:px-12 md:py-20">
             <h1 className="font-headline text-5xl font-normal leading-[1.02] tracking-tight text-balance sm:text-6xl lg:text-7xl">
               {splitEmphasis(hero.headline).map((part, i) =>
                 part.em ? (
@@ -65,7 +65,7 @@ export function HomeHero({ hero }: { hero: HomeHeroData }) {
           </div>
 
           {/* The phone is sized from the block's height (taller than the block), so the same part of the screen shows at any width. */}
-          <div className="relative min-h-[30rem] md:min-h-[36rem]">
+          <div className="intro-near relative min-h-[30rem] md:min-h-[36rem]">
             <div className="absolute inset-0">
               <PhoneMockup
                 kind={hero.mockup}

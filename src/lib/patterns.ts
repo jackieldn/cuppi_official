@@ -5,6 +5,7 @@ export const PATTERNS = {
   victorianWinter: '/patterns/victorianWinter.min.svg',
   autumnPorch: '/patterns/autumnPorch.min.svg',
   summerTea: '/patterns/summerTea.min.svg',
+  springGarden: '/patterns/springGarden.min.svg',
 } as const;
 
 export type PatternName = keyof typeof PATTERNS;

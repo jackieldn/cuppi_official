@@ -179,8 +179,9 @@ about 30px in), not hard against the curve.
 
 The app's background patterns are in `public/patterns` (autumnPorch, springGarden, summerTea,
 victorianWinter). The originals are 0.6 to 1MB each because they carry Illustrator metadata and
-hidden layers, so the site uses slimmed copies (`*.min.svg`: 30 to 190KB). springGarden has
-not been slimmed yet because nothing uses it. List and paths are in `src/lib/patterns.ts`.
+hidden layers, so the site uses slimmed copies (`*.min.svg`: 30 to 280KB). Do not round their numbers to shrink them further: the shapes are built
+from thousands of tiny relative moves, and rounding breaks the small details (springGarden's little flowers fill in). List and paths are in
+`src/lib/patterns.ts`.
 
 `PatternOverlay` (`src/components/cuppi/pattern-overlay.tsx`) lays a pattern over a colour block.
 The shapes are white, so opacity sets how strongly it shows. The house look is a quiet patch
@@ -193,6 +194,7 @@ box sits in a calm area. `shape="ellipse"` stretches the fade to a wide block.
 | Every feature page hero | victorianWinter | behind the phone |
 | Cosy Corner hero | autumnPorch | behind the picture |
 | Help page hero | summerTea | the middle, behind the search box (ellipse) |
+| Support hero | springGarden | the middle, behind the icons and title (ellipse) |
 
 **Cursor light.** The home hero's pattern also lights up under the pointer: a soft circle (190px)
 where the pattern rises to 50%, easing after the cursor and fading in and out as it enters and
@@ -218,11 +220,31 @@ version did that, and the parallax barely showed.)
 | Layer | What | Starts | Speed vs the pattern |
 | --- | --- | --- | --- |
 | far (`.intro-far`) | the pattern | 8% closer | 1x |
-| near (`.intro-near`) | the text and the phone, together | 40% closer | 5x |
+| mid (`.intro-mid`) | the text | 30% closer | 4x |
+| near (`.intro-near`) | the phone | 90% closer | 11x |
 | late (`.intro-late`) | the button | fades up at about 2.6s, as the move settles | |
 
 `HeroIntro` (`src/components/cuppi/home/hero-intro.tsx`) holds the hero in `prep`, waits, then sets
 `play`; the timings are in `globals.css`. It cannot leave the hero hidden: it plays after 6 seconds
 even if something never loads, and with no JavaScript CSS reveals it after 8. Reduced motion shows
 no movement. To use it on another hero, wrap the frame in `HeroIntro` and put `intro-far`,
-`intro-near` and `intro-late` on the layers.
+`intro-mid`, `intro-near` and `intro-late` on the layers.
+
+## The icon fan
+
+Below "What's new", the home page shows Cuppi's own icon on its own (`public/icons/Cuppi-Mar26-v1-iOS-Default-1024x1024@1x.png`).
+When it scrolls into view, the eight in-app icons (every feature in the Features menu, as `AppTile`s)
+slide out of it to the left and right, the nearest first, and settle with a small overshoot
+(`AppFan`, `src/components/cuppi/home/app-fan.tsx`; the layout is the `.fan` block in `globals.css`). It
+plays once. Icons take turns going right then left, in menu order, so a feature added to the menu joins the
+fan with no other change (the layout holds eight; a ninth needs a new slot).
+
+On a wide screen it is one row of nine; on a phone, Cuppi with two icons either side and four more in a
+second row below. Positions are written in "units" that scale down to fit the width, never up. Like the
+hero intro, it cannot leave the icons hidden: without JavaScript they appear after 6 seconds, and with
+reduced motion they are simply in place.
+
+The support page uses it at the top of its hero, centred above the title (`PageHero` with
+`align="center"`, `top` and `pattern`). There it opens once the page, fonts, icons and the hero's pattern
+have all downloaded (`when="loaded"`, using the same `useAssetsReady` hook as the home hero's opening shot)
+rather than on scroll.

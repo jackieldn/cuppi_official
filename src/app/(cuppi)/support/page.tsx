@@ -4,7 +4,10 @@ import { ArrowUpRight } from 'lucide-react';
 import { CuppiFooter } from '@/components/cuppi/footer';
 import { CuppiHeader } from '@/components/cuppi/header';
 import { AppTile } from '@/components/cuppi/feature-icon';
+import { AppFan } from '@/components/cuppi/home/app-fan';
 import { PageHero } from '@/components/cuppi/page-hero';
+import { getFeatures } from '@/lib/features';
+import { PATTERNS } from '@/lib/patterns';
 import { SupportMessage } from '@/components/support/support-message';
 
 export const metadata: Metadata = {
@@ -14,15 +17,25 @@ export const metadata: Metadata = {
 };
 
 // A server component: only the "Message us" pop-up needs the browser, and it lives in SupportMessage.
-export default function SupportPage() {
+export default async function SupportPage() {
+  const features = (await getFeatures()).filter((f) => f.group !== 'yours');
+
   return (
     <div className="bg-background text-foreground flex flex-col min-h-screen">
       <CuppiHeader />
       <main className="flex-grow">
-        <PageHero tint="honey" title="Support" intro="We’re here to help you keep your household running smoothly.">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <PageHero
+          tint="honey"
+          align="center"
+          title="Support"
+          intro="We’re here to help you keep your household running smoothly."
+          pattern={{ name: 'springGarden', focus: '50% 50%', shape: 'ellipse' }}
+          // Cuppi's icon, with the in-app icons sliding out of it once the page and the pattern have loaded.
+          top={<AppFan features={features} when="loaded" waitFor={[PATTERNS.springGarden]} />}
+        >
+          <div className="flex flex-col items-center gap-4">
             <SupportMessage />
-            <p className="max-w-xs text-cuppi-ink-soft">For technical help, feature requests or security questions. We aim to reply within 24–48 hours.</p>
+            <p className="max-w-sm text-cuppi-ink-soft">For technical help, feature requests or security questions. We aim to reply within 24–48 hours.</p>
           </div>
         </PageHero>
 

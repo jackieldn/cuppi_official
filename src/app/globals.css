@@ -629,13 +629,65 @@ body > div:has(iframe[title*="recaptcha"]) {
 }
 
 /*
+  The icon fan on the home page (AppFan): Cuppi's icon with the in-app icons sliding out of it.
+  Everything is positioned in "units" (--u), scaled to the width available and never bigger than
+  1px, so the layout is a fixed picture that shrinks to fit. There are two pictures:
+    phone  344 units wide: Cuppi (80) with two icons (56) each side, four more in a row below
+    wide   960 units wide: Cuppi (128) in the middle, four icons (88) each side
+  Each icon is placed by --x (its centre, from the middle) and --y (its top); "closed" parks it
+  behind Cuppi, unseen. They leave in order of --k, the nearest first.
+*/
+.fan { container-type: inline-size; }
+.fan-stage {
+  --u: min(1px, calc(100cqw / 344));
+  --size: 56; --cuppi: 80; --y0: 12; --h: 148;
+  position: relative; isolation: isolate;
+  height: calc(var(--h) * var(--u));
+}
+@media (min-width: 640px) {
+  .fan-stage { --u: min(1px, calc(100cqw / 960)); --size: 88; --cuppi: 128; --y0: 20; --h: 128; }
+}
+.fan-cuppi {
+  position: absolute; z-index: 2; top: 0; left: 50%;
+  width: calc(var(--cuppi) * var(--u)); height: calc(var(--cuppi) * var(--u));
+  margin-left: calc(var(--cuppi) * var(--u) / -2);
+}
+.fan-icon {
+  --x: var(--mx); --y: var(--my);
+  position: absolute; z-index: 1; top: 0; left: 50%;
+  width: calc(var(--size) * var(--u)); height: calc(var(--size) * var(--u));
+  transform: translate(calc((var(--x) - var(--size) / 2) * var(--u)), calc(var(--y) * var(--u)));
+  transition: transform 1.1s var(--ease-spring), opacity 0.5s ease-out;
+  transition-delay: calc(var(--k) * 110ms);
+}
+@media (min-width: 640px) {
+  .fan-icon { --x: var(--dx); --y: var(--y0); }
+}
+[data-fan='closed'] .fan-icon {
+  opacity: 0;
+  transform: translate(calc(var(--size) * var(--u) / -2), calc(var(--y0) * var(--u))) scale(0.4);
+  transition: none;
+}
+/* No JavaScript, or it never got going: open after 6 seconds regardless. */
+@keyframes fan-failsafe {
+  to { opacity: 1; transform: translate(calc((var(--x) - var(--size) / 2) * var(--u)), calc(var(--y) * var(--u))); }
+}
+[data-fan='closed'] .fan-icon { animation: fan-failsafe 0.01s 6s forwards; }
+@media (prefers-reduced-motion: reduce) {
+  [data-fan] .fan-icon { opacity: 1 !important; transform: translate(calc((var(--x) - var(--size) / 2) * var(--u)), calc(var(--y) * var(--u))) !important; transition: none !important; animation: none !important; }
+}
+
+/*
   Home hero intro: the camera pulls back out of the hero (HeroIntro sets data-intro).
   Three layers at three depths, so it reads as depth rather than a zoom. Parallax is the SAME
   move on the SAME timeline at different distances, so the layers share one duration and one
   curve and arrive together; they differ only in how far they travel:
     far   the pattern: starts 8% closer, so it drifts back slowly
-    near  the text and phone: start 40% closer, so they sweep back about five times faster
+    mid   the text: starts 30% closer, so it sweeps back about four times faster
+    near  the phone: starts 90% closer, so it flies back about eleven times faster
     late  the button: fades up once the move has mostly settled
+  Mid and near are separate columns, each scaling from the hero's centre (not its own), so
+  they travel along the same lines as one camera move would.
   (Give the layers different durations and they cross over, which flattens the depth.)
   In "prep" the hero shows only its colour. In "play" each layer eases to its natural
   state; the end state is simply "no transform, fully visible", so there is nothing to keep in sync.
@@ -646,24 +698,37 @@ body > div:has(iframe[title*="recaptcha"]) {
 }
 
 .intro-far,
-.intro-near { transform-origin: 50% 50%; will-change: transform, opacity; }
+.intro-mid,
+.intro-near { will-change: transform, opacity; }
+.intro-far { transform-origin: 50% 50%; }
+/* The hero's centre, in each column's own terms: stacked on a phone, side by side from md up. */
+.intro-mid  { transform-origin: 50% 100%; }
+.intro-near { transform-origin: 50% 0%; }
+@media (min-width: 768px) {
+  .intro-mid  { transform-origin: 95% 50%; }
+  .intro-near { transform-origin: -5% 50%; }
+}
 
 [data-intro='prep'] .intro-far  { opacity: 0; transform: scale(1.08); }
-[data-intro='prep'] .intro-near { opacity: 0; transform: scale(1.4); }
+[data-intro='prep'] .intro-mid  { opacity: 0; transform: scale(1.3); }
+[data-intro='prep'] .intro-near { opacity: 0; transform: scale(1.9); }
 [data-intro='prep'] .intro-late { opacity: 0; transform: translateY(16px); }
 
 [data-intro='play'] .intro-far  { transition: transform 4.4s var(--ease-camera), opacity 1.8s ease-out; }
+[data-intro='play'] .intro-mid  { transition: transform 4.4s var(--ease-camera), opacity 1.2s ease-out; }
 [data-intro='play'] .intro-near { transition: transform 4.4s var(--ease-camera), opacity 1.2s ease-out; }
 [data-intro='play'] .intro-late { transition: transform 0.9s var(--ease-calm) 2.6s, opacity 0.9s ease-out 2.6s; }
 
 /* No JavaScript, or it never got going: show everything after 8 seconds regardless. */
 @keyframes intro-failsafe { to { opacity: 1; transform: none; } }
 [data-intro='prep'] .intro-far,
+[data-intro='prep'] .intro-mid,
 [data-intro='prep'] .intro-near,
 [data-intro='prep'] .intro-late { animation: intro-failsafe 0.01s 8s forwards; }
 
 @media (prefers-reduced-motion: reduce) {
   [data-intro] .intro-far,
+  [data-intro] .intro-mid,
   [data-intro] .intro-near,
   [data-intro] .intro-late { opacity: 1 !important; transform: none !important; transition: none !important; animation: none !important; }
 }
