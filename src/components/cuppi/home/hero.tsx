@@ -3,9 +3,10 @@ import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { splitEmphasis, type HomeHero as HomeHeroData } from '@/lib/home-hero';
 import { PhoneMockup } from '../blocks/phone-mockup';
+import { patternUrl } from '../pattern-overlay';
+import { SpotlightPattern } from '../spotlight-pattern';
+import { HeroIntro } from './hero-intro';
 import { TINTS } from '../blocks/tints';
-
-const delay = (ms: number) => ({ '--d': `${ms}ms` }) as React.CSSProperties;
 
 /** The home page's opening block: what's new, in a big colour block, with the app on show. */
 export function HomeHero({ hero }: { hero: HomeHeroData }) {
@@ -13,21 +14,28 @@ export function HomeHero({ hero }: { hero: HomeHeroData }) {
   const { screenshot: shot } = hero;
   return (
     <section className="w-full px-3 pt-3 sm:px-6">
-      <div className={cn('relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem]', tint.surface, tint.text)}>
-        <div className="grid items-stretch md:grid-cols-[1.1fr_1fr]">
+      <HeroIntro
+        patternUrl={hero.pattern ? patternUrl(hero.pattern.url) : undefined}
+        className={cn('relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem]', tint.surface, tint.text)}
+      >
+        {/* Far layer: the pattern. The intro scales this wrapper, so the pattern inside keeps its own fade and cursor light. */}
+        {hero.pattern && (
+          <div className="intro-far pointer-events-none absolute inset-0">
+            <SpotlightPattern
+              pattern={hero.pattern.url}
+              focus={hero.pattern.focus}
+              size={hero.pattern.size}
+              centre={hero.pattern.centre}
+              edge={hero.pattern.edge}
+              spot={hero.pattern.spot}
+              radius={hero.pattern.radius}
+            />
+          </div>
+        )}
+        {/* Near layer: the words and the phone, together. `relative` keeps them above the pattern. */}
+        <div className="intro-near relative grid items-stretch md:grid-cols-[1.1fr_1fr]">
           <div className="flex flex-col justify-center gap-6 px-7 pb-6 pt-12 sm:px-12 md:py-20">
-            <span
-              className="cuppi-fade-up inline-flex w-fit items-center gap-2 rounded-full bg-cuppi-paper/90 px-4 py-1.5 text-sm font-semibold text-cuppi-ink"
-              style={delay(0)}
-            >
-              <span aria-hidden className="h-2 w-2 rounded-full bg-cuppi-brand" />
-              {hero.badge}
-            </span>
-
-            <h1
-              className="cuppi-fade-up font-headline text-5xl font-normal leading-[1.02] tracking-tight text-balance sm:text-6xl lg:text-7xl"
-              style={delay(100)}
-            >
+            <h1 className="font-headline text-5xl font-normal leading-[1.02] tracking-tight text-balance sm:text-6xl lg:text-7xl">
               {splitEmphasis(hero.headline).map((part, i) =>
                 part.em ? (
                   <em key={i} className="whitespace-nowrap text-cuppi-brand">
@@ -39,12 +47,12 @@ export function HomeHero({ hero }: { hero: HomeHeroData }) {
               )}
             </h1>
 
-            <p className={cn('cuppi-fade-up max-w-md text-xl leading-relaxed', tint.muted)} style={delay(220)}>
+            <p className={cn('max-w-md text-xl leading-relaxed', tint.muted)}>
               {hero.body}
             </p>
 
             {hero.link && (
-              <div className="cuppi-fade-up" style={delay(340)}>
+              <div className="intro-late">
                 <Link
                   href={hero.link.href}
                   className="group inline-flex items-center gap-2 rounded-full bg-cuppi-paper/90 px-6 py-3 text-lg font-semibold text-cuppi-ink transition-colors hover:bg-cuppi-paper"
@@ -58,7 +66,7 @@ export function HomeHero({ hero }: { hero: HomeHeroData }) {
 
           {/* The phone is sized from the block's height (taller than the block), so the same part of the screen shows at any width. */}
           <div className="relative min-h-[30rem] md:min-h-[36rem]">
-            <div className="cuppi-rise absolute inset-0" style={delay(200)}>
+            <div className="absolute inset-0">
               <PhoneMockup
                 kind={hero.mockup}
                 flip={hero.flip}
@@ -74,7 +82,7 @@ export function HomeHero({ hero }: { hero: HomeHeroData }) {
             </div>
           </div>
         </div>
-      </div>
+      </HeroIntro>
     </section>
   );
 }

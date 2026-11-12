@@ -50,6 +50,9 @@ Rules:
 - **Display: DM Serif Display**, Regular and Italic: the app's own display serif. It
   has no bold, so titles are never bolded (the theme sets `font-synthesis: none`).
 - **Body: DM Sans.** Friendly and legible, no personality fighting the serif.
+- Highlighted text is set in the AccentColor (`text-cuppi-brand`), italic: one word or short phrase per
+  headline ("Vroom-vroom", "as you do.", "gently", "help?"). Always large display type, because the
+  orange is too light for small text on cream. Small orange text uses `brand-deep`.
 - Italic is for a single emphasised word ("*gently*") or a callout sentence.
 
 ## Shape
@@ -88,10 +91,9 @@ Until the admin exists, features come from `src/lib/features-seed.ts`.
 
 ## Features and their icons
 
-Features are grouped as the app's Apps tab groups them: **Family life**
-(Celebrations, Pets, Chores) and **Home** (Shopping, Budget, Bin Day, Receipts, Car)
-fill the Features menu. **Your Home** (Home Feed, Personalisation, Privacy & Security)
-is the second menu.
+The Features menu has three columns: **Family life** (Celebrations, Pets, Chores),
+**Home** (Shopping, Bin Day, Car) and **Finance** (Budget, Receipts). **Your Home** (Home
+Feed, Personalisation, Privacy & Security) is the second menu, and stays separate.
 
 Each feature wears its in-app icon as an *app tile* (`AppTile` in
 `src/components/cuppi/feature-icon.tsx`), built the way the app's icons are built:
@@ -112,7 +114,7 @@ Nothing is invented for any of them.
 ## The home page hero
 
 The home page leads with whatever is newest: the latest release, a seasonal promo, a
-discount. It is one small piece of data in `src/lib/home-hero.ts` (badge, headline,
+discount. It is one small piece of data in `src/lib/home-hero.ts` (headline,
 text, one quiet link, a screenshot, which phone, a tint). Change it and nothing else
 needs touching. Wrap a word in `*asterisks*` in the headline to set it in italic.
 
@@ -160,7 +162,8 @@ of text and a search box or button. The help front page has its own centred vers
 Download, "Message us", the closing "Download on the App Store" and the invite page's
 "Open in Cuppi". It is built like the app's icons: a flat AccentColor fill, a 1px deeper
 outline, and a thin bright shine at the top and bottom that curves into the pill's ends.
-Use it for the single main action on a page and nowhere else. Secondary buttons ("Explore
+It does not move: on hover a faint light rises from the bottom edge, and while pressed
+the whole button lights up. Use it for the single main action on a page and nowhere else. Secondary buttons ("Explore
 features", the "back" pills) stay plain on purpose. It renders a link (in the same tab, in a
 new tab, or a plain link for app deep links) or a button, and works as a dialog trigger.
 
@@ -171,3 +174,55 @@ is always semibold and at least 15px.
 
 The logo's left edge sits where the bar's rounded end finishes (half the bar's height, so
 about 30px in), not hard against the curve.
+
+## Patterns
+
+The app's background patterns are in `public/patterns` (autumnPorch, springGarden, summerTea,
+victorianWinter). The originals are 0.6 to 1MB each because they carry Illustrator metadata and
+hidden layers, so the site uses slimmed copies (`*.min.svg`: 30 to 190KB). springGarden has
+not been slimmed yet because nothing uses it. List and paths are in `src/lib/patterns.ts`.
+
+`PatternOverlay` (`src/components/cuppi/pattern-overlay.tsx`) lays a pattern over a colour block.
+The shapes are white, so opacity sets how strongly it shows. The house look is a quiet patch
+of 5% around what we want looked at, easing out to 30% at the corners, so a phone or a search
+box sits in a calm area. `shape="ellipse"` stretches the fade to a wide block.
+
+| Where | Pattern | Quiet patch |
+| --- | --- | --- |
+| Home hero | victorianWinter | behind the phone |
+| Every feature page hero | victorianWinter | behind the phone |
+| Cosy Corner hero | autumnPorch | behind the picture |
+| Help page hero | summerTea | the middle, behind the search box (ellipse) |
+
+**Cursor light.** The home hero's pattern also lights up under the pointer: a soft circle (190px)
+where the pattern rises to 50%, easing after the cursor and fading in and out as it enters and
+leaves (`SpotlightPattern`). It is on every hero with a pattern: the home hero's `spot` and `radius`
+are in `src/lib/home-hero.ts`; the others use 50% (17% on the dark feature heroes). It is mouse and
+pen only: touch screens and reduced-motion get the plain pattern. The opacity maths is in
+`patternLayers()` in `src/lib/patterns.ts`, with tests. 
+
+White reads much stronger on a dark colour than on a light one, so dark heroes (the deep
+blue ones) get a third of the strength (1.5% to 10%). Pages that put a pattern behind text
+must check the text still reads.
+
+## The home hero's opening shot
+
+When the home page loads, the hero shows only its colour block until everything it needs has
+downloaded (fonts, the phone images, the pattern). Then the camera pulls back out of the hero.
+It is built in layers at different depths. Parallax is the same move on the same timeline at
+different distances: every layer shares one duration (4.4s) and one curve, and they differ only
+in how far they travel, so the near layer is always moving faster and they arrive together.
+(Give the layers different durations and they cross over, which flattens the depth. The first
+version did that, and the parallax barely showed.)
+
+| Layer | What | Starts | Speed vs the pattern |
+| --- | --- | --- | --- |
+| far (`.intro-far`) | the pattern | 8% closer | 1x |
+| near (`.intro-near`) | the text and the phone, together | 40% closer | 5x |
+| late (`.intro-late`) | the button | fades up at about 2.6s, as the move settles | |
+
+`HeroIntro` (`src/components/cuppi/home/hero-intro.tsx`) holds the hero in `prep`, waits, then sets
+`play`; the timings are in `globals.css`. It cannot leave the hero hidden: it plays after 6 seconds
+even if something never loads, and with no JavaScript CSS reveals it after 8. Reduced motion shows
+no movement. To use it on another hero, wrap the frame in `HeroIntro` and put `intro-far`,
+`intro-near` and `intro-late` on the layers.

@@ -24,10 +24,10 @@ export type FeatureIcon =
   | 'sparkles';
 
 /**
- * Where a feature sits. 'family' and 'home' mirror the two sections of the app's
- * own Apps tab and fill the Features menu; 'yours' fills the second menu.
+ * Where a feature sits. 'family', 'home' and 'finance' fill the Features menu (the
+ * app's features, sorted by what they are for); 'yours' fills the second menu.
  */
-export type FeatureGroup = 'family' | 'home' | 'yours';
+export type FeatureGroup = 'family' | 'home' | 'finance' | 'yours';
 
 /** The colour of a feature's app-icon tile, as in the app's Apps tab. */
 export type TileColour = 'pink' | 'green' | 'blue' | 'amber';
@@ -107,15 +107,16 @@ export const hasPage = (f: Feature): f is PageFeature => f.status !== 'soon' && 
 
 export const GROUP_LABELS: Record<FeatureGroup, { title: string; blurb: string }> = {
   family: { title: 'Family life', blurb: 'The people and pets you share a home with' },
-  home: { title: 'Home', blurb: 'Money, shopping and the everyday jobs' },
+  home: { title: 'Home', blurb: 'Shopping, bins and the car' },
+  finance: { title: 'Finance', blurb: 'Budgets and receipts, clear and calm' },
   yours: { title: 'Your Home', blurb: 'The feed, your colours and your privacy' },
 };
 
-export const GROUP_ORDER: FeatureGroup[] = ['family', 'home', 'yours'];
+export const GROUP_ORDER: FeatureGroup[] = ['family', 'home', 'finance', 'yours'];
 
 /** Which groups open from which menu button in the header. */
 export const MENU_GROUPS: { key: 'features' | 'yours'; label: string; groups: FeatureGroup[] }[] = [
-  { key: 'features', label: 'Features', groups: ['family', 'home'] },
+  { key: 'features', label: 'Features', groups: ['family', 'home', 'finance'] },
   { key: 'yours', label: 'Your Home', groups: ['yours'] },
 ];
 

@@ -67,6 +67,6 @@ describe('validateFeatures', () => {
   });
 
   test('every group in the menu order has a label slot', () => {
-    assert.deepEqual([...GROUP_ORDER].sort(), ['family', 'home', 'yours']);
+    assert.deepEqual([...GROUP_ORDER].sort(), ['family', 'finance', 'home', 'yours']);
   });
 });

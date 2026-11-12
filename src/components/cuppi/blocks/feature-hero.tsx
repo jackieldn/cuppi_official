@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PageFeature } from '@/lib/features-types';
+import { SpotlightPattern } from '../spotlight-pattern';
 import { Phone } from './phone';
 import { TINTS } from './tints';
 
@@ -14,6 +15,8 @@ export function FeatureHero({ feature }: { feature: PageFeature }) {
   return (
     <section className="px-3 pt-3 sm:px-6">
       <div className={cn('relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem]', tint.surface, tint.text)}>
+        {/* White shapes read much stronger on a dark colour, so dark heroes get about a third of the strength, the cursor light included. */}
+        <SpotlightPattern pattern="victorianWinter" focus="72% 50%" {...(tint.dark ? { centre: 0.015, edge: 0.1, spot: 0.17 } : { spot: 0.5 })} />
         <div className="relative grid items-stretch md:grid-cols-[1.05fr_1fr]">
           <div className="flex flex-col justify-center gap-6 px-7 pb-4 pt-10 sm:px-12 md:py-16">
             <Link

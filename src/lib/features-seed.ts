@@ -10,8 +10,8 @@ import type { Feature, FeatureCard, FeatureImage } from './features-types';
 // screenshots yet, so they are listed as "soon" with no page. Siri and the
 // Companion are not listed at all yet. Nothing is invented for any of them.
 //
-// Groups mirror the app's Apps tab: Family life and Home fill the Features menu,
-// and "yours" (the feed, personalisation, privacy) fills the second menu.
+// Family life, Home and Finance fill the Features menu; "yours" (the feed,
+// personalisation, privacy) fills the second menu.
 
 type Carousel = Extract<(typeof homePageFallback.sections)[number], { kind: 'carousel' }>;
 type ImageSection = Extract<(typeof homePageFallback.sections)[number], { kind: 'image' }>;
@@ -173,7 +173,7 @@ export const featuresSeed: Feature[] = [
     tagline: 'Your shopping, itemised',
     icon: 'receipt',
     tint: 'honey',
-    group: 'home',
+    group: 'finance',
     status: 'live',
     order: 40,
     iconUrl: '/icons/receiptAppIcon.png',
@@ -195,7 +195,7 @@ export const featuresSeed: Feature[] = [
     tagline: 'Budgets built for Britain',
     icon: 'wallet',
     tint: 'lake',
-    group: 'home',
+    group: 'finance',
     status: 'live',
     order: 20,
     iconUrl: '/icons/007-3d-wallet.png',

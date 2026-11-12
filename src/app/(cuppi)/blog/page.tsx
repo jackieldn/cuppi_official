@@ -7,6 +7,7 @@ import { CosyCornerPost } from '@/lib/blog-types';
 import { Badge } from '@/components/ui/badge';
 import { CuppiFooter } from '@/components/cuppi/footer';
 import { CuppiHeader } from '@/components/cuppi/header';
+import { SpotlightPattern } from '@/components/cuppi/spotlight-pattern';
 
 export const revalidate = 60; // Re-fetch posts every 60 seconds
 
@@ -117,19 +118,19 @@ function LatestHero({ post }: { post: CosyCornerPost }) {
   return (
     <Link
       href={`/blog/${post.slug.current}`}
-      className="cuppi-fade-up group block overflow-hidden rounded-[2.5rem] bg-cuppi-honey-soft transition-transform duration-500 [transition-timing-function:var(--ease-spring)] hover:-translate-y-1"
+      className="cuppi-fade-up group relative block overflow-hidden rounded-[2.5rem] bg-cuppi-honey-soft transition-transform duration-500 [transition-timing-function:var(--ease-spring)] hover:-translate-y-1"
       style={{ '--d': '200ms' } as React.CSSProperties}
     >
-      <div className={post.mainImage ? 'grid items-center md:grid-cols-[1fr_1.15fr]' : 'grid'}>
+      <SpotlightPattern pattern="autumnPorch" focus="72% 50%" spot={0.5} />
+      <div className={post.mainImage ? 'relative grid items-center md:grid-cols-[1fr_1.15fr]' : 'relative grid'}>
         <div className="order-2 flex flex-col items-start gap-5 px-7 py-9 sm:px-12 md:order-1 md:py-14">
-          <span className="inline-flex items-center gap-2 rounded-full bg-cuppi-paper/90 px-4 py-1.5 text-sm font-semibold text-cuppi-ink">
-            <span aria-hidden className="h-2 w-2 rounded-full bg-cuppi-brand" />
-            Latest article
-            <span aria-hidden className="text-cuppi-ink-soft">·</span>
-            <time dateTime={post._createdAt} className="font-medium text-cuppi-ink-soft">
-              {format(new Date(post._createdAt), 'd MMMM yyyy')}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+            <time dateTime={post._createdAt} className="text-cuppi-ink-soft">
+              {format(new Date(post._createdAt), 'MMMM dd, yyyy')}
             </time>
-          </span>
+            {post.postType && <Badge variant="secondary">{post.postType}</Badge>}
+            {post.status && <Badge variant="outline">{post.status}</Badge>}
+          </div>
           <h2 className="font-headline text-4xl font-normal leading-[1.05] tracking-tight text-balance sm:text-5xl">{post.title}</h2>
           {post.excerpt && <p className="line-clamp-4 max-w-xl text-lg leading-relaxed text-cuppi-ink-soft">{post.excerpt}</p>}
           <span className="mt-1 inline-flex items-center gap-2 text-lg font-semibold text-cuppi-brand-deep">
@@ -147,7 +148,7 @@ function LatestHero({ post }: { post: CosyCornerPost }) {
                 fill
                 sizes="(max-width: 768px) 92vw, 600px"
                 priority
-                className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                className="object-cover"
               />
             </div>
           </div>

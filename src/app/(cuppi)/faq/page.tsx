@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import type { Metadata } from 'next';
 import { CuppiFooter } from '@/components/cuppi/footer';
 import { CuppiHeader } from '@/components/cuppi/header';
+import { SpotlightPattern } from '@/components/cuppi/spotlight-pattern';
 import { FaqSearch } from '@/components/faq/faq-search';
 import { FaqSectionCard } from '@/components/faq/faq-section-card';
 import { FaqHelpCta } from '@/components/faq/faq-help-cta';
@@ -38,9 +39,11 @@ export default async function FaqPage() {
       <main className="flex-grow">
         {/* One question, one search box, and room to breathe. */}
         <section className="px-3 pt-3 sm:px-6">
-          <div className="mx-auto max-w-6xl rounded-[2.5rem] bg-cuppi-sky-soft px-6 py-16 text-center sm:py-24">
+          <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-cuppi-sky-soft px-6 py-16 text-center sm:py-24">
+            <SpotlightPattern pattern="summerTea" focus="50% 55%" shape="ellipse" spot={0.5} />
+            <div className="relative">
             <h1 className="cuppi-fade-up font-headline text-5xl font-normal leading-[1.05] tracking-tight sm:text-7xl">
-              How can we <em className="text-cuppi-lake">help?</em>
+              How can we <em className="text-cuppi-brand">help?</em>
             </h1>
             <p className="cuppi-fade-up mx-auto mt-5 max-w-md text-lg text-cuppi-ink-soft" style={{ '--d': '100ms' } as React.CSSProperties}>
               Search the answers, or pick a topic below.
@@ -65,6 +68,7 @@ export default async function FaqPage() {
                   {term}
                 </Link>
               ))}
+            </div>
             </div>
           </div>
         </section>

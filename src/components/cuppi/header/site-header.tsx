@@ -27,7 +27,7 @@ const LINKS: { key: string; label: string; href: string; menu?: MenuKey }[] = [
 ];
 
 // Width of each panel, in px, used to centre it under its button.
-const PANEL_WIDTH: Record<MenuKey, number> = { features: 560, yours: 288 };
+const PANEL_WIDTH: Record<MenuKey, number> = { features: 720, yours: 288 };
 
 export function SiteHeader({ groups }: { groups: Group[] }) {
   const pathname = usePathname();
@@ -213,7 +213,7 @@ export function SiteHeader({ groups }: { groups: Group[] }) {
             onMouseLeave={closeSoon}
           >
             <div className="rounded-[2rem] border border-cuppi-line bg-cuppi-card p-4 shadow-[0_24px_60px_-24px_rgba(43,33,24,0.45)]">
-              <div className={cn('grid gap-4', open === 'features' && 'grid-cols-2')}>
+              <div className={cn('grid gap-4', open === 'features' && 'grid-cols-3')}>
                 {byGroup(MENU_GROUPS.find((m) => m.key === open)?.groups ?? []).map(({ group, items }, gi) => (
                   <div key={group} className="cuppi-fade-up" style={{ '--d': `${gi * 50}ms` } as React.CSSProperties}>
                     {open === 'features' && (

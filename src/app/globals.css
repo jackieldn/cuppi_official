@@ -627,3 +627,43 @@ body > div:has(iframe[title*="recaptcha"]) {
   [data-revealed] .cuppi-rise-scroll { animation: none; }
   .cuppi-on-reveal .cuppi-rise-scroll { opacity: 1; }
 }
+
+/*
+  Home hero intro: the camera pulls back out of the hero (HeroIntro sets data-intro).
+  Three layers at three depths, so it reads as depth rather than a zoom. Parallax is the SAME
+  move on the SAME timeline at different distances, so the layers share one duration and one
+  curve and arrive together; they differ only in how far they travel:
+    far   the pattern: starts 8% closer, so it drifts back slowly
+    near  the text and phone: start 40% closer, so they sweep back about five times faster
+    late  the button: fades up once the move has mostly settled
+  (Give the layers different durations and they cross over, which flattens the depth.)
+  In "prep" the hero shows only its colour. In "play" each layer eases to its natural
+  state; the end state is simply "no transform, fully visible", so there is nothing to keep in sync.
+*/
+.theme-cuppi {
+  /* One shared curve for every layer in the shot: parallax is the same move at different distances. */
+  --ease-camera: cubic-bezier(0.3, 0.55, 0.25, 1);
+}
+
+.intro-far,
+.intro-near { transform-origin: 50% 50%; will-change: transform, opacity; }
+
+[data-intro='prep'] .intro-far  { opacity: 0; transform: scale(1.08); }
+[data-intro='prep'] .intro-near { opacity: 0; transform: scale(1.4); }
+[data-intro='prep'] .intro-late { opacity: 0; transform: translateY(16px); }
+
+[data-intro='play'] .intro-far  { transition: transform 4.4s var(--ease-camera), opacity 1.8s ease-out; }
+[data-intro='play'] .intro-near { transition: transform 4.4s var(--ease-camera), opacity 1.2s ease-out; }
+[data-intro='play'] .intro-late { transition: transform 0.9s var(--ease-calm) 2.6s, opacity 0.9s ease-out 2.6s; }
+
+/* No JavaScript, or it never got going: show everything after 8 seconds regardless. */
+@keyframes intro-failsafe { to { opacity: 1; transform: none; } }
+[data-intro='prep'] .intro-far,
+[data-intro='prep'] .intro-near,
+[data-intro='prep'] .intro-late { animation: intro-failsafe 0.01s 8s forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-intro] .intro-far,
+  [data-intro] .intro-near,
+  [data-intro] .intro-late { opacity: 1 !important; transform: none !important; transition: none !important; animation: none !important; }
+}
