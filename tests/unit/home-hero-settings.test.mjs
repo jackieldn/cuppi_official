@@ -102,3 +102,71 @@ describe('buildHero', () => {
     assert.equal(HERO_TEMPLATES.find((t) => t.key === 'split-reverse').facing, 'right');
   });
 });
+
+describe('the hero screenshot', () => {
+  const STORAGE = 'https://firebasestorage.googleapis.com/v0/b/studio-5700093446-89b93.firebasestorage.app/';
+  const shot = { url: `${STORAGE}o/cuppi_home%2Fshot.png?alt=media`, alt: 'The Pets screen', width: 1170, height: 2532, bg: '#D8EAF9' };
+
+  test('none saved is the original, and the default hero still uses the built-in screenshot', () => {
+    assert.equal(defaultHeroSettings().screenshot, null);
+    assert.deepEqual(buildHero(defaultHeroSettings()).screenshot, homeHero.screenshot);
+    for (const bad of [undefined, null, 'x', 5, [], {}, { url: 5 }]) assert.equal(resolveHeroSettings({ screenshot: bad }).screenshot, null);
+  });
+
+  test('a saved screenshot is kept and is what the hero draws', () => {
+    const s = resolveHeroSettings({ screenshot: shot });
+    assert.deepEqual(s.screenshot, shot);
+    assert.deepEqual(buildHero(s).screenshot, shot);
+    // everything else about the hero is unaffected
+    assert.equal(buildHero(s).headline, homeHero.headline);
+  });
+
+  test('an address the site cannot show falls back to the original rather than breaking the hero', () => {
+    for (const url of ['https://evil.example/a.png', 'http://insecure/a.png', 'javascript:alert(1)', '//evil.com/a.png', 'blob:http://localhost/123']) {
+      assert.equal(resolveHeroSettings({ screenshot: { ...shot, url } }).screenshot, null, url);
+    }
+    // a file on this site is fine
+    assert.equal(resolveHeroSettings({ screenshot: { ...shot, url: '/images/hero/x.jpg' } }).screenshot.url, '/images/hero/x.jpg');
+  });
+
+  test('bad fields fall back on their own', () => {
+    const s = resolveHeroSettings({ screenshot: { url: shot.url, width: -5, height: 'tall', bg: 'red; background:url(x)', alt: '   ' } }).screenshot;
+    assert.deepEqual([s.width, s.height], [1170, 2532]);
+    assert.equal(s.bg, '#FFFFFF');
+    assert.equal(s.alt, 'The Cuppi app');
+    assert.equal(resolveHeroSettings({ screenshot: { ...shot, alt: 'x'.repeat(500) } }).screenshot.alt.length, 200);
+  });
+
+  test('saving needs a picture if a screenshot is set', () => {
+    assert.deepEqual(validateHeroSettings({ ...defaultHeroSettings(), screenshot: shot }), []);
+    assert.equal(validateHeroSettings({ ...defaultHeroSettings(), screenshot: { ...shot, url: '' } }).length, 1);
+  });
+
+  test('the view, a second phone, its arrangement and the slide are kept and read like a feature page\'s', () => {
+    const second = { url: `${STORAGE}o/cuppi_home%2Fsecond.png?alt=media`, alt: 'Second', width: 1170, height: 2532, view: 'bottom' };
+    const s = resolveHeroSettings({ screenshot: { ...shot, view: 'bottom', second, arrange: 'level' } }).screenshot;
+    assert.equal(s.view, 'bottom');
+    assert.deepEqual(s.second, second);
+    assert.equal(s.arrange, 'level');
+    assert.deepEqual(buildHero(resolveHeroSettings({ screenshot: { ...shot, view: 'bottom', second } })).screenshot.second, second);
+    // top and a lower arrangement are the defaults, so nothing is stored for them
+    const plain = resolveHeroSettings({ screenshot: { ...shot, view: 'top', second, arrange: 'lower' } }).screenshot;
+    assert.equal(plain.view, undefined);
+    assert.equal(plain.arrange, undefined);
+  });
+
+  test('the slide is for one phone only, and a second screenshot that cannot be shown is dropped', () => {
+    assert.equal(resolveHeroSettings({ screenshot: { ...shot, slide: true } }).screenshot.slide, true);
+    assert.equal(resolveHeroSettings({ screenshot: { ...shot, slide: 'yes' } }).screenshot.slide, undefined);
+    const second = { url: `${STORAGE}o/x.png?alt=media`, alt: 'b' };
+    assert.equal(resolveHeroSettings({ screenshot: { ...shot, slide: true, second } }).screenshot.slide, undefined, 'not with two phones');
+    assert.equal(resolveHeroSettings({ screenshot: { ...shot, second: { url: 'https://evil.example/x.png' } } }).screenshot.second, undefined);
+  });
+
+  test('saving needs the second phone\'s picture if there is a second phone', () => {
+    const withSecond = (url) => ({ ...defaultHeroSettings(), screenshot: { ...shot, second: { url, alt: '' } } });
+    assert.deepEqual(validateHeroSettings(withSecond(shot.url)), []);
+    assert.equal(validateHeroSettings(withSecond('')).length, 1);
+  });
+});
+

@@ -229,6 +229,13 @@ case to `block-renderer.tsx`, then in `src/lib/feature-sections.ts` add it to `S
 `src/components/admin/cuppi/section-forms.tsx` and a thumbnail in `SectionThumb` (`feature-page-admin.tsx`). The
 unit tests (`tests/unit/feature-sections.test.mjs`) loop over `SECTION_TEMPLATES`, so they catch a missing piece.
 
+**The top picture** (the feature's hero image) is `phone` or `photo` too. A `photo` is set in a rounded mask with a margin all round, so the block's colour and pattern frame it: in its half of the page's
+top block (1rem of margin, 1.75rem corners) and in its card on the Features overview (1rem of margin, 1.25rem corners). It is
+cropped to fill the mask, never stretched. Without the setting a picture is treated as a phone crop and fitted whole inside a square, so a landscape
+photo would sit small and square-cornered. In the admin (Edit on the features list) the choice is "How the picture is shown":
+a landscape picture is set to Photo automatically when it is chosen, and it can be changed. A picture saved before the
+choice existed has none, so open its feature, pick Photo and Save.
+
 Built-in features start from `src/lib/features-seed.ts`; the admin's sections (below) replace them.
 
 ## Disclaimers
@@ -296,8 +303,20 @@ The home page leads with whatever is newest: the latest release, a seasonal prom
 discount. It is one small piece of data (headline, text, one quiet link, a screenshot,
 which phone, a tint, a pattern), edited in the admin under **Cuppi > Home hero** and
 stored as `cuppi_home/hero`. `src/lib/home-hero.ts` is its starting point and holds the
-screenshot, which the admin does not change yet. Wrap a word in `*asterisks*` in the
+original screenshot. Wrap a word in `*asterisks*` in the
 headline to set it in italic.
+
+**The screenshot** in the hero's phone can be uploaded in the editor (Phone > Upload a screenshot): a plain app screenshot, which the
+site puts in the phone. The hero draws it with the same `FramedPhones` a feature page uses (`variant` `hero-split` or `hero-centred`
+sets where the phone hangs), so it has the same options (see Building a feature page): **one phone or two side by side** (right one
+lower, higher, or level), **the top or the bottom** of each screenshot, and a **slide** to the other end of the screenshot while the
+cursor is over the hero (one phone only). The phone's angle and facing stay the hero's own settings (with two phones "facing" means
+towards each other or apart). It is saved as `screenshot` in the hero document (`url`, `alt`, `width`, `height`, `bg`, and `view`,
+`second`, `arrange`, `slide` when set), read through the same `readImage` as a page's pictures, and uploaded on Save to `cuppi_home/` in
+Storage (images up to 10 MB; `storage.rules` allows it). Removing it goes back to the one in `home-hero.ts`. Without one saved, or
+with an address the site cannot show, the original is used, so the hero never loses its picture. The hero shows only the top part of the
+screen unless the bottom is chosen (the phone is 175% of the block's height), so crop out anything private. A full-length iPhone
+screenshot fills the screen right to the bezel (see Phone mockups).
 
 The hero has three templates (`split`, `split-reverse`, `centred`; `HomeHero` in
 `src/components/cuppi/home/hero.tsx`) that share the same words and phone. Everything

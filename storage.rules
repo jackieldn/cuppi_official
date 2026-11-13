@@ -112,6 +112,15 @@ service firebase.storage {
             && request.resource.contentType == 'application/pdf'));
     }
 
+    // The screenshot in the Cuppi home page hero's phone, set in the admin. Images only, up to 10 MB.
+    match /cuppi_home/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && (request.resource == null
+          || (request.resource.size < 10 * 1024 * 1024
+            && request.resource.contentType.matches('image/.*')));
+    }
+
     // Icons, screenshots and videos for Cuppi feature pages built in the admin. Images up to 10 MB;
     // videos (MP4, WebM or MOV, for the page builder's Video section) up to 200 MB.
     match /cuppi_features/{allPaths=**} {

@@ -61,19 +61,32 @@ export default async function FeaturesPage() {
                           tint.text,
                         )}
                       >
-                        <div className="relative flex items-start justify-between gap-4">
-                          <div>
-                            <AppTile feature={f} className="mb-4 h-14 w-14" />
-                            <h3 className="flex items-center gap-2 font-headline font-normal text-3xl">
+                        {/* The tile, with the name and the one line beside it, and the arrow at the far end. */}
+                        <div className="relative flex items-center gap-4">
+                          <AppTile feature={f} className="h-14 w-14 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <h3 className="flex flex-wrap items-center gap-x-2 gap-y-1 font-headline font-normal text-3xl leading-tight">
                               {f.name}
                               {status && <span className="rounded-full bg-cuppi-paper/80 px-2.5 py-0.5 font-body text-xs font-semibold text-cuppi-ink">{status}</span>}
                             </h3>
-                            <p className={cn('mt-1.5 max-w-xs', tint.muted)}>{f.tagline}</p>
+                            <p className={cn('mt-0.5', tint.muted)}>{f.tagline}</p>
                           </div>
-                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cuppi-paper/70 text-cuppi-ink transition-transform duration-500 [transition-timing-function:var(--ease-spring)] group-hover:rotate-45 group-hover:bg-cuppi-paper">
+                          <span className="grid h-10 w-10 shrink-0 place-items-center self-start rounded-full bg-cuppi-paper/70 text-cuppi-ink transition-transform duration-500 [transition-timing-function:var(--ease-spring)] group-hover:rotate-45 group-hover:bg-cuppi-paper">
                             <ArrowUpRight className="h-5 w-5" aria-hidden />
                           </span>
                         </div>
+                        {f.hero.image.fit === 'photo' && f.hero.imageStyle !== 'wide' ? (
+                          // A photo fills the rest of the card in a rounded mask, with a margin round it so the card's colour frames it.
+                          <div className="relative -mx-3 -mb-3 mt-5 min-h-[14rem] flex-1 overflow-hidden rounded-[1.25rem]">
+                            <Image
+                              src={f.hero.image.url}
+                              alt=""
+                              fill
+                              sizes="(max-width: 640px) 100vw, 50vw"
+                              className="object-cover transition-transform duration-700 [transition-timing-function:var(--ease-spring)] group-hover:scale-105"
+                            />
+                          </div>
+                        ) : (
                         <div className="relative mt-4 flex-1">
                           {f.hero.imageStyle === 'wide' ? (
                             <Image
@@ -90,6 +103,7 @@ export default async function FeaturesPage() {
                             </div>
                           )}
                         </div>
+                        )}
                       </Link>
                     </Reveal>
                   );

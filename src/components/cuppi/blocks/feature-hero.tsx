@@ -56,6 +56,13 @@ export function FeatureHero({ feature }: { feature: PageFeature }) {
                   className="h-auto w-full drop-shadow-[0_24px_30px_rgb(var(--c-shadow)/0.18)]"
                 />
               </div>
+            ) : feature.hero.image.fit === 'photo' ? (
+              // A photo sits in a rounded mask with a margin all round, so the block's colour and pattern frame it.
+              <div className="cuppi-rise absolute inset-0 p-4 sm:p-5" style={{ '--d': '200ms' } as React.CSSProperties}>
+                <div className="relative h-full w-full overflow-hidden rounded-[1.75rem]">
+                  <Image src={feature.hero.image.url} alt={feature.hero.image.alt} fill sizes="(max-width: 768px) 92vw, 46vw" priority className="object-cover" />
+                </div>
+              </div>
             ) : (
               <div className="cuppi-rise absolute inset-0" style={{ '--d': '200ms' } as React.CSSProperties}>
                 <Phone image={feature.hero.image} sizes="(max-width: 768px) 92vw, 46vw" priority sink={3} />

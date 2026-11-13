@@ -135,10 +135,13 @@ export function ImageEditor({
   label = 'Picture',
   fits,
   hint,
+  angle = true,
 }: {
   image: FeatureImage;
   onChange: (image: FeatureImage) => void;
   label?: string;
+  /** Offer the phone's angle and which way it faces. Off where those are set elsewhere (the home hero's own settings). */
+  angle?: boolean;
   /** The ways this template can show a picture. One means no choice is offered. */
   fits: { value: NonNullable<FeatureImage['fit']>; label: string; hint: string }[];
   hint?: string;
@@ -210,6 +213,8 @@ export function ImageEditor({
               {image.second?.url && <ViewField label="Second phone shows" value={image.second.view} onChange={(view) => onChange({ ...image, second: { ...image.second!, view } })} />}
             </div>
           )}
+          {angle && (
+            <>
           <div className="flex flex-wrap gap-x-6 gap-y-3">
             <Field label="Angle">
               <Segmented
@@ -232,6 +237,8 @@ export function ImageEditor({
             </Field>
           </div>
           {!tilt && <p className="-mt-1 text-xs text-muted-foreground">A face-forward phone looks the same either way.</p>}
+            </>
+          )}
           <div className="flex items-start gap-2">
             <Checkbox id={`${altId}-slide`} checked={!!image.slide && !pair} disabled={pair} onCheckedChange={(v) => onChange({ ...image, slide: v === true || undefined })} className="mt-0.5" />
             <div className="space-y-1">
@@ -255,7 +262,7 @@ export function ImageEditor({
   );
 }
 
-const FRAME_FIT = { value: 'frame' as const, label: 'Screenshot in a phone', hint: 'Your plain app screenshot, put inside an iPhone for you: face forward or turned 45 degrees, one phone or two. The same as the home page.' };
+export const FRAME_FIT = { value: 'frame' as const, label: 'Screenshot in a phone', hint: 'Your plain app screenshot, put inside an iPhone for you: face forward or turned 45 degrees, one phone or two. The same as the home page.' };
 export const PHONE_FITS = [
   FRAME_FIT,
   { value: 'phone' as const, label: 'Ready-made phone', hint: 'A transparent crop of a phone, already framed, that rises out of the bottom of the card.' },

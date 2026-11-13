@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { splitEmphasis, type HomeHero as HomeHeroData } from '@/lib/home-hero';
 import type { HeroTemplate } from '@/lib/home-hero-settings';
-import { PhoneMockup } from '../blocks/phone-mockup';
+import { FramedPhones } from '../blocks/framed-phones';
 import { patternUrl } from '../pattern-overlay';
 import { SpotlightPattern } from '../spotlight-pattern';
 import { HeroIntro } from './hero-intro';
@@ -68,7 +68,9 @@ export function HomeHero({ hero, instant = false }: { hero: Hero; instant?: bool
     </div>
   );
 
-  const { screenshot: shot } = hero;
+  // The same framed phones a feature page uses: the hero's screenshot (one phone or two, the top or the bottom of the screen, with the
+  // slide on hover if it is switched on) in the hero's angle and facing. The original screenshot is just a plain one phone.
+  const shots = { ...hero.screenshot, fit: 'frame' as const, frame: hero.mockup, flip: hero.flip };
   // In the two split templates the phone is sized from the block's height (taller than the block),
   // so the same part of the screen shows at any width. Centred, it is cropped by a fixed-height window.
   const phone = (
@@ -79,20 +81,7 @@ export function HomeHero({ hero, instant = false }: { hero: Hero; instant?: bool
         reverse && 'md:order-1',
       )}
     >
-      <div className="absolute inset-0">
-        <PhoneMockup
-          kind={hero.mockup}
-          flip={hero.flip}
-          src={shot.url}
-          alt={shot.alt}
-          imageWidth={shot.width}
-          imageHeight={shot.height}
-          bg={shot.bg}
-          sizes="(max-width: 768px) 60vw, 30vw"
-          priority
-          className={cn('absolute left-1/2 -translate-x-1/2', centred ? 'top-[4%] h-[190%]' : 'top-[5%] h-[175%]')}
-        />
-      </div>
+      <FramedPhones image={shots} variant={centred ? 'hero-centred' : 'hero-split'} sizes="(max-width: 768px) 60vw, 30vw" priority />
     </div>
   );
 

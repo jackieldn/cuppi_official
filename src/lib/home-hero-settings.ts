@@ -3,12 +3,14 @@
 // read through resolveHeroSettings, which fills gaps from the defaults, clamps every number and
 // drops anything unsafe, so a bad document can make the hero look plain but never break the page.
 //
-// The picture inside the phone is not editable here: it stays the one in home-hero.ts.
+// The picture inside the phone is optional: with none saved it is the one in home-hero.ts (the original).
 
-import type { FeatureTint } from './features-types';
+import { readImage } from './feature-sections.ts';
+import type { FeatureImage, FeatureShot, FeatureTint, PairArrangement, PhoneView } from './features-types';
 import { homeHero, type HomeHero } from './home-hero.ts';
 import { MAX_LABEL, safeHref } from './menu-settings.ts';
 import { PATTERNS, type PatternName } from './patterns.ts';
+import { safeImageUrl } from './safe-urls.ts';
 import type { MockupKind } from './phone-mockups';
 
 export type HeroTemplate = 'split' | 'split-reverse' | 'centred';
@@ -44,6 +46,29 @@ export const LIMITS = {
   intro: { min: 1, max: 10 },
 } as const;
 
+/**
+ * The screenshot in the hero's phone, as uploaded in the admin. Like a feature page's "screenshot in a phone" it can show the top or
+ * the bottom of the screen (`view`), be joined by a second screenshot in a second phone (`second`, set out as `arrange`), or slide
+ * to the other end of the screenshot under the cursor (`slide`, one phone only). The phone's angle and which way it faces are the
+ * hero's own settings (`phone`, `facing`).
+ */
+export type HeroShot = {
+  url: string;
+  alt: string;
+  /** Its real size, so the phone is laid out before the picture loads. */
+  width: number;
+  height: number;
+  /** The app's background colour, for any part of the screen the screenshot does not cover. */
+  bg: string;
+  view?: PhoneView;
+  second?: FeatureShot;
+  arrange?: PairArrangement;
+  slide?: boolean;
+};
+
+/** What a screenshot is assumed to measure when its size was not recorded (a current iPhone screenshot). */
+const GUESS = { width: 1170, height: 2532 };
+
 export type HeroSettings = {
   template: HeroTemplate;
   /** Wrap a word in *asterisks* to set it in italic. */
@@ -63,6 +88,8 @@ export type HeroSettings = {
   cursorGlow: boolean;
   phone: MockupKind;
   facing: Facing;
+  /** The screenshot shown in the phone, or null for the original one in home-hero.ts. */
+  screenshot: HeroShot | null;
   /** How long the opening shot takes, in seconds. */
   introSeconds: number;
 };
@@ -85,6 +112,7 @@ export function defaultHeroSettings(): HeroSettings {
     cursorGlow: (p?.spot ?? 0) > 0,
     phone: homeHero.mockup,
     facing: homeHero.flip ? 'left' : 'right',
+    screenshot: null,
     introSeconds: 4.4,
   };
 }
@@ -96,6 +124,25 @@ const text = (v: unknown, max: number, fallback: string): string => {
 const oneOf = <T extends string>(v: unknown, allowed: readonly T[], fallback: T): T => (allowed.includes(v as T) ? (v as T) : fallback);
 const num = (v: unknown, min: number, max: number, fallback: number): number =>
   typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : fallback;
+
+/** A stored screenshot -> a safe one, or null (the original) when its address is not one the site can show. */
+function readShot(v: unknown): HeroShot | null {
+  const r = v && typeof v === 'object' ? (v as Record<string, unknown>) : null;
+  // The same reader a feature page's framed phones use, so an address, size, view, second phone and colour are all checked alike.
+  const i: FeatureImage | null = r ? readImage({ ...r, fit: 'frame' }) : null;
+  if (!i) return null;
+  return {
+    url: i.url,
+    alt: i.alt || 'The Cuppi app',
+    width: i.width ?? GUESS.width,
+    height: i.height ?? GUESS.height,
+    bg: i.bg ?? '#FFFFFF',
+    ...(i.view ? { view: i.view } : {}),
+    ...(i.second ? { second: i.second } : {}),
+    ...(i.arrange ? { arrange: i.arrange } : {}),
+    ...(i.slide ? { slide: true } : {}),
+  };
+}
 
 /** Stored document -> complete, safe settings. Every field falls back on its own, so one bad field costs only itself. */
 export function resolveHeroSettings(stored: unknown): HeroSettings {
@@ -120,6 +167,7 @@ export function resolveHeroSettings(stored: unknown): HeroSettings {
     cursorGlow: typeof s.cursorGlow === 'boolean' ? s.cursorGlow : d.cursorGlow,
     phone: oneOf(s.phone, ['tilt', 'front'] as const, d.phone),
     facing: oneOf(s.facing, ['left', 'right'] as const, d.facing),
+    screenshot: readShot(s.screenshot),
     introSeconds: Math.round(num(s.introSeconds, LIMITS.intro.min, LIMITS.intro.max, d.introSeconds) * 10) / 10,
   };
 }
@@ -128,6 +176,8 @@ export function resolveHeroSettings(stored: unknown): HeroSettings {
 export function validateHeroSettings(h: HeroSettings): string[] {
   const problems: string[] = [];
   if (!h.headline.trim()) problems.push('The hero needs a headline.');
+  if (h.screenshot && !h.screenshot.url) problems.push('The phone screenshot has no picture. Choose one, or go back to the original.');
+  if (h.screenshot?.second && !h.screenshot.second.url) problems.push('Add the second phone’s screenshot, or switch to one phone.');
   if (h.button.visible) {
     if (!h.button.label.trim()) problems.push('The button needs a name (or switch it off).');
     if (!safeHref(h.button.href)) problems.push('The button needs an address that starts with / (a page on this site) or https://.');
@@ -157,6 +207,7 @@ export function buildHero(h: HeroSettings): HomeHero & { template: HeroTemplate 
             spot: h.cursorGlow ? 0.5 : 0,
             radius: 190,
           },
+    screenshot: h.screenshot ?? homeHero.screenshot,
     mockup: h.phone,
     flip: h.phone === 'tilt' && h.facing === 'left',
     introSeconds: h.introSeconds,

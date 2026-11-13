@@ -104,7 +104,8 @@ function readShot(v: unknown): FeatureShot | null {
   return { url, alt: text(r.alt, SECTION_LIMITS.alt) ?? '', ...(width && height ? { width, height } : {}), ...(r.view === 'bottom' ? { view: 'bottom' as const } : {}) };
 }
 
-function readImage(v: unknown): FeatureImage | null {
+/** A stored picture -> a safe one, or null when its address cannot be shown. Also reads the home hero's screenshot. */
+export function readImage(v: unknown): FeatureImage | null {
   const shot = readShot(v);
   const r = obj(v);
   if (!shot || !r) return null;
