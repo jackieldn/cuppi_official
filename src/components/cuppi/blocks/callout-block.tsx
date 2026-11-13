@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import { Reveal } from '@/components/ui/reveal';
 import type { FeatureBlock } from '@/lib/features-types';
 import { TINTS } from './tints';
+import { MarkedText } from '../marked-text';
 
 type Callout = Extract<FeatureBlock, { type: 'callout' }>;
 
@@ -12,9 +13,9 @@ export function CalloutBlock({ block }: { block: Callout }) {
     <Reveal className="px-3 py-3 sm:px-6">
       <section className={cn('relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] px-7 py-16 text-center sm:px-16 sm:py-24', tint.surface, tint.text)}>
         <p className="relative mx-auto max-w-3xl font-headline font-normal text-3xl italic leading-snug tracking-tight sm:text-5xl sm:leading-tight">
-          {block.title}
+          <MarkedText text={block.title} />
         </p>
-        {block.body && <p className={cn('relative mx-auto mt-5 max-w-xl text-lg', tint.muted)}>{block.body}</p>}
+        {block.body && <p className={cn('relative mx-auto mt-5 max-w-xl text-lg', tint.muted)}><MarkedText text={block.body} /></p>}
       </section>
     </Reveal>
   );

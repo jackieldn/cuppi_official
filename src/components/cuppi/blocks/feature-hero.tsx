@@ -6,6 +6,7 @@ import type { PageFeature } from '@/lib/features-types';
 import { SpotlightPattern } from '../spotlight-pattern';
 import { Phone } from './phone';
 import { TINTS } from './tints';
+import { MarkedText } from '../marked-text';
 
 /** The top of a feature page: a big colour block, words on one side, the phone on the other. */
 export function FeatureHero({ feature }: { feature: PageFeature }) {
@@ -34,10 +35,10 @@ export function FeatureHero({ feature }: { feature: PageFeature }) {
               className="cuppi-fade-up font-headline font-normal text-4xl leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl"
               style={{ '--d': '160ms' } as React.CSSProperties}
             >
-              {feature.hero.headline}
+              <MarkedText text={feature.hero.headline} />
             </h1>
             <p className={cn('cuppi-fade-up max-w-xl text-lg leading-relaxed', tint.muted)} style={{ '--d': '260ms' } as React.CSSProperties}>
-              {feature.hero.intro}
+              <MarkedText text={feature.hero.intro} />
             </p>
 
           </div>

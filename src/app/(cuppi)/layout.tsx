@@ -4,6 +4,8 @@ import { THEME_COLOURS, THEME_SCRIPT } from '@/lib/theme';
 import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from '@/firebase';
 import { CookieConsentBanner } from '@/components/layout/CookieConsentBanner';
+import { getDisclaimers } from '@/lib/cuppi-site-data';
+import { DisclaimersProvider } from '@/components/cuppi/disclaimer';
 
 const siteUrl = 'https://cuppi.co.uk';
 
@@ -47,11 +49,12 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const disclaimers = await getDisclaimers();
   return (
     // suppressHydrationWarning: THEME_SCRIPT sets data-theme and the dark class on <html> before React loads.
     <html lang="en" suppressHydrationWarning>
@@ -64,7 +67,7 @@ export default function RootLayout({
       </head>
       <body className="theme-cuppi font-body antialiased">
         <FirebaseClientProvider>
-          {children}
+          <DisclaimersProvider items={disclaimers}>{children}</DisclaimersProvider>
           <Toaster />
           <CookieConsentBanner />
         </FirebaseClientProvider>

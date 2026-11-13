@@ -14,7 +14,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { InstantReveal } from '@/components/ui/reveal';
 import { useToast } from '@/hooks/use-toast';
 import { BlockRenderer } from '@/components/cuppi/blocks/block-renderer';
+import { DisclaimersProvider } from '@/components/cuppi/disclaimer';
 import { FeatureHero } from '@/components/cuppi/blocks/feature-hero';
+import { disclaimerTag, resolveDisclaimers, type Disclaimer } from '@/lib/disclaimers';
 import { featuresSeed } from '@/lib/features-seed';
 import {
   SECTION_LIMITS,
@@ -60,6 +62,10 @@ export function FeaturePageAdmin({ slug }: { slug: string }) {
   const storage = useStorage();
   const ref = useMemo(() => (firestore ? doc(firestore, 'cuppi_features', slug) : null), [firestore, slug]);
   const { data, isLoading } = useDoc<Record<string, unknown>>(ref);
+  // The disclaimers the page's (i) tags can use, live, so a new one is usable (and shown in the preview) as soon as it is saved.
+  const disclaimerRef = useMemo(() => (firestore ? doc(firestore, 'cuppi_home', 'disclaimers') : null), [firestore]);
+  const disclaimerDoc = useDoc<Record<string, unknown>>(disclaimerRef);
+  const disclaimers = useMemo(() => resolveDisclaimers(disclaimerDoc.data ?? null), [disclaimerDoc.data]);
 
   // The editor is started once, from what was saved when the page opened. It keeps its own copy from then
   // on, so the saves it makes itself do not start it over.
@@ -97,6 +103,7 @@ export function FeaturePageAdmin({ slug }: { slug: string }) {
       feature={feature}
       original={original}
       customised={customised}
+      disclaimers={disclaimers}
       onSave={async (blocks) => {
         if (!ref) throw new Error('The database is not ready yet.');
         // JSON round trip: Firestore refuses `undefined`, and a draft can carry a few.
@@ -121,6 +128,7 @@ export function FeaturePageEditor({
   feature,
   original,
   customised,
+  disclaimers = [],
   onSave,
   onReset,
   upload,
@@ -130,6 +138,8 @@ export function FeaturePageEditor({
   original: FeatureBlock[];
   /** Whether the admin has already saved sections of their own. */
   customised: boolean;
+  /** The disclaimers a section's (i) tags can use. */
+  disclaimers?: Disclaimer[];
   onSave: (blocks: FeatureBlock[]) => Promise<void>;
   onReset: () => Promise<void>;
   upload: (file: File, kind: 'image' | 'video') => Promise<string>;
@@ -219,7 +229,7 @@ export function FeaturePageEditor({
   };
 
   const save = async () => {
-    const found = validateSections(blocks);
+    const found = validateSections(blocks, disclaimers.map((d) => d.id));
     setProblems(found);
     if (found.length > 0) return;
     try {
@@ -312,6 +322,7 @@ export function FeaturePageEditor({
           >
             <ScaledToFit designWidth={1200}>
               <InstantReveal>
+                <DisclaimersProvider items={disclaimers}>
                 <div className="pb-3">
                   <FeatureHero feature={preview} />
                   {blocks.length === 0 ? (
@@ -320,6 +331,7 @@ export function FeaturePageEditor({
                     <BlockRenderer blocks={blocks} wrap={wrap} />
                   )}
                 </div>
+                </DisclaimersProvider>
               </InstantReveal>
             </ScaledToFit>
           </div>
@@ -330,6 +342,8 @@ export function FeaturePageEditor({
 
         <div className="flex min-h-0 min-w-0 flex-col">
           <div className="space-y-6 lg:flex-1 lg:overflow-y-auto lg:pr-2">
+            <DisclaimerTags disclaimers={disclaimers} />
+
             <Card>
               <CardHeader>
                 <CardTitle>Sections</CardTitle>
@@ -457,6 +471,41 @@ export function FeaturePageEditor({
         </DialogContent>
       </Dialog>
     </UploadsContext.Provider>
+  );
+}
+
+/** The disclaimers that exist, as tags to copy. A tag straight after a word in a heading or paragraph puts an (i) icon there. */
+function DisclaimerTags({ disclaimers }: { disclaimers: Disclaimer[] }) {
+  const { toast } = useToast();
+  const copy = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(disclaimerTag(id));
+      toast({ title: 'Tag copied', description: 'Paste it straight after the word, with no space.' });
+    } catch {
+      toast({ variant: 'destructive', title: 'Could not copy', description: `Type ${disclaimerTag(id)} instead.` });
+    }
+  };
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Disclaimers</CardTitle>
+        <CardDescription>
+          Put a tag straight after a word in a heading or paragraph, like <code className="rounded bg-muted px-1 text-foreground">Medication{'{i:health}'}</code>, for an (i) icon that opens the disclaimer. Not in labels or topic titles.{' '}
+          <Link href="/admin/cuppi-disclaimers" target="_blank" className="underline underline-offset-2 hover:text-foreground">
+            Write or edit disclaimers
+          </Link>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-2">
+        {disclaimers.length === 0 && <p className="text-sm text-muted-foreground">None yet.</p>}
+        {disclaimers.map((d) => (
+          <Button key={d.id} type="button" variant="outline" size="sm" className="font-mono" title={d.text} onClick={() => copy(d.id)}>
+            <Copy className="mr-2 h-3.5 w-3.5" /> {disclaimerTag(d.id)}
+            <span className="ml-2 font-body text-xs font-normal text-muted-foreground">{d.label}</span>
+          </Button>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 

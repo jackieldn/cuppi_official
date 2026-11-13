@@ -8,6 +8,7 @@ import { patternUrl } from '../pattern-overlay';
 import { SpotlightPattern } from '../spotlight-pattern';
 import { HeroIntro } from './hero-intro';
 import { TINTS } from '../blocks/tints';
+import { MarkedText } from '../marked-text';
 
 type Hero = HomeHeroData & { template?: HeroTemplate };
 
@@ -43,15 +44,15 @@ export function HomeHero({ hero, instant = false }: { hero: Hero; instant?: bool
           part.em ? (
             // Orange is too dim on the dark (lake) block; honey stays readable there.
             <em key={i} className={cn('whitespace-nowrap', tint.dark ? 'text-cuppi-honey' : 'text-cuppi-brand')}>
-              {part.text}
+              <MarkedText text={part.text} />
             </em>
           ) : (
-            <span key={i}>{part.text}</span>
+            <span key={i}><MarkedText text={part.text} /></span>
           ),
         )}
       </h1>
 
-      {hero.body && <p className={cn('max-w-md text-xl leading-relaxed', centred && 'max-w-xl', tint.muted)}>{hero.body}</p>}
+      {hero.body && <p className={cn('max-w-md text-xl leading-relaxed', centred && 'max-w-xl', tint.muted)}><MarkedText text={hero.body} /></p>}
 
       {hero.link && (
         <div className="intro-late">

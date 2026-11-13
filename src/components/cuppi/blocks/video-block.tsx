@@ -3,6 +3,8 @@ import { Reveal } from '@/components/ui/reveal';
 import type { FeatureBlock } from '@/lib/features-types';
 import { TINTS } from './tints';
 import { VideoPlayer } from './video-player';
+import { MarkedText } from '../marked-text';
+import { stripDisclaimers } from '@/lib/disclaimers';
 
 type Video = Extract<FeatureBlock, { type: 'video' }>;
 
@@ -20,9 +22,9 @@ export function VideoBlock({ block }: { block: Video }) {
 
   const words = hasWords && (
     <div className={cn(split ? 'flex flex-col justify-center gap-4 px-4 py-8 sm:px-10 md:py-14' : 'px-4 pb-6 sm:px-6', split && textRight && 'md:order-2')}>
-      {block.eyebrow && <span className={cn('w-fit rounded-full px-3.5 py-0.5 font-headline text-base', tint.chip)}>{block.eyebrow}</span>}
-      {block.title && <h2 className={cn('max-w-2xl font-headline font-normal text-3xl leading-tight tracking-tight sm:text-4xl', block.eyebrow && !split && 'mt-4')}>{block.title}</h2>}
-      {block.body && <p className={cn('whitespace-pre-line text-lg leading-relaxed text-cuppi-ink-soft', split ? 'max-w-lg' : 'mt-3 max-w-2xl')}>{block.body}</p>}
+      {block.eyebrow && <span className={cn('w-fit rounded-full px-3.5 py-0.5 font-headline text-base', tint.chip)}>{stripDisclaimers(block.eyebrow)}</span>}
+      {block.title && <h2 className={cn('max-w-2xl font-headline font-normal text-3xl leading-tight tracking-tight sm:text-4xl', block.eyebrow && !split && 'mt-4')}><MarkedText text={block.title} /></h2>}
+      {block.body && <p className={cn('whitespace-pre-line text-lg leading-relaxed text-cuppi-ink-soft', split ? 'max-w-lg' : 'mt-3 max-w-2xl')}><MarkedText text={block.body} /></p>}
     </div>
   );
 

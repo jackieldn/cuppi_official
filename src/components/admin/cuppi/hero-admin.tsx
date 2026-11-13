@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { DisclaimersProvider } from '@/components/cuppi/disclaimer';
 import { HomeHero } from '@/components/cuppi/home/hero';
 import { TINTS } from '@/components/cuppi/blocks/tints';
 import { Segmented } from '@/components/admin/apps/segmented';
@@ -29,6 +30,7 @@ import {
   type HeroSettings,
   type HeroTemplate,
 } from '@/lib/home-hero-settings';
+import { disclaimerTag, resolveDisclaimers, type Disclaimer } from '@/lib/disclaimers';
 import { PATTERNS } from '@/lib/patterns';
 import type { FeatureTint } from '@/lib/features-types';
 import { describeError } from './errors';
@@ -52,11 +54,15 @@ export function HeroAdmin() {
   const firestore = useFirestore();
   const ref = useMemo(() => (firestore ? doc(firestore, 'cuppi_home', 'hero') : null), [firestore]);
   const { data, isLoading } = useDoc<Record<string, unknown>>(ref);
+  const disclaimerRef = useMemo(() => (firestore ? doc(firestore, 'cuppi_home', 'disclaimers') : null), [firestore]);
+  const disclaimerDoc = useDoc<Record<string, unknown>>(disclaimerRef);
+  const disclaimers = useMemo(() => resolveDisclaimers(disclaimerDoc.data ?? null), [disclaimerDoc.data]);
 
   if (isLoading) return <Skeleton className="h-96 w-full" />;
   return (
     <HeroEditor
       initial={resolveHeroSettings(data ?? null)}
+      disclaimers={disclaimers}
       onSave={async (hero) => {
         if (!ref) throw new Error('The database is not ready yet.');
         await setDoc(ref, { ...hero, updatedAt: serverTimestamp() });
@@ -66,7 +72,7 @@ export function HeroAdmin() {
 }
 
 /** The form. It knows nothing about the database: it is given what is saved and a way to save. */
-export function HeroEditor({ initial, onSave }: { initial: HeroSettings; onSave: (hero: HeroSettings) => Promise<void> }) {
+export function HeroEditor({ initial, disclaimers = [], onSave }: { initial: HeroSettings; disclaimers?: Disclaimer[]; onSave: (hero: HeroSettings) => Promise<void> }) {
   const { toast } = useToast();
   const [hero, setHero] = useState<HeroSettings>(initial);
   /** What is saved, to tell whether there is anything unsaved. */
@@ -125,7 +131,9 @@ export function HeroEditor({ initial, onSave }: { initial: HeroSettings; onSave:
           <ScaledToFit designWidth={1200}>
             {/* The real hero, drawn from the form as it is now (saved or not). It starts settled; Replay remounts it so the opening shot plays again. */}
             <div className="pb-3">
-              <HomeHero key={plays} hero={preview} instant={plays === 0} />
+              <DisclaimersProvider items={disclaimers}>
+                <HomeHero key={plays} hero={preview} instant={plays === 0} />
+              </DisclaimersProvider>
             </div>
           </ScaledToFit>
         </div>
@@ -169,7 +177,7 @@ export function HeroEditor({ initial, onSave }: { initial: HeroSettings; onSave:
             <CardHeader>
               <CardTitle>Words and button</CardTitle>
               <CardDescription>
-                Put a word between *asterisks* to set it in orange italics, like *Vroom-vroom*. The button is the quiet link under the words; the Download button lives in the menu.
+                Put a word between *asterisks* to set it in orange italics, like *Vroom-vroom*.{disclaimers.length > 0 && ` A disclaimer tag straight after a word gives it an (i) icon: ${disclaimers.map((d) => disclaimerTag(d.id)).join(', ')}.`} The button is the quiet link under the words; the Download button lives in the menu.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

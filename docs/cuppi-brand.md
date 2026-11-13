@@ -231,6 +231,43 @@ unit tests (`tests/unit/feature-sections.test.mjs`) loop over `SECTION_TEMPLATES
 
 Built-in features start from `src/lib/features-seed.ts`; the admin's sections (below) replace them.
 
+## Disclaimers
+
+Cuppi suggests reminders for health, pets and money, so wherever the words could be read as advice there is a disclaimer: a
+small **(i)** beside the word, and a bubble with the notice when it is hovered, tapped or tabbed to.
+
+**How it works.** A disclaimer is written once, in the admin under **Cuppi > Disclaimers** (`/admin/cuppi-disclaimers`), with a
+tag name (`health`), the words for its bubble (up to 700 characters), and a name for the admin's own use. It is stored as one
+document, `cuppi_home/disclaimers` (public read, admin write: the existing `cuppi_home` rule), and read on the server
+(`getDisclaimers`, `src/lib/cuppi-site-data.ts`) through `resolveDisclaimers` (`src/lib/disclaimers.ts`), which drops an entry
+with a bad tag name or no words, so a bad document cannot break a page. The wording lives in one place: change it there and every
+use changes.
+
+**Using one.** Type its tag **straight after the word, with no space**, in any heading or paragraph on a feature page (every
+template) or the home hero: `Medication{i:health} reminders`. The word and its icon never wrap onto separate lines. A tag with no
+matching disclaimer shows nothing. Tags cannot go in a label chip, a tab's title (it is a button) or a page description; those
+strip them (`stripDisclaimers`). Wherever page text is drawn it goes through `MarkedText` (`src/components/cuppi/marked-text.tsx`),
+which works in server and client components; to support tags in a new place, wrap its text in that.
+
+**The bubble** (`DisclaimerMark`, `src/components/cuppi/disclaimer.tsx`):
+
+- Opens on a mouse hovering over the icon (after 120ms) and stays while the mouse is over the bubble, so the words can be read or
+  selected; closes 220ms after the mouse leaves both.
+- Opens when the icon is reached with the **keyboard** (a focus ring shows); Enter or Space toggles it; **Escape** closes it.
+- A **tap** toggles it, because a touch screen has no hover; a tap elsewhere closes it. A click after a hover does not close what the
+  hover opened.
+- It is drawn outside the card it sits in (a colour block's rounded edge never clips it) but inside `.theme-cuppi`, so it has the
+  right colours in light and dark. It flips below the icon when there is no room above, and is never wider than the screen.
+- The icon is `0.4em` (at least 1rem), raised like a footnote, at 60% opacity until hovered. The tap area is larger than the icon.
+  Its accessible name is "Important information: <name>".
+
+**In the admin**, the page builder and the home hero editor show the live disclaimers in their previews, the page builder lists
+the tags to copy, and saving a page reports a tag that has no disclaimer. The Disclaimers page has a "Try it" sample for each. A
+saved tag name cannot be renamed (pages may use it); to retire one, remove it and any page still using it shows no icon.
+
+The wording of a disclaimer is a legal matter: the site ships with none, and what to say (and where) should be agreed with
+whoever advises on it. Which features need one is a content decision: nothing is added to the existing copy.
+
 ## Features and their icons
 
 The Features menu has three columns: **Family life** (Celebrations, Pets, Chores),
@@ -436,6 +473,7 @@ If the database cannot be reached, the built-in features and the default menu ar
 depends on it. Everything read back goes through `readOverride` / `resolveMenu`, which keep only fields of the
 right type and addresses that are safe (a path on this site, or https), so a bad document cannot break a page.
 
+- **Disclaimers** (`/admin/cuppi-disclaimers`): the notices behind the (i) icons in page text; see Disclaimers above.
 - **Page sections** (`/admin/cuppi-features/<slug>`, the **Sections** button on a feature that has a page): the page
   builder. Two columns like the home hero editor: the page as the site draws it on the left (the real `FeatureHero` and
   `BlockRenderer`, at desktop width, scaled to fit; click a section to edit it), the sections on the right. **Add a
