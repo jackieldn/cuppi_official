@@ -1,8 +1,7 @@
 'use client';
 
-import Image from 'next/image';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { AppTile } from '@/components/cuppi/feature-icon';
+import { AppTile, CuppiTile } from '@/components/cuppi/feature-icon';
 import { useAssetsReady } from '@/lib/use-assets-ready';
 import type { Feature } from '@/lib/features-types';
 
@@ -12,7 +11,7 @@ const FAN_MAX = 8;
 type Tile = Pick<Feature, 'slug' | 'name' | 'iconUrl' | 'icon' | 'tile'>;
 
 /**
- * Cuppi's own icon on its own, until the visitor scrolls it into view. Then the in-app
+ * Cuppi's own icon (the house on a cream tile) on its own, until the visitor scrolls it into view. Then the in-app
  * icons slide out of it to the left and right, the closest ones first, and settle.
  *
  * Icons take turns going right then left, so each side gets a mix. The layout is two
@@ -67,15 +66,7 @@ export function AppFan({
     <div className="fan mx-auto w-full max-w-[60rem]" aria-hidden>
       <div ref={ref} className="fan-stage" data-fan={open ? 'open' : 'closed'}>
         <div className="fan-cuppi">
-          <Image
-            src="/icons/Cuppi-Mar26-v1-iOS-Default-1024x1024@1x.png"
-            alt=""
-            width={256}
-            height={256}
-            sizes="(max-width: 640px) 80px, 128px"
-            priority
-            className="h-full w-full"
-          />
+          <CuppiTile className="h-full w-full" priority />
         </div>
         {features.slice(0, FAN_MAX).map((f, i) => {
           const side = i % 2 === 0 ? 1 : -1; // right, left, right, left...
@@ -90,7 +81,7 @@ export function AppFan({
           } as CSSProperties;
           return (
             <div key={f.slug} className="fan-icon" style={style}>
-              <AppTile feature={f} className="h-full w-full" />
+              <AppTile feature={f} eager className="h-full w-full" />
             </div>
           );
         })}

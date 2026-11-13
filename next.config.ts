@@ -1,5 +1,7 @@
 import type {NextConfig} from 'next';
 
+const DAY = 60 * 60 * 24;
+
 const nextConfig: NextConfig = {
   /* config options here */
   output: "standalone",
@@ -23,6 +25,14 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Pictures that ship with the site. Next serves files from /public with max-age=0, which makes
+      // a browser ask the server about every one of them on every use (a round trip per icon, which
+      // is what made the icons seem to reload on a phone). A week, then quietly refreshed in the
+      // background for a month. If you replace one of these files, give it a new name.
+      ...['icons', 'patterns', 'phone-frames', 'images', 'brand'].map((dir) => ({
+        source: `/${dir}/:path*`,
+        headers: [{ key: 'Cache-Control', value: `public, max-age=${7 * DAY}, stale-while-revalidate=${30 * DAY}` }],
+      })),
     ];
   },
   // Apple fetches the AASA file from exactly this path, with no redirect. App
@@ -52,6 +62,10 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    // How long a resized picture is kept (by the browser and by our server). The default is 60 seconds,
+    // so every minute the browser would ask again. Pictures here barely change, and a changed picture
+    // gets a new address (Firebase tokens, new file names), so a week is safe.
+    minimumCacheTTL: 7 * DAY,
     // next/image fetches and re-encodes these on demand, so keep the list to
     // sources we control. Allowing all of firebasestorage.googleapis.com would
     // let anyone have the optimizer fetch files from their own bucket.

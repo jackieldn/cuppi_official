@@ -48,7 +48,7 @@ export function Phone({
         height={1000}
         sizes={sizes}
         priority={priority}
-        className="h-full w-full select-none drop-shadow-[0_24px_30px_rgba(43,33,24,0.18)]"
+        className="h-full w-full select-none drop-shadow-[0_24px_30px_rgb(var(--c-shadow)/0.18)]"
       />
     </div>
   );

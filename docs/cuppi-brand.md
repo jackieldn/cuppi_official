@@ -44,6 +44,106 @@ Rules:
 - Orange `brand` on paper is 3.6:1, so it is for headline-size type only. Anything
   small uses `brand-deep` (4.9:1 on paper, 5.1:1 under cream text).
 - Body text pairs all clear WCAG AA (6.0 to 14.4:1).
+- **Highlighted text** (selected with the cursor) is the brand orange, not the operating system's blue or
+  grey: pure `#FF6B00` (`--c-selection`, the same in both themes; light mode's `--c-brand` goes salmon-pink when
+  tinted) laid over whatever is behind it at 35% in light and 45% in dark (`--selection-alpha`; the
+  `::selection` rule in `globals.css`). It is a tint, so text keeps its own colour and it works on every
+  surface. Orange text (`text-cuppi-brand`, `text-cuppi-brand-deep`) turns to the ink colour while selected,
+  because orange on an orange tint would vanish.
+
+## Dark mode
+
+The same farmhouse, lamp on, after dark. Warm espresso (hue 20, 35% saturation), never
+black or grey; it turns 70s brown if it drifts yellower (hue 27 and up); cream type; and the app's own
+dark AccentColor. Visitors choose **Light, Auto
+or Dark** with the toggle in the footer. Auto (the default) follows the device and
+changes live if the device does; the choice is remembered in `localStorage`
+(`cuppi-theme`). Logic is in `src/lib/theme.ts`, the control in
+`src/components/cuppi/theme-toggle.tsx`.
+
+How it works: a tiny script at the top of `<head>` sets `data-theme="dark"` (and the
+`dark` class) on `<html>` before the page paints, so there is never a flash of the
+wrong palette. The dark values live in the `html[data-theme='dark'] .theme-cuppi`
+block in `globals.css`. It only re-points the same `--c-*` variables, so nothing
+else knows which theme it is in.
+
+| Token | Light | Dark | Note |
+| --- | --- | --- | --- |
+| `paper` | `#FBF4E6` | `#241812` | Page. Warm espresso, 35% saturation. |
+| `paper-deep` | `#F4E8D0` | `#1B120C` | Sunken (footer): still darker than the page. |
+| `card` | `#FFFAF0` | `#34241A` | Raised: still lighter than the page. |
+| `ink` | `#2B2118` | `#F5ECDE` | Warm cream, never pure white. |
+| `ink-soft` | `#6B5A4A` | `#C0B4A5` | |
+| `line` | `#E6D7BC` | `#4C3626` | |
+| `brand` | `#D65A1F` | `#FF6B00` | The app's dark AccentColor. Headline-size type and glows. |
+| `brand-deep` | `#B8461A` | `#FF8C4A` | Orange **text and links**. Flips lighter so it reads on dark. |
+| `lake` | `#2E5A7C` | `#29506F` | A touch deeper, so it rests rather than glares. |
+| `*-soft` tints | pastels | deep, muted | Each keeps its hue: `#202E39` sky, `#293123` moss, `#3C3020` honey, `#402921` clay. |
+
+Rules:
+
+- **`paper` and `ink` flip, so never use them as "the light colour on a strong
+  surface".** Cream text on lake, moss or orange uses `text-cuppi-cream`; dark text on
+  honey or sky uses `text-cuppi-espresso`; orange behind cream text is
+  `bg-cuppi-brand-fill` (not `brand-deep`, which is a text colour that goes light in
+  dark). These three are fixed in both themes.
+- Shadows are cast with `rgb(var(--c-shadow) / 0.2)`, not a literal brown, so they
+  deepen to black in dark.
+- The background patterns are white shapes, which glare on a dark surface. In dark,
+  `--pattern-strength` takes them to a quarter of their light-mode opacity, and
+  `--pattern-blend: overlay` mixes them with the block they sit on, so each pattern
+  picks up its own block's colour (amber on honey, blue on sky) instead of grey-white.
+  Light keeps plain white (`normal`).
+- Artwork with a dark mark on a transparent background needs `dark:invert` (the
+  footer's social icons do). Phone screenshots and the app icons are left alone.
+- Every text pair in dark clears WCAG AA: body 6.3 to 15.8:1, orange text 5.6 to 8.0:1
+  (lowest: `brand-deep` on the honey tint), cream on lake 7.8:1.
+
+## The logo
+
+The orange house with its smile, drawn as an SVG (November 2026). `public/icons/CuppiHome-logo-nov2026.svg`
+is the editable original (3.7MB, nearly all of it Illustrator's metadata); the site uses
+`CuppiHome-logo-nov2026.min.svg` (1.5KB, same artwork), referenced through `CUPPI_LOGO` in
+`src/lib/brand-assets.ts`. It has no background: bare in the header and footer, and on the cream tile
+(`CuppiTile`) wherever it appears as an app icon (the icon fan, the "little refresh" pages). The social
+share image and structured data still point at the old PNG, because social networks do not accept SVG.
+If you edit the original, re-export the slim copy.
+
+**The name slides out.** In the header and footer the logo and "Cuppi Home" are one link
+(`CuppiLogoLink`, `src/components/cuppi/logo-link.tsx`; the styles are the `.cuppi-logo` block in
+`globals.css`). On a device with a mouse the name is tucked away behind the logo. Hover the logo (or tab to
+it) and the name slowly slides out from behind it (about 1.6s), uncovered by a soft wipe, starting in
+Cuppi orange and settling to the text colour. **It then stays out** for the rest of the visit, including when
+moving between pages (a small module-level memory, per logo). Notes:
+
+- The name's space is always reserved, so nothing around it moves when it appears.
+- Only the logo itself starts it, not the empty space where the name will be.
+- Touch screens have no hover, so there the name is simply always shown. Reduced motion gets the same
+  reveal instantly.
+- The motion is CSS; the script only remembers that the logo has been hovered. `--reach` (set per logo from
+  its width) is how far behind the logo the name starts.
+
+## Images and caching
+
+Pictures should be fetched once and then come from the browser's own cache, so icons never blink or reload.
+What makes that true (all in `next.config.ts` unless noted):
+
+- **`/public` folders are cached for a week** (`icons`, `patterns`, `phone-frames`, `images`, `brand`), then
+  refreshed quietly in the background for a month. Next sends `/public` files with `max-age=0` by default,
+  which makes the browser ask the server about every picture on every use. **If you replace one of these files,
+  give it a new name**, or visitors keep the old one for up to a week.
+- **Resized pictures (`next/image`) are kept for a week** (`images.minimumCacheTTL`; the default is 60 seconds).
+  Firebase Storage files carry no cache headers of their own (they are sent as `private, max-age=0`), so going
+  through `next/image` is what makes them cacheable. A changed picture should get a new address (a Firebase
+  upload gets a new token).
+- **Anything that matters is self-hosted.** The App Store badge and social icons used to load straight from
+  Firebase on every page view (about 600ms each); they now live in `public/brand`.
+- **Tiles that appear with an animation or a click load early.** The icon fan and the menu panels use
+  `<AppTile eager>` so the pictures are already there when the tile shows, instead of a blank tile that pops in
+  as a lazy image arrives. The menu panels only exist while open, so the header also loads their tiles quietly,
+  out of sight, on arrival. The header logo is `priority`.
+- `next dev` always sends resized pictures with `max-age=0` (so you can edit them), so caching only shows up in
+  a production build.
 
 ## Type
 
@@ -142,7 +242,7 @@ cover.
 
 `/faq` (the help centre), each topic page (`/faq/<topic>`), search results and `/support`
 share one look. Inner pages open with `PageHero` (`src/components/cuppi/page-hero.tsx`):
-a tinted colour block with a "back" pill, an optional app tile beside the title, a line
+a tinted colour block with a "back" pill (pinned to the block's top-left corner, 1.5rem from the top and from the left, 1.25rem on a phone; the feature hero's "All features" pill sits in the same place), an optional app tile beside the title, a line
 of text and a search box or button. The help front page has its own centred version.
 
 - The search box is a large pill with an orange focus ring; results open in a bordered
@@ -232,7 +332,8 @@ no movement. To use it on another hero, wrap the frame in `HeroIntro` and put `i
 
 ## The icon fan
 
-Below "What's new", the home page shows Cuppi's own icon on its own (`public/icons/Cuppi-Mar26-v1-iOS-Default-1024x1024@1x.png`).
+Below "What's new", the home page shows Cuppi's own icon on its own: the house logo on a cream (`#FFF3D7`) tile
+built exactly like the feature tiles (`CuppiTile`, sharing `TileShell` with `AppTile` in `feature-icon.tsx`).
 When it scrolls into view, the eight in-app icons (every feature in the Features menu, as `AppTile`s)
 slide out of it to the left and right, the nearest first, and settle with a small overshoot
 (`AppFan`, `src/components/cuppi/home/app-fan.tsx`; the layout is the `.fan` block in `globals.css`). It

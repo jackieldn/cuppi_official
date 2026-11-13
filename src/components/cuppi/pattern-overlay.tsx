@@ -40,7 +40,9 @@ export function PatternOverlay({
         backgroundImage: `url(${patternUrl(pattern)})`,
         backgroundSize: `${size}px`,
         backgroundRepeat: 'repeat',
-        opacity,
+        // The patterns are white shapes: on a dark surface the same opacity reads far stronger, so dark turns it down.
+        opacity: `calc(${opacity} * var(--pattern-strength, 1))`,
+        mixBlendMode: 'var(--pattern-blend, normal)' as React.CSSProperties['mixBlendMode'],
         WebkitMaskImage: mask,
         maskImage: mask,
       }}

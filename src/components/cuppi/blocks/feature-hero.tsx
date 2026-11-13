@@ -17,20 +17,19 @@ export function FeatureHero({ feature }: { feature: PageFeature }) {
       <div className={cn('relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem]', tint.surface, tint.text)}>
         {/* White shapes read much stronger on a dark colour, so dark heroes get about a third of the strength, the cursor light included. */}
         <SpotlightPattern pattern="victorianWinter" focus="72% 50%" {...(tint.dark ? { centre: 0.015, edge: 0.1, spot: 0.17 } : { spot: 0.5 })} />
+        {/* In the block's top-left corner, the same distance from the top and the left (as PageHero's back pill). */}
+        <Link
+          href="/features"
+          className={cn(
+            'cuppi-fade-up absolute left-5 top-5 z-10 inline-flex items-center gap-1.5 rounded-full bg-cuppi-paper/90 px-3.5 py-1.5 text-sm font-medium text-cuppi-ink sm:left-6 sm:top-6',
+            'transition-colors hover:bg-cuppi-paper',
+          )}
+          style={{ '--d': '0ms' } as React.CSSProperties}
+        >
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> All features
+        </Link>
         <div className="relative grid items-stretch md:grid-cols-[1.05fr_1fr]">
-          <div className="flex flex-col justify-center gap-6 px-7 pb-4 pt-10 sm:px-12 md:py-16">
-            <Link
-              href="/features"
-              className={cn(
-                'cuppi-fade-up inline-flex w-fit items-center gap-1.5 rounded-full bg-cuppi-paper/90 px-3.5 py-1.5 text-sm font-medium text-cuppi-ink',
-                'transition-colors hover:bg-cuppi-paper',
-              )}
-              style={{ '--d': '0ms' } as React.CSSProperties}
-            >
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> All features
-            </Link>
-
-
+          <div className="flex flex-col justify-center gap-6 px-7 pb-4 pt-24 sm:px-12 md:py-16">
             <h1
               className="cuppi-fade-up font-headline font-normal text-4xl leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl"
               style={{ '--d': '160ms' } as React.CSSProperties}
@@ -53,7 +52,7 @@ export function FeatureHero({ feature }: { feature: PageFeature }) {
                   height={1000}
                   sizes="(max-width: 768px) 92vw, 46vw"
                   priority
-                  className="h-auto w-full drop-shadow-[0_24px_30px_rgba(43,33,24,0.18)]"
+                  className="h-auto w-full drop-shadow-[0_24px_30px_rgb(var(--c-shadow)/0.18)]"
                 />
               </div>
             ) : (
