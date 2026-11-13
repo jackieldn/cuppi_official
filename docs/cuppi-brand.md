@@ -176,21 +176,60 @@ Everything switches off under `prefers-reduced-motion`.
 
 ## Building a feature page
 
-A feature page is a hero plus a list of blocks (`src/lib/features-types.ts`). The
-blocks are reusable layouts in `src/components/cuppi/blocks`:
+A feature page is a hero plus a list of sections (blocks, `src/lib/features-types.ts`). Each section is one
+of seven templates, reusable layouts in `src/components/cuppi/blocks`:
 
-| Block | What it is |
+| Template (`type`) | What it is |
 | --- | --- |
-| `showcase` | Text on one side, a phone rising out of a colour card on the other |
-| `cards` | A swipeable row of phone cards |
-| `callout` | One big warm sentence on a colour band |
-| `points` | Short reasons, no images |
+| `showcase` "Words and phone" | Text on one side, a phone rising out of a colour card on the other |
+| `tabs` "Explainer tabs" | A colour card: a list of short topics, one open at a time, beside a picture that swaps with it. The "Made for each other" layout. Topics stack above the picture on a phone. |
+| `banner` "Big picture" | A headline over one full-width picture. The "A whole family of possibilities" layout. |
+| `video` "Video" | A tutorial or an ad: YouTube link or an uploaded file, **widescreen (16:9) or phone-shaped (9:16)**, full width or beside its words |
+| `cards` "Phone cards" | A swipeable row of phone cards |
+| `callout` "Big sentence" | One big warm sentence on a colour band |
+| `points` "Reasons" | Short reasons, no images |
 
-To add a layout: write the component, add its type to `FeatureBlock`, add a case to
-`block-renderer.tsx`. Images are either `phone` (a transparent phone crop that rises
-from the bottom edge) or `photo` (full-bleed).
+Pictures (`FeatureImage.fit`) are:
 
-Until the admin exists, features come from `src/lib/features-seed.ts`.
+- `frame`: **a plain app screenshot the site puts inside an iPhone**, reusing the home hero's `PhoneMockup`
+  (`FramedPhones`, `blocks/framed-phones.tsx`): face forward or turned 45 degrees (`frame`), mirrored (`flip`), with the
+  app's background colour (`bg`) behind any part of the screen the screenshot does not cover. The phone is taller than its
+  card and hangs from near the top, so the top of the app shows. Add `second` for **two phones side by side**, arranged
+  (`arrange`) with the right one lower (default), the right one higher, or both level at the same size with a small gap;
+  turned phones face each other (or apart, with `flip`).
+  **View** (`view`, per phone): `top` (default) shows the top of the screenshot; `bottom` moves the phone up until its bottom
+  edge sits the same gap above the card's bottom as its top edge sat below the card's top in a top view (the phone is
+  whole at both ends, never cut off), for screens whose content is at the bottom. Each phone of a pair
+  has its own, so all four pairings work (top/top, top/bottom, bottom/top, bottom/bottom). In a bottom view the "lower"
+  phone of a staggered pair keeps that gap and the other is raised by the same stagger.
+  **Slide** (`slide`, a tickbox on a single framed phone) goes to the other end of the screenshot: while the cursor is over the card a top view eases up (2.2s) until the bottom of
+  the screenshot reaches the bottom of the card (a bottom view eases down to the top), and eases back when the cursor leaves (1.1s).
+  `phoneTops` (`phone-mockups.ts`) works the distance out from the screenshot's own proportions, so a screenshot shorter
+  than the screen does not slide up into empty background (a pre-cropped one, like the home hero's, needs none). The
+  CSS is `.phone-slide` in `globals.css`. Mouse and pen only (`@media (hover: hover)`): a touch screen has no hover, so
+  the phone stays still; reduced motion jumps instead of gliding. Not offered with two phones. The screenshot layer's corner radius and a few pixels of overscan
+  (`SCREEN_RADIUS`, `OVERSCAN` in `phone-mockups.ts`) are tuned to the frame renders so no see-through wedge or hairline
+  shows round the screen; re-measure them if a frame render changes. New phone sections start as `frame`. The admin records the
+  screenshot's real size (`width`, `height`) when it is chosen, so the frame is laid out before the picture loads.
+- `phone`: a ready-made transparent phone crop that rises from the bottom edge (what the built-in pages use). It keeps its
+  proportions; it used to be stretched into a square, which distorted a plain screenshot.
+- `photo`: full-bleed, cropped to fit.
+- `contain`: shown whole, centred, with room round it (a phone beside a watch).
+
+**Video.** A widescreen video is a card of its own. A phone-shaped one would be a sliver in the same space, so it
+stands in a colour card at a sensible height (never taller than 75% of the screen). A YouTube video (any link shape,
+Shorts included) loads as a still with a play button: the page fetches no YouTube code and sets no cookies until the
+visitor presses play, then it swaps in the privacy-enhanced embed (`VideoPlayer`). A file is a plain `<video>` with the
+browser's controls. The cover is the admin's picture, else YouTube's own (the 9:16 one keeps its shape), else the
+file's first frame.
+
+**To add a template:** write the component in `blocks/`, add its type to `FeatureBlock` in `features-types.ts`, add a
+case to `block-renderer.tsx`, then in `src/lib/feature-sections.ts` add it to `SECTION_TEMPLATES`, `newSection`,
+`readBlock` (the safe reader), `validateSections` and `mapBlockUrls`; then a form in
+`src/components/admin/cuppi/section-forms.tsx` and a thumbnail in `SectionThumb` (`feature-page-admin.tsx`). The
+unit tests (`tests/unit/feature-sections.test.mjs`) loop over `SECTION_TEMPLATES`, so they catch a missing piece.
+
+Built-in features start from `src/lib/features-seed.ts`; the admin's sections (below) replace them.
 
 ## Features and their icons
 
@@ -243,6 +282,11 @@ corners and the maths are in `src/lib/phone-mockups.ts`, with tests.
 
 To add another mockup render: put the transparent PNG in `public/phone-frames`, measure
 its four screen corners, and add an entry to `MOCKUPS`.
+
+A screenshot within 5% of the screen's shape is scaled to fill the whole screen (`fillsScreenByCover`, `NEAR_FULL` in
+`phone-mockups.ts`), trimming a sliver off its sides. Real iPhone screenshots are 0.7% shorter than this render's screen,
+so without it a strip of the `bg` colour showed along the bottom edge. Shorter screenshots (pre-cropped ones) still sit at
+the top with `bg` filling the rest.
 
 Screenshots: the hero shows the top part of the screen, so crop the file before adding
 it (the tab bar shows your profile photo, and the car's plate is readable). Pass the
@@ -392,6 +436,22 @@ If the database cannot be reached, the built-in features and the default menu ar
 depends on it. Everything read back goes through `readOverride` / `resolveMenu`, which keep only fields of the
 right type and addresses that are safe (a path on this site, or https), so a bad document cannot break a page.
 
-Limits for now: the sections lower down a feature page (cards, callouts) are still written in code (an
-added feature's page has just its top block); the icon fan on the home page holds eight features; the
-firestore.rules and storage.rules changes must be deployed before saving works.
+- **Page sections** (`/admin/cuppi-features/<slug>`, the **Sections** button on a feature that has a page): the page
+  builder. Two columns like the home hero editor: the page as the site draws it on the left (the real `FeatureHero` and
+  `BlockRenderer`, at desktop width, scaled to fit; click a section to edit it), the sections on the right. **Add a
+  section** opens the template picker; each section can be reordered, duplicated, removed, or have another added after
+  it. Pictures and videos chosen are shown at once and uploaded when **Save page** is pressed (to
+  `cuppi_features/<slug>/sections/` in Storage; images up to 10 MB, videos MP4/WebM/MOV up to 200 MB). Saved as the
+  `blocks` field of `cuppi_features/<slug>`, which replaces the built-in sections for that feature. **Start again from
+  the original** deletes just that field. The top block (headline, intro, picture) is still edited with Edit on the
+  features list.
+
+  What is stored goes back through `resolveBlocks` (`src/lib/feature-sections.ts`) on every read: an unknown template, a
+  section missing what it needs, or an address that is not allowed (`src/lib/safe-urls.ts`: this site, our own
+  Storage bucket, https for a video file, any YouTube link) is dropped by itself, so a bad document can leave a gap but
+  never break the page. `validateSections` is the stricter, plain-English check run when Save is pressed.
+
+Limits for now: the icon fan on the home page holds eight features; a page holds up to 30 sections and 8 items
+(cards, topics, reasons) in each; the firestore.rules and storage.rules changes (storage now also allows video up to
+200 MB under `cuppi_features/`) must be deployed before saving works; a video file is not transcoded, so use MP4 (H.264)
+for it to play in every browser, or upload long or large videos to YouTube and paste the link.

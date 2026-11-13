@@ -923,3 +923,14 @@ html.theme-changing *::after {
   [data-intro] .intro-near,
   [data-intro] .intro-late { opacity: 1 !important; transform: none !important; transition: none !important; animation: none !important; }
 }
+
+/* A framed phone that slides up to show the bottom of its screenshot while the cursor is over it (FramedPhones,
+   the "slide up" tickbox in the page builder). It eases up slowly and back a little quicker. Mouse and pen only:
+   a touch screen has no hover, so the phone just stays put. Reduced motion jumps instead of gliding. */
+.phone-slide { transform: translate(-50%, 0); transition: transform 1100ms cubic-bezier(0.45, 0, 0.2, 1); }
+@media (hover: hover) {
+  .phone-slide-host:hover .phone-slide { transform: translate(-50%, var(--slide, 0%)); transition-duration: 2200ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .phone-slide, .phone-slide-host:hover .phone-slide { transition-duration: 0.01ms; }
+}
