@@ -72,12 +72,14 @@ export function HomeHero({ hero, instant = false }: { hero: Hero; instant?: bool
   // slide on hover if it is switched on) in the hero's angle and facing. The original screenshot is just a plain one phone.
   const shots = { ...hero.screenshot, fit: 'frame' as const, frame: hero.mockup, flip: hero.flip };
   // In the two split templates the phone is sized from the block's height (taller than the block),
-  // so the same part of the screen shows at any width. Centred, it is cropped by a fixed-height window.
+  // so the same part of the screen shows at any width. Centred, it hangs in a fixed-height window. The window does not clip: the
+  // block's own rounded edge trims the phone at the bottom and sides, and when it slides up (the hover slide) it passes over the
+  // words above it, rather than being cut off at the top of its window. It paints over them because it comes after them.
   const phone = (
     <div
       className={cn(
         'intro-near relative',
-        centred ? 'h-[22rem] overflow-hidden sm:h-[26rem] md:h-[30rem]' : 'min-h-[30rem] md:min-h-[36rem]',
+        centred ? 'h-[22rem] sm:h-[26rem] md:h-[30rem]' : 'min-h-[30rem] md:min-h-[36rem]',
         reverse && 'md:order-1',
       )}
     >
