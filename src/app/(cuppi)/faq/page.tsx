@@ -10,6 +10,8 @@ import { FaqHelpCta } from '@/components/faq/faq-help-cta';
 import { JsonLd } from '@/components/faq/json-ld';
 import { ArrowUpRight, ChevronDown } from 'lucide-react';
 import { getFaqModel } from '@/lib/faq';
+import { getFeatures } from '@/lib/features';
+import { faqTile } from '@/lib/faq-visuals';
 import { buildHubJsonLd } from '@/lib/faq-jsonld';
 import { faqMetadata } from '@/lib/faq-metadata';
 import { entryPath } from '@/lib/faq-model';
@@ -31,6 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function FaqPage() {
   const model = await getFaqModel();
+  const features = await getFeatures();
   const total = model.entries.length;
 
   return (
@@ -102,7 +105,7 @@ export default async function FaqPage() {
               </h2>
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 {group.sections.map((section) => (
-                  <FaqSectionCard key={section.id} section={section} />
+                  <FaqSectionCard key={section.id} section={section} tile={faqTile(section.id, features)} />
                 ))}
               </div>
             </section>

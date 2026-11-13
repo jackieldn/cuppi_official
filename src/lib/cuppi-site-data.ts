@@ -4,12 +4,15 @@ import { readOverride, type FeatureOverride } from './features-types';
 import { resolveMenu, type MenuSettings } from './menu-settings';
 import { APP_STORE_URL } from './invite';
 import { defaultPageStatus, resolvePageStatus, type PageStatus } from './page-status';
+import { defaultHeroSettings, resolveHeroSettings, type HeroSettings } from './home-hero-settings';
 
-// What the admin has changed about the Cuppi site, read on the server. Two collections, both
+// What the admin has changed about the Cuppi site, read on the server. Four collections, all
 // publicly readable and admin-writable (firestore.rules):
 //   cuppi_menu/main        the top menu: links, their order and switches, the Download button
 //   cuppi_features/{slug}  edits to a feature, or a whole new one (see mergeFeatures)
 //   cuppi_pages/status     which sections are live and which show "refresh in progress" (page-status.ts)
+//   cuppi_home/hero        the home page hero: template, words, colour, pattern, phone (home-hero-settings.ts)
+//   cuppi_home/fan         the icon banner: which features slide out of Cuppi's icon, and in what order (fan-settings.ts)
 //
 // The site must never be down because this is: every read has a short timeout, any failure
 // gives "nothing changed" (the seed and the default menu), and the answer, good or bad, is
@@ -51,6 +54,8 @@ function remembered<T>(memo: { current?: Memo<T> }, empty: T, read: () => Promis
 const featureMemo: { current?: Memo<FeatureOverride[]> } = {};
 const menuMemo: { current?: Memo<MenuSettings> } = {};
 const pagesMemo: { current?: Memo<PageStatus> } = {};
+const heroMemo: { current?: Memo<HeroSettings> } = {};
+const fanMemo: { current?: Memo<unknown> } = {};
 
 export function getFeatureOverrides(): Promise<FeatureOverride[]> {
   return remembered(featureMemo, [], async () => {
@@ -70,5 +75,20 @@ export function getPageStatus(): Promise<PageStatus> {
   return remembered(pagesMemo, defaultPageStatus(), async () => {
     const snap = await firestore.collection('cuppi_pages').doc('status').get();
     return resolvePageStatus(snap.exists ? snap.data() : null);
+  });
+}
+
+export function getHeroSettings(): Promise<HeroSettings> {
+  return remembered(heroMemo, defaultHeroSettings(), async () => {
+    const snap = await firestore.collection('cuppi_home').doc('hero').get();
+    return resolveHeroSettings(snap.exists ? snap.data() : null);
+  });
+}
+
+/** The icon banner's stored document, as it is (null when nothing is saved). Read it through resolveFan / applyFan. */
+export function getFanStored(): Promise<unknown> {
+  return remembered<unknown>(fanMemo, null, async () => {
+    const snap = await firestore.collection('cuppi_home').doc('fan').get();
+    return snap.exists ? snap.data() : null;
   });
 }

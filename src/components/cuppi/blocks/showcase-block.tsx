@@ -20,7 +20,7 @@ export function ShowcaseBlock({ block }: { block: Showcase }) {
           )}
         >
           {block.eyebrow && (
-            <span className={cn('w-fit rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]', tint.chip)}>
+            <span className={cn('w-fit rounded-full px-3.5 py-0.5 font-headline text-base', tint.chip)}>
               {block.eyebrow}
             </span>
           )}

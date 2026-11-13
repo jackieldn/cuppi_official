@@ -217,7 +217,7 @@ export function SiteHeader({ groups, links: configured, download }: { groups: Gr
                 {byGroup(MENU_GROUPS.find((m) => m.key === open)?.groups ?? []).map(({ group, items }, gi) => (
                   <div key={group} className="cuppi-fade-up" style={{ '--d': `${gi * 50}ms` } as React.CSSProperties}>
                     {open === 'features' && (
-                      <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-cuppi-ink-soft">{GROUP_LABELS[group].title}</p>
+                      <p className="px-3 pb-2 font-headline text-lg">{GROUP_LABELS[group].title}</p>
                     )}
                     <ul className="space-y-0.5">
                       {items.map((f) => (
@@ -270,7 +270,7 @@ export function SiteHeader({ groups, links: configured, download }: { groups: Gr
                         {byGroup(m.groups).map(({ group, items }) => (
                           <div key={group} className="pb-1">
                             {m.key === 'features' && (
-                              <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-[0.14em] text-cuppi-ink-soft">{GROUP_LABELS[group].title}</p>
+                              <p className="px-3 pb-1 pt-2 font-headline text-lg">{GROUP_LABELS[group].title}</p>
                             )}
                             {items.map((f) => (
                               <MenuItem key={f.slug} feature={f} />

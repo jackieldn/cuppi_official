@@ -99,7 +99,7 @@ export default async function FeaturesPage() {
               {soon.length > 0 && (
                 <Reveal className="mt-4">
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-[1.75rem] border border-dashed border-cuppi-line px-6 py-4">
-                    <p className="text-sm font-semibold uppercase tracking-[0.14em] text-cuppi-ink-soft">Pages on their way</p>
+                    <p className="font-headline text-lg">Pages on their way</p>
                     {soon.map((f) => (
                       <span key={f.slug} className="flex items-center gap-2.5 font-medium text-cuppi-ink-soft">
                         <AppTile feature={f} muted className="h-9 w-9" />

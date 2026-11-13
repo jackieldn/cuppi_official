@@ -14,7 +14,8 @@ import { JsonLd } from '@/components/faq/json-ld';
 import { getFaqModel } from '@/lib/faq';
 import { buildSectionJsonLd } from '@/lib/faq-jsonld';
 import { faqMetadata } from '@/lib/faq-metadata';
-import { FALLBACK_TILE, FAQ_TILES, TINT_FOR_TILE } from '@/lib/faq-visuals';
+import { getFeatures } from '@/lib/features';
+import { faqTile, TINT_FOR_TILE } from '@/lib/faq-visuals';
 import { findSection } from '@/lib/faq-model';
 import { SITE_ORIGINS } from '@/lib/sites';
 
@@ -60,7 +61,8 @@ export default async function FaqSectionPage({ params }: Props) {
     (s, i, all) => s.id !== section.id && all.indexOf(s) === i,
   );
 
-  const tile = FAQ_TILES[section.id] ?? FALLBACK_TILE;
+  const features = await getFeatures();
+  const tile = faqTile(section.id, features);
 
   return (
     <div className="bg-background text-foreground flex flex-col min-h-screen">
@@ -117,7 +119,7 @@ export default async function FaqSectionPage({ params }: Props) {
                   </h2>
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
                     {related.map((s) => (
-                      <FaqSectionCard key={s.id} section={s} />
+                      <FaqSectionCard key={s.id} section={s} tile={faqTile(s.id, features)} />
                     ))}
                   </div>
                 </section>

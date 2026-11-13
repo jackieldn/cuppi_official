@@ -1,12 +1,11 @@
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { AppTile } from '@/components/cuppi/feature-icon';
-import { FALLBACK_TILE, FAQ_TILES } from '@/lib/faq-visuals';
+import type { FaqTile } from '@/lib/faq-visuals';
 import { sectionPath, type FaqSection } from '@/lib/faq-model';
 
 /** A help topic on the help page: its tile, its name and one line. The questions are one click away. */
-export function FaqSectionCard({ section }: { section: FaqSection }) {
-  const tile = FAQ_TILES[section.id] ?? FALLBACK_TILE;
+export function FaqSectionCard({ section, tile }: { section: FaqSection; tile: FaqTile }) {
   return (
     <Link
       href={sectionPath(section.id)}

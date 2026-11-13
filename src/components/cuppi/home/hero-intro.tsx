@@ -19,20 +19,29 @@ import { useAssetsReady } from '@/lib/use-assets-ready';
  */
 export function HeroIntro({
   patternUrl,
+  template = 'split',
+  seconds,
+  instant = false,
   className,
   children,
 }: {
   /** The pattern is a CSS background, so nothing waits for it unless we do it here. */
   patternUrl?: string;
+  /** The layout, which decides where the camera's centre is (see `data-hero` in globals.css). */
+  template?: string;
+  /** How long the move takes, in seconds. Unset, the stylesheet's 4.4. */
+  seconds?: number;
+  /** Skip the opening shot: for the admin's preview, which is redrawn on every edit. */
+  instant?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const ready = useAssetsReady(ref, patternUrl ? [patternUrl] : []);
-  const state = ready ? 'play' : 'prep';
+  const state = ready || instant ? 'play' : 'prep';
 
   return (
-    <div ref={ref} data-intro={state} data-spotlight-host className={className}>
+    <div ref={ref} data-intro={state} data-hero={template} data-spotlight-host className={className} style={seconds ? ({ '--intro-dur': `${seconds}s` } as React.CSSProperties) : undefined}>
       {children}
     </div>
   );

@@ -6,7 +6,7 @@ import { CuppiHeader } from '@/components/cuppi/header';
 import { AppTile } from '@/components/cuppi/feature-icon';
 import { AppFan } from '@/components/cuppi/home/app-fan';
 import { PageHero } from '@/components/cuppi/page-hero';
-import { getFeatures } from '@/lib/features';
+import { getFanFeatures } from '@/lib/features';
 import { PATTERNS } from '@/lib/patterns';
 import { SupportMessage } from '@/components/support/support-message';
 
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 // A server component: only the "Message us" pop-up needs the browser, and it lives in SupportMessage.
 export default async function SupportPage() {
-  const features = (await getFeatures()).filter((f) => f.group !== 'yours');
+  const features = await getFanFeatures();
 
   return (
     <div className="bg-background text-foreground flex flex-col min-h-screen">

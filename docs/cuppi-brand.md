@@ -135,7 +135,10 @@ What makes that true (all in `next.config.ts` unless noted):
 - **Resized pictures (`next/image`) are kept for a week** (`images.minimumCacheTTL`; the default is 60 seconds).
   Firebase Storage files carry no cache headers of their own (they are sent as `private, max-age=0`), so going
   through `next/image` is what makes them cacheable. A changed picture should get a new address (a Firebase
-  upload gets a new token).
+  upload gets a new token). **SVGs too:** by default `next/image` does not proxy an SVG, so SVG feature icons
+  went straight to Firebase, uncacheable, and the menu icons arrived late on every open. `next.config.ts` sets
+  `dangerouslyAllowSVG` (with a sandboxing CSP on `/_next/image`) so they go through the same cache. Do not
+  switch it off, or give a feature icon `unoptimized`.
 - **Anything that matters is self-hosted.** The App Store badge and social icons used to load straight from
   Firebase on every page view (about 600ms each); they now live in `public/brand`.
 - **Tiles that appear with an animation or a click load early.** The icon fan and the menu panels use
@@ -214,9 +217,17 @@ Nothing is invented for any of them.
 ## The home page hero
 
 The home page leads with whatever is newest: the latest release, a seasonal promo, a
-discount. It is one small piece of data in `src/lib/home-hero.ts` (headline,
-text, one quiet link, a screenshot, which phone, a tint). Change it and nothing else
-needs touching. Wrap a word in `*asterisks*` in the headline to set it in italic.
+discount. It is one small piece of data (headline, text, one quiet link, a screenshot,
+which phone, a tint, a pattern), edited in the admin under **Cuppi > Home hero** and
+stored as `cuppi_home/hero`. `src/lib/home-hero.ts` is its starting point and holds the
+screenshot, which the admin does not change yet. Wrap a word in `*asterisks*` in the
+headline to set it in italic.
+
+The hero has three templates (`split`, `split-reverse`, `centred`; `HomeHero` in
+`src/components/cuppi/home/hero.tsx`) that share the same words and phone. Everything
+stored is read through `resolveHeroSettings` (`src/lib/home-hero-settings.ts`), which
+fills gaps from the original hero and clamps every value, so a bad document cannot break
+the page. To add a template, add it to `HERO_TEMPLATES` and handle it in `HomeHero`.
 
 There is no Download button in any hero. It lives in the menu, top right, and the
 closing strip at the bottom of the feature pages.
@@ -334,11 +345,15 @@ no movement. To use it on another hero, wrap the frame in `HeroIntro` and put `i
 
 Below "What's new", the home page shows Cuppi's own icon on its own: the house logo on a cream (`#FFF3D7`) tile
 built exactly like the feature tiles (`CuppiTile`, sharing `TileShell` with `AppTile` in `feature-icon.tsx`).
-When it scrolls into view, the eight in-app icons (every feature in the Features menu, as `AppTile`s)
-slide out of it to the left and right, the nearest first, and settle with a small overshoot
+When it scrolls into view, the in-app icons (up to eight features, as `AppTile`s) slide out of it to the
+left and right, the nearest first, and settle with a small overshoot
 (`AppFan`, `src/components/cuppi/home/app-fan.tsx`; the layout is the `.fan` block in `globals.css`). It
-plays once. Icons take turns going right then left, in menu order, so a feature added to the menu joins the
-fan with no other change (the layout holds eight; a ninth needs a new slot).
+plays once. Icons take turns going right then left. Which features appear, and in what order, is set in
+the admin under **Cuppi > Icon banner** (stored as `cuppi_home/fan`, read through `resolveFan` in
+`src/lib/fan-settings.ts`). The pictures are the features' own, so change one on the Cuppi features page.
+Until anything is saved it is the first eight features in menu order; a feature added later waits switched
+off. The layout holds eight (`FAN_MAX`); a ninth needs a new slot. The FAQ topic tiles take their icons from
+the matching feature in the same way (`faqTile`).
 
 On a wide screen it is one row of nine; on a phone, Cuppi with two icons either side and four more in a
 second row below. Positions are written in "units" that scale down to fit the width, never up. Like the

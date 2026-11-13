@@ -3,10 +3,8 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AppTile, CuppiTile } from '@/components/cuppi/feature-icon';
 import { useAssetsReady } from '@/lib/use-assets-ready';
+import { FAN_MAX } from '@/lib/fan-settings';
 import type { Feature } from '@/lib/features-types';
-
-/** The layout has room for this many icons; any further features are left out of the fan. */
-const FAN_MAX = 8;
 
 type Tile = Pick<Feature, 'slug' | 'name' | 'iconUrl' | 'icon' | 'tile'>;
 

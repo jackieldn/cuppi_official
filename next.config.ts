@@ -1,6 +1,7 @@
 import type {NextConfig} from 'next';
 
 const DAY = 60 * 60 * 24;
+const IMAGE_CSP = "default-src 'self'; script-src 'none'; sandbox;";
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -24,6 +25,12 @@ const nextConfig: NextConfig = {
             value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
           },
         ],
+      },
+      // Resized and proxied pictures (see `images` below). The baseline policy above would replace the
+      // image one, so repeat it here: it stops script in an SVG from running if one is ever opened directly.
+      {
+        source: '/_next/image',
+        headers: [{ key: 'Content-Security-Policy', value: IMAGE_CSP }],
       },
       // Pictures that ship with the site. Next serves files from /public with max-age=0, which makes
       // a browser ask the server about every one of them on every use (a round trip per icon, which
@@ -66,6 +73,14 @@ const nextConfig: NextConfig = {
     // so every minute the browser would ask again. Pictures here barely change, and a changed picture
     // gets a new address (Firebase tokens, new file names), so a week is safe.
     minimumCacheTTL: 7 * DAY,
+    // Feature icons are SVGs uploaded in the admin (Firebase Storage). By default next/image does not
+    // proxy an SVG, so the browser fetched each one straight from Firebase, which sends them as
+    // `private, max-age=0`: never cached, 300 to 800ms each, so the menu icons arrived late on every
+    // open. Allowing SVG sends them through our own cache like every other picture. This is the
+    // recommended lock-down for that: the optimizer only fetches from the sources listed below, and
+    // each response carries a policy that stops any script inside an SVG from running.
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: IMAGE_CSP,
     // next/image fetches and re-encodes these on demand, so keep the list to
     // sources we control. Allowing all of firebasestorage.googleapis.com would
     // let anyone have the optimizer fetch files from their own bucket.

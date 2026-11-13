@@ -1,4 +1,5 @@
-import { getFeatureOverrides } from './cuppi-site-data';
+import { getFanStored, getFeatureOverrides } from './cuppi-site-data';
+import { applyFan } from './fan-settings';
 import { featuresSeed } from './features-seed';
 import { GROUP_ORDER, hasPage, isPublished, mergeFeatures, validateFeatures, type Feature, type FeatureGroup, type PageFeature } from './features-types';
 
@@ -26,4 +27,14 @@ export function groupFeatures(features: Feature[]): { group: FeatureGroup; items
   return GROUP_ORDER.map((group) => ({ group, items: features.filter((f) => f.group === group) })).filter(
     (g) => g.items.length > 0,
   );
+}
+
+/**
+ * The features in the icon banner (Cuppi's icon with the in-app icons sliding out of it), in the
+ * admin's order. The banner can show any feature in the Features menu; the "Your Home" ones are not
+ * offered, since the banner is about what Cuppi does for the household.
+ */
+export async function getFanFeatures(): Promise<Feature[]> {
+  const features = (await getFeatures()).filter((f) => f.group !== 'yours');
+  return applyFan(features, await getFanStored());
 }

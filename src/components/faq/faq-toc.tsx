@@ -22,7 +22,7 @@ export function FaqToc({ section }: { section: FaqSection }) {
       data-faq-toc
       className="max-md:sticky max-md:top-20 max-md:z-10 max-md:-mx-4 max-md:flex max-md:gap-2 max-md:overflow-x-auto max-md:border-b max-md:border-cuppi-line max-md:bg-background max-md:px-4 max-md:py-2 md:sticky md:top-24 md:max-h-[calc(100vh-8rem)] md:overflow-y-auto"
     >
-      <p className="mb-2 px-4 text-xs font-semibold uppercase tracking-[0.14em] text-cuppi-ink-soft max-md:hidden">
+      <p className="mb-2 px-4 font-headline text-lg max-md:hidden">
         {hasTopics ? 'On this page' : 'Questions'}
       </p>
       <ul className="max-md:contents md:grid md:gap-0.5">

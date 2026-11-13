@@ -885,23 +885,37 @@ html.theme-changing *::after {
   .intro-mid  { transform-origin: 95% 50%; }
   .intro-near { transform-origin: -5% 50%; }
 }
+/* Centred stays stacked at every width (words above, phone below), so it keeps the stacked
+   centre from above: the words scale from their bottom edge, the phone from its top, and the
+   camera pulls back from the middle of the hero instead of sweeping in from the side. */
+@media (min-width: 768px) {
+  [data-hero='centred'] .intro-mid  { transform-origin: 50% 100%; }
+  [data-hero='centred'] .intro-near { transform-origin: 50% 0%; }
+}
+/* Phone on the left: the seam is the other way round. */
+@media (min-width: 768px) {
+  [data-hero='split-reverse'] .intro-mid  { transform-origin: 5% 50%; }
+  [data-hero='split-reverse'] .intro-near { transform-origin: 105% 50%; }
+}
 
 [data-intro='prep'] .intro-far  { opacity: 0; transform: scale(1.08); }
 [data-intro='prep'] .intro-mid  { opacity: 0; transform: scale(1.3); }
 [data-intro='prep'] .intro-near { opacity: 0; transform: scale(1.9); }
 [data-intro='prep'] .intro-late { opacity: 0; transform: translateY(16px); }
 
-[data-intro='play'] .intro-far  { transition: transform 4.4s var(--ease-camera), opacity 1.8s ease-out; }
-[data-intro='play'] .intro-mid  { transition: transform 4.4s var(--ease-camera), opacity 1.2s ease-out; }
-[data-intro='play'] .intro-near { transition: transform 4.4s var(--ease-camera), opacity 1.2s ease-out; }
-[data-intro='play'] .intro-late { transition: transform 0.9s var(--ease-calm) 2.6s, opacity 0.9s ease-out 2.6s; }
+/* --intro-dur is the length of the whole move (set by HeroIntro from the admin; 4.4s by default).
+   The fades and the button's delay are fixed fractions of it, so any length keeps the same shape. */
+[data-intro='play'] .intro-far  { transition: transform var(--intro-dur, 4.4s) var(--ease-camera), opacity calc(var(--intro-dur, 4.4s) * 0.41) ease-out; }
+[data-intro='play'] .intro-mid  { transition: transform var(--intro-dur, 4.4s) var(--ease-camera), opacity calc(var(--intro-dur, 4.4s) * 0.27) ease-out; }
+[data-intro='play'] .intro-near { transition: transform var(--intro-dur, 4.4s) var(--ease-camera), opacity calc(var(--intro-dur, 4.4s) * 0.27) ease-out; }
+[data-intro='play'] .intro-late { transition: transform 0.9s var(--ease-calm) calc(var(--intro-dur, 4.4s) * 0.59), opacity 0.9s ease-out calc(var(--intro-dur, 4.4s) * 0.59); }
 
-/* No JavaScript, or it never got going: show everything after 8 seconds regardless. */
+/* No JavaScript, or it never got going: show everything after 8 seconds (3.6 past the move) regardless. */
 @keyframes intro-failsafe { to { opacity: 1; transform: none; } }
 [data-intro='prep'] .intro-far,
 [data-intro='prep'] .intro-mid,
 [data-intro='prep'] .intro-near,
-[data-intro='prep'] .intro-late { animation: intro-failsafe 0.01s 8s forwards; }
+[data-intro='prep'] .intro-late { animation: intro-failsafe 0.01s calc(var(--intro-dur, 4.4s) + 3.6s) forwards; }
 
 @media (prefers-reduced-motion: reduce) {
   [data-intro] .intro-far,
