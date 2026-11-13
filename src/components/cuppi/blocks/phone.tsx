@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import type { FeatureImage } from '@/lib/features-types';
+import { FramedPhones } from './framed-phones';
 
 /**
  * A phone screenshot that rises out of the bottom edge of its parent. The parent
@@ -25,6 +26,23 @@ export function Phone({
   scale?: number;
   className?: string;
 }) {
+  // Nothing chosen yet (a section still being built in the admin): leave the space empty rather than ask for no picture.
+  if (!image.url) return null;
+
+  // A plain screenshot (or two) inside iPhone renders, like the home hero.
+  if (image.fit === 'frame') return <FramedPhones image={image} sizes={sizes} priority={priority} className={className} />;
+
+  // A picture shown whole: centred, with room round it, never cropped.
+  if (image.fit === 'contain') {
+    return (
+      <div className={cn('absolute inset-0 p-5 sm:p-8', className)}>
+        <div className="relative h-full w-full">
+          <Image src={image.url} alt={image.alt} fill sizes={sizes} priority={priority} className="object-contain drop-shadow-[0_18px_24px_rgb(var(--c-shadow)/0.16)]" />
+        </div>
+      </div>
+    );
+  }
+
   // A photograph just fills the space; only phone crops need the rising-from-the-bottom treatment.
   if (image.fit === 'photo') {
     return (
@@ -48,7 +66,7 @@ export function Phone({
         height={1000}
         sizes={sizes}
         priority={priority}
-        className="h-full w-full select-none drop-shadow-[0_24px_30px_rgba(43,33,24,0.18)]"
+        className="h-full w-full select-none object-contain drop-shadow-[0_24px_30px_rgb(var(--c-shadow)/0.18)]"
       />
     </div>
   );

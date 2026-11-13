@@ -49,6 +49,8 @@ export type HomeHero = {
   /** Mirror the phone so its screen faces the other way. */
   flip?: boolean;
   tint: FeatureTint;
+  /** How long the opening shot takes, in seconds. Unset, 4.4. */
+  introSeconds?: number;
 };
 
 export const homeHero: HomeHero = {

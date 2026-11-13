@@ -1,7 +1,7 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { CuppiFooter } from '@/components/cuppi/footer';
 import { CuppiHeader } from '@/components/cuppi/header';
+import { CuppiTile } from '@/components/cuppi/feature-icon';
 import { PageHero } from '@/components/cuppi/page-hero';
 import { SECTIONS, type PageStatus, type SectionKey } from '@/lib/page-status';
 
@@ -24,9 +24,7 @@ export function RefreshInProgress({ section, status }: { section: SectionKey; st
           intro={`We’re updating ${current.phrase} and it will be back soon. Thank you for your patience.`}
           pattern={{ name: 'springGarden', focus: '50% 50%', shape: 'ellipse' }}
           top={
-            <div className="mx-auto h-24 w-24 overflow-hidden">
-              <Image src="/icons/Cuppi-Mar26-v1-iOS-Default-1024x1024@1x.png" alt="" width={192} height={192} priority className="h-full w-full" />
-            </div>
+            <CuppiTile className="mx-auto h-24 w-24" priority />
           }
         >
           {elsewhere.length > 0 && (

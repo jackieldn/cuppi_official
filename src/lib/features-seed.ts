@@ -81,7 +81,6 @@ export const featuresSeed: Feature[] = [
     group: 'family',
     status: 'live',
     order: 20,
-    iconUrl: '/icons/medical-report.png',
     tile: 'green',
     hero: { headline: pets.heading, intro: pets.intro, image: firstImage(pets) },
     blocks: [
@@ -106,7 +105,6 @@ export const featuresSeed: Feature[] = [
     group: 'family',
     status: 'live',
     order: 10,
-    iconUrl: '/icons/confetti-ball.png',
     tile: 'pink',
     hero: { headline: birthdays.heading, intro: birthdays.intro, image: firstImage(birthdays) },
     blocks: [
@@ -145,7 +143,6 @@ export const featuresSeed: Feature[] = [
     group: 'home',
     status: 'live',
     order: 30,
-    iconUrl: '/icons/trash-bin.png',
     tile: 'blue',
     hero: { headline: binDay.heading, intro: binDay.intro, image: firstImage(binDay) },
     blocks: [
@@ -198,7 +195,6 @@ export const featuresSeed: Feature[] = [
     group: 'finance',
     status: 'live',
     order: 20,
-    iconUrl: '/icons/007-3d-wallet.png',
     tile: 'amber',
     hero: { headline: budget.heading, intro: budget.intro, image: firstImage(budget) },
     blocks: [
@@ -279,7 +275,6 @@ export const featuresSeed: Feature[] = [
     name: 'Chores',
     tagline: 'Coming soon',
     icon: 'sparkles',
-    iconUrl: '/icons/spring-cleaning.png',
     tile: 'blue',
     tint: 'sky',
     group: 'family',
@@ -291,7 +286,6 @@ export const featuresSeed: Feature[] = [
     name: 'Shopping',
     tagline: 'Coming soon',
     icon: 'sparkles',
-    iconUrl: '/icons/groceryAppIcon.png',
     tile: 'green',
     tint: 'moss',
     group: 'home',
@@ -303,7 +297,6 @@ export const featuresSeed: Feature[] = [
     name: 'Car',
     tagline: 'Coming soon',
     icon: 'sparkles',
-    iconUrl: '/icons/3d-car.png',
     tile: 'blue',
     tint: 'sky',
     group: 'home',

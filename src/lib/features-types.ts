@@ -6,6 +6,10 @@
 // a small set of reusable layouts (src/components/cuppi/blocks). The admin only
 // has to pick a layout and fill in its fields, like the Apps & Websites editor.
 
+import { resolveBlocks } from './feature-sections.ts';
+import { safeImageUrl } from './safe-urls.ts';
+import type { MockupKind } from './phone-mockups.ts';
+
 /** The colour a feature wears on its cards and hero. Maps to the brand palette. */
 export type FeatureTint = 'honey' | 'sky' | 'moss' | 'clay' | 'lake';
 
@@ -34,12 +38,42 @@ export type TileColour = 'pink' | 'green' | 'blue' | 'amber';
 
 export type FeatureStatus = 'live' | 'preview' | 'soon';
 
-export type FeatureImage = {
+export type PairArrangement = 'lower' | 'higher' | 'level';
+
+/** One screenshot: its address, a description, and its real size (so a phone frame can be sized before it loads). */
+export type FeatureShot = {
   url: string;
   alt: string;
-  /** 'phone' (default): a transparent phone crop that rises from the bottom edge.
-   *  'photo': a normal photograph, shown full-bleed to fill its space. */
-  fit?: 'phone' | 'photo';
+  width?: number;
+  height?: number;
+  /** For a 'frame' phone: which end of the screenshot shows. 'top' (default) is the top of the screen; 'bottom' moves the
+   *  phone up so the end of the screenshot sits at the bottom of the card. Each phone of a pair has its own. */
+  view?: PhoneView;
+};
+
+export type PhoneView = 'top' | 'bottom';
+
+export type FeatureImage = FeatureShot & {
+  /** 'phone' (default): a ready-made transparent phone crop that rises from the bottom edge.
+   *  'photo': a normal photograph, shown full-bleed to fill its space.
+   *  'contain': a picture shown whole and centred, with some room round it (a phone beside a watch, say).
+   *  'frame': a plain app screenshot that the site puts inside an iPhone render (see phone-mockups.ts),
+   *           like the home hero; with `second`, two phones side by side. */
+  fit?: 'phone' | 'photo' | 'contain' | 'frame';
+  /** For 'frame': straight on (default) or turned 45 degrees. */
+  frame?: MockupKind;
+  /** For 'frame': mirror the phone, so a turned one faces the other way. */
+  flip?: boolean;
+  /** For 'frame': the app's background colour, for any part of the screen the screenshot does not cover. */
+  bg?: string;
+  /** For 'frame': a second screenshot, shown in a second phone beside the first. */
+  second?: FeatureShot;
+  /** For one 'frame' phone: slide to the other end of the screenshot while the cursor is over it (a top view slides up to
+   *  the bottom, a bottom view slides down to the top). Mouse and pen only. */
+  slide?: boolean;
+  /** For two phones: 'lower' (default) the right one sits lower; 'higher' the right one sits higher;
+   *  'level' they stand side by side at the same height with a small gap. */
+  arrange?: PairArrangement;
 };
 
 export type FeatureCard = { title: string; body: string; image: FeatureImage };
@@ -69,7 +103,47 @@ export type FeatureBlock =
   // One big warm sentence on a colour band.
   | { id: string; type: 'callout'; title: string; body?: string; tint: FeatureTint }
   // Three or four short reasons, no images.
-  | { id: string; type: 'points'; title?: string; items: { title: string; body: string }[] };
+  | { id: string; type: 'points'; title?: string; items: { title: string; body: string }[] }
+  // A list of short topics on a colour card; picking one swaps the picture beside it.
+  | {
+      id: string;
+      type: 'tabs';
+      title?: string;
+      intro?: string;
+      items: { title: string; body: string; image: FeatureImage }[];
+      side: 'left' | 'right';
+      tint: FeatureTint;
+    }
+  // A headline over one full-width picture.
+  | { id: string; type: 'banner'; title?: string; intro?: string; image: FeatureImage; tint: FeatureTint }
+  // A tutorial or an ad, widescreen or phone-shaped.
+  | {
+      id: string;
+      type: 'video';
+      eyebrow?: string;
+      title?: string;
+      body?: string;
+      /** 'full': the video across the page under its words. 'split': words on one side, the video on the other. */
+      layout: 'full' | 'split';
+      /** Where the words go in a split layout. */
+      side: 'left' | 'right';
+      /** The label chip, and the card behind a phone-shaped video. */
+      tint: FeatureTint;
+      video: FeatureVideo;
+    };
+
+export type VideoAspect = '16:9' | '9:16';
+
+export type FeatureVideo = {
+  /** A YouTube link, or the https address of a video file (an upload lands in our Firebase Storage). */
+  url: string;
+  /** Widescreen (16:9) or phone-shaped (9:16: Shorts, Reels, a screen recording). */
+  aspect: VideoAspect;
+  /** The cover picture. YouTube supplies its own; a video file shows its first frame without one. */
+  poster?: string;
+  /** What the video shows, for screen readers. */
+  label?: string;
+};
 
 export type FeatureHero = {
   headline: string;
@@ -159,6 +233,9 @@ export function validateFeatures(features: Feature[]): string[] {
       if (b.type === 'cards' && b.cards.length === 0) problems.push(`${where}: cards block "${b.id}" has no cards.`);
       if (b.type === 'points' && b.items.length === 0) problems.push(`${where}: points block "${b.id}" has no items.`);
       if (b.type === 'showcase' && !b.image?.url) problems.push(`${where}: showcase block "${b.id}" has no image.`);
+      if (b.type === 'tabs' && b.items.length === 0) problems.push(`${where}: tabs block "${b.id}" has no items.`);
+      if (b.type === 'banner' && !b.image?.url) problems.push(`${where}: banner block "${b.id}" has no image.`);
+      if (b.type === 'video' && !b.video?.url) problems.push(`${where}: video block "${b.id}" has no video.`);
     }
   }
   return problems;
@@ -182,19 +259,7 @@ export const TILE_TINT: Record<TileColour, FeatureTint> = { pink: 'clay', green:
 
 export type FeatureOverride = Partial<Feature> & { slug: string };
 
-const STORAGE_PREFIX = 'https://firebasestorage.googleapis.com/v0/b/studio-5700093446-89b93.firebasestorage.app/';
-
-/**
- * A picture address that is safe to give next/image: a file on this site, or one in the site's
- * own Firebase Storage bucket (where admin uploads go). next/image refuses any other host, so
- * letting one through here would break the page instead of just hiding the picture.
- */
-export function safeImageUrl(value: unknown): string | undefined {
-  if (typeof value !== 'string') return undefined;
-  const v = value.trim();
-  if (v.startsWith('/') && !v.startsWith('//') && !/\s/.test(v)) return v;
-  return v.startsWith(STORAGE_PREFIX) && !/\s/.test(v) ? v : undefined;
-}
+export { safeImageUrl };
 
 const str = (v: unknown, max = 600): string | undefined => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : undefined);
 
@@ -227,7 +292,8 @@ export function readOverride(slug: string, raw: unknown): FeatureOverride | null
       ...(h.imageStyle === 'wide' ? { imageStyle: 'wide' as const } : {}),
     };
   }
-  if (Array.isArray(r.blocks)) o.blocks = r.blocks as FeatureBlock[];
+  // Sections are read one by one; a bad one is dropped, never the page.
+  if (Array.isArray(r.blocks)) o.blocks = resolveBlocks(r.blocks);
   return o;
 }
 

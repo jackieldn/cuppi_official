@@ -3,7 +3,8 @@
 import { useMemo, useState } from 'react';
 import { collection, deleteDoc, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
-import { ArrowDown, ArrowUp, ImagePlus, Pencil, Plus } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowDown, ArrowUp, ImagePlus, LayoutTemplate, Pencil, Plus } from 'lucide-react';
 import { useCollection, useFirestore, useStorage } from '@/firebase';
 import { AppTile } from '@/components/cuppi/feature-icon';
 import { Badge } from '@/components/ui/badge';
@@ -108,7 +109,7 @@ export function FeaturesAdmin() {
             </div>
             {items.length === 0 && <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">Nothing here yet.</p>}
             {items.map((f, i) => (
-              <div key={f.slug} className={cn('grid items-center gap-3 rounded-lg border p-3 md:grid-cols-[auto_auto_1fr_auto_auto_auto]', !isPublished(f) && 'opacity-60')}>
+              <div key={f.slug} className={cn('grid items-center gap-3 rounded-lg border p-3 md:grid-cols-[auto_auto_1fr_auto_auto_auto_auto]', !isPublished(f) && 'opacity-60')}>
                 <div className="flex gap-1">
                   <Button type="button" variant="ghost" size="icon" aria-label={`Move ${f.name} up`} disabled={i === 0} onClick={() => move(f, -1)}>
                     <ArrowUp className="h-4 w-4" />
@@ -142,6 +143,15 @@ export function FeaturesAdmin() {
                 <Button type="button" variant="outline" size="sm" onClick={() => setEditing({ feature: f })}>
                   <Pencil className="mr-2 h-4 w-4" /> Edit
                 </Button>
+                {hasPage(f) ? (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/admin/cuppi-features/${f.slug}`}>
+                      <LayoutTemplate className="mr-2 h-4 w-4" /> Sections
+                    </Link>
+                  </Button>
+                ) : (
+                  <span aria-hidden />
+                )}
               </div>
             ))}
           </section>
@@ -396,7 +406,7 @@ function FeatureEditor({
             <legend className="px-1 text-sm font-medium">Feature page</legend>
             <p className="text-xs text-muted-foreground">
               Give it a headline and a picture and it gets its own page, linked from the menu. Leave them empty to list the icon now as &ldquo;Coming soon&rdquo; and add the page later.
-              {feature?.blocks && feature.blocks.length > 0 && ` The ${feature.blocks.length} sections further down this page are edited in code for now.`}
+              {feature?.blocks && ` The ${feature.blocks.length} section${feature.blocks.length === 1 ? '' : 's'} below this top block are built with Sections on the features list.`}
             </p>
             <div className="space-y-2">
               <Label htmlFor="f-headline">Headline</Label>

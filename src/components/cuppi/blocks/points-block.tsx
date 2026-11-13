@@ -17,7 +17,7 @@ export function PointsBlock({ block }: { block: Points }) {
         {block.items.map((item) => (
           <Reveal key={item.title} stagger={90}>
             <div className="h-full rounded-[1.75rem] border border-cuppi-line bg-cuppi-card p-6 transition-transform duration-500 [transition-timing-function:var(--ease-spring)] hover:-translate-y-1">
-              <span className="mb-4 grid h-9 w-9 place-items-center rounded-full bg-cuppi-moss-deep text-cuppi-paper">
+              <span className="mb-4 grid h-9 w-9 place-items-center rounded-full bg-cuppi-moss-deep text-cuppi-cream">
                 <Check className="h-4 w-4" aria-hidden />
               </span>
               <h3 className="font-headline font-normal text-xl">{item.title}</h3>

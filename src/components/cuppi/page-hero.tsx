@@ -45,20 +45,23 @@ export function PageHero({
     <section className="px-3 pt-3 sm:px-6">
       <div
         data-spotlight-host
-        className={cn('mx-auto max-w-6xl rounded-[2.5rem] px-7 py-12 sm:px-12 sm:py-16', pattern && 'relative overflow-hidden', centred && 'text-center', t.surface, t.text)}
+        className={cn('relative mx-auto max-w-6xl rounded-[2.5rem] px-7 py-12 sm:px-12 sm:py-16', pattern && 'overflow-hidden', centred && 'text-center', t.surface, t.text)}
       >
         {pattern && <SpotlightPattern pattern={pattern.name} focus={pattern.focus} shape={pattern.shape} />}
         {/* `relative` keeps the content above the pattern. */}
-        <div className={cn('relative', centred && 'flex flex-col items-center')}>
+        {/* The back pill lives in the block's top-left corner, the same distance from the top and the left
+            (1.25rem on a phone, 1.5rem above), so it is in the same place on every page. It is out of the
+            flow, so the content below makes room for it with a little extra top padding. */}
+        {back && (
+          <Link
+            href={back.href}
+            className="cuppi-fade-up absolute left-5 top-5 z-10 inline-flex items-center gap-1.5 rounded-full bg-cuppi-paper/90 px-3.5 py-1.5 text-sm font-medium text-cuppi-ink transition-colors hover:bg-cuppi-paper sm:left-6 sm:top-6"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> {back.label}
+          </Link>
+        )}
+        <div className={cn('relative', back && 'pt-8', centred && 'flex flex-col items-center')}>
           {top && <div className="mb-8 w-full sm:mb-10">{top}</div>}
-          {back && (
-            <Link
-              href={back.href}
-              className="cuppi-fade-up mb-8 inline-flex w-fit items-center gap-1.5 rounded-full bg-cuppi-paper/90 px-3.5 py-1.5 text-sm font-medium text-cuppi-ink transition-colors hover:bg-cuppi-paper"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> {back.label}
-            </Link>
-          )}
           <div className={cn('cuppi-fade-up flex items-center gap-5', centred && 'justify-center')} style={delay(80)}>
             {tile}
             <h1 className="font-headline text-4xl font-normal leading-[1.05] tracking-tight sm:text-6xl">{title}</h1>

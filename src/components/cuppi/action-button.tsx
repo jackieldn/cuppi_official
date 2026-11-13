@@ -61,7 +61,7 @@ export const ActionButton = React.forwardRef<HTMLElement, Props>(function Action
   ref,
 ) {
   const classes = cn(
-    'group/btn relative inline-flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full font-semibold text-cuppi-card',
+    'group/btn relative inline-flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full font-semibold text-cuppi-cream',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cuppi-brand focus-visible:ring-offset-2 focus-visible:ring-offset-cuppi-paper',
     SIZES[size],
     className,

@@ -197,6 +197,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    // The home page hero (cuppi_home/hero).
+    match /cuppi_home/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     // Which sections are live and which show "refresh in progress" (cuppi_pages/status).
     match /cuppi_pages/{docId} {
       allow read: if true;

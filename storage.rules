@@ -112,13 +112,16 @@ service firebase.storage {
             && request.resource.contentType == 'application/pdf'));
     }
 
-    // Icons and screenshots for Cuppi feature pages added in the admin. Images only, up to 10 MB.
+    // Icons, screenshots and videos for Cuppi feature pages built in the admin. Images up to 10 MB;
+    // videos (MP4, WebM or MOV, for the page builder's Video section) up to 200 MB.
     match /cuppi_features/{allPaths=**} {
       allow read: if true;
       allow write: if isAdmin()
         && (request.resource == null
           || (request.resource.size < 10 * 1024 * 1024
-            && request.resource.contentType.matches('image/.*')));
+            && request.resource.contentType.matches('image/.*'))
+          || (request.resource.size < 200 * 1024 * 1024
+            && request.resource.contentType.matches('video/(mp4|webm|quicktime)')));
     }
 
     // Match all files for technical skills icons.

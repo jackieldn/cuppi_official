@@ -2,10 +2,13 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import {
   MOCKUPS,
-  SCREEN_H,
+  OVERSCAN,
   SCREEN_RADIUS,
+  SCREEN_H,
   SCREEN_W,
   flipQuad,
+  fillsScreenByCover,
+  growQuad,
   quadToMatrix3d,
   type MockupKind,
 } from '@/lib/phone-mockups';
@@ -49,7 +52,7 @@ export function PhoneMockup({
   style?: React.CSSProperties;
 }) {
   const m = MOCKUPS[kind];
-  const quad = flip ? flipQuad(m.screen, m.width) : m.screen;
+  const quad = growQuad(flip ? flipQuad(m.screen, m.width) : m.screen, OVERSCAN);
 
   return (
     <div
@@ -60,7 +63,7 @@ export function PhoneMockup({
         className="absolute left-0 top-0 origin-top-left"
         style={{ width: m.width, height: m.height, transform: `scale(tan(atan2(100cqw, ${m.width}px)))` }}
       >
-        {/* The screenshot, flat, then warped onto the screen. */}
+        {/* The screenshot, flat, then warped onto the screen. Its corner radius is tuned to the frame's opening (see SCREEN_RADIUS). */}
         <div
           className="absolute left-0 top-0 origin-top-left overflow-hidden"
           style={{
@@ -71,7 +74,16 @@ export function PhoneMockup({
             transform: quadToMatrix3d(SCREEN_W, SCREEN_H, quad),
           }}
         >
-          <Image src={src} alt={alt} width={imageWidth} height={imageHeight} sizes={sizes} priority={priority} className="block h-auto w-full" />
+          {/* Almost screen-shaped: fill the whole screen (a sliver off the sides) rather than leave a strip of `bg` along the bottom. */}
+          <Image
+            src={src}
+            alt={alt}
+            width={imageWidth}
+            height={imageHeight}
+            sizes={sizes}
+            priority={priority}
+            className={fillsScreenByCover(imageWidth, imageHeight) ? 'block h-full w-full object-cover object-top' : 'block h-auto w-full'}
+          />
         </div>
         {/* The frame, on top: its bezel and Dynamic Island cover the screen's edges. */}
         <Image

@@ -77,6 +77,10 @@ export default {
           'moss-soft': 'rgb(var(--c-moss-soft) / <alpha-value>)',
           'honey-soft': 'rgb(var(--c-honey-soft) / <alpha-value>)',
           'clay-soft': 'rgb(var(--c-clay-soft) / <alpha-value>)',
+          // Fixed in light and dark: text that sits on a strong colour, and that colour for a fill.
+          cream: 'rgb(var(--c-cream) / <alpha-value>)',
+          espresso: 'rgb(var(--c-espresso) / <alpha-value>)',
+          'brand-fill': 'rgb(var(--c-brand-fill) / <alpha-value>)',
         },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

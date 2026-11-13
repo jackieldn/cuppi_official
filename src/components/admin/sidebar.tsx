@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FolderKanban, GalleryHorizontal, UserCircle, Smile, Bot, AppWindow, Scale, Music, ListMusic, Images, NotebookPen, Clapperboard, PanelTop, Sparkles, ToggleRight } from 'lucide-react';
+import { FolderKanban, GalleryHorizontal, UserCircle, Smile, Bot, AppWindow, Scale, Music, ListMusic, Images, NotebookPen, Clapperboard, PanelTop, Sparkles, ToggleRight, LayoutTemplate, Shapes } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -24,23 +24,48 @@ const navigation = [
 
 // The Cuppi website (cuppi.co.uk), edited here.
 const cuppiNavigation = [
+  { name: 'Home hero', href: '/admin/cuppi-home', icon: LayoutTemplate },
+  { name: 'Icon banner', href: '/admin/cuppi-icons', icon: Shapes },
   { name: 'Cuppi pages', href: '/admin/cuppi-pages', icon: ToggleRight },
   { name: 'Cuppi menu', href: '/admin/cuppi-menu', icon: PanelTop },
   { name: 'Cuppi features', href: '/admin/cuppi-features', icon: Sparkles },
 ];
 
+// The two sites edited here. The sidebar shows one site's pages at a time; which one follows the
+// address, so a link straight to a Cuppi page opens with Cuppi selected, and the toggle is just
+// two links (each lands on that site's first page).
+const SITES = [
+  { key: 'portfolio', label: 'Portfolio', href: '/admin', nav: navigation },
+  { key: 'cuppi', label: 'Cuppi', href: '/admin/cuppi-home', nav: cuppiNavigation },
+] as const;
+
+const siteForPath = (pathname: string): (typeof SITES)[number]['key'] => (pathname.startsWith('/admin/cuppi') ? 'cuppi' : 'portfolio');
+
 export function AdminSidebar() {
   const pathname = usePathname();
+  const current = siteForPath(pathname);
+  const site = SITES.find((s) => s.key === current)!;
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex-1">
         <nav className="grid items-start gap-2 px-2 text-sm font-medium lg:px-4">
-          {navigation.map((item) => (
-            <NavItem key={item.name} item={item} pathname={pathname} />
-          ))}
-          <p className="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cuppi website</p>
-          {cuppiNavigation.map((item) => (
+          <div role="group" aria-label="Site to edit" className="mb-2 grid grid-cols-2 rounded-lg border bg-muted p-1">
+            {SITES.map((s) => (
+              <Link
+                key={s.key}
+                href={s.href}
+                aria-current={s.key === current ? 'true' : undefined}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  s.key === current ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {s.label}
+              </Link>
+            ))}
+          </div>
+          {site.nav.map((item) => (
             <NavItem key={item.name} item={item} pathname={pathname} />
           ))}
         </nav>

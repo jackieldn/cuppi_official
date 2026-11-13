@@ -31,14 +31,37 @@ export const MOCKUPS: Record<MockupKind, { src: string; width: number; height: n
 /** The flat screenshot layer is laid out at this size (the real screen's proportions), then warped. */
 export const SCREEN_W = 955;
 export const SCREEN_H = 2082;
-/** The screen's corner radius, measured: 16.75% of its width. */
-export const SCREEN_RADIUS = Math.round(SCREEN_W * 0.1675);
+/**
+ * The corner radius of the screenshot layer. The frame's own screen opening measures about 15% of the screen
+ * width (the real phone's 16.75% does not match this render). The layer is a touch tighter, 14%, so it always
+ * covers the opening (a see-through wedge shows in the corners if it is rounder), and a touch rounder than
+ * square, so its corners stay inside the opaque bezel instead of poking out past the phone's outline.
+ */
+export const SCREEN_RADIUS = Math.round(SCREEN_W * 0.14);
 
 /** Mirrors a mockup left to right. The screenshot itself is never mirrored, so the quad's corners swap sides. */
 export function flipQuad(q: Quad, width: number): Quad {
   const m = ([x, y]: Point): Point => [width - x, y];
   return { tl: m(q.tr), tr: m(q.tl), br: m(q.bl), bl: m(q.br) };
 }
+
+/**
+ * The quad pushed outwards by `px` on every side (measured in the image's own pixels, about the quad's centre).
+ * The screenshot is laid a few pixels bigger than the screen opening, so its edges are always under the frame's
+ * opaque bezel: lined up exactly, anti-aliasing leaves a hairline of whatever is behind the phone along the edge.
+ */
+export function growQuad(q: Quad, px: number): Quad {
+  const pts = [q.tl, q.tr, q.br, q.bl];
+  const cx = pts.reduce((n, p) => n + p[0], 0) / 4;
+  const cy = pts.reduce((n, p) => n + p[1], 0) / 4;
+  const w = (Math.hypot(q.tr[0] - q.tl[0], q.tr[1] - q.tl[1]) + Math.hypot(q.br[0] - q.bl[0], q.br[1] - q.bl[1])) / 2;
+  const h = (Math.hypot(q.bl[0] - q.tl[0], q.bl[1] - q.tl[1]) + Math.hypot(q.br[0] - q.tr[0], q.br[1] - q.tr[1])) / 2;
+  const g = ([x, y]: Point): Point => [cx + (x - cx) * (1 + (2 * px) / w), cy + (y - cy) * (1 + (2 * px) / h)];
+  return { tl: g(q.tl), tr: g(q.tr), br: g(q.br), bl: g(q.bl) };
+}
+
+/** How far the screenshot reaches under the bezel, in the mockup image's pixels. The bezel is about 25px thick. */
+export const OVERSCAN = 6;
 
 /**
  * The perspective transform (a homography) that carries the rectangle
@@ -91,4 +114,59 @@ export function quadToMatrix3d(w: number, h: number, quad: Quad): string {
   const [h11, h12, h13, h21, h22, h23, h31, h32] = solveHomography(w, h, quad);
   const v = [h11, h21, 0, h31, h12, h22, 0, h32, 0, 0, 1, 0, h13, h23, 0, 1];
   return `matrix3d(${v.map((n) => +n.toFixed(8)).join(',')})`;
+}
+
+/** Where the screen starts and ends down the phone's own height, as fractions (0 to 1) of the phone. */
+export function screenSpan(kind: MockupKind): { top: number; bottom: number } {
+  const m = MOCKUPS[kind];
+  const { tl, tr, br, bl } = m.screen;
+  return { top: Math.min(tl[1], tr[1]) / m.height, bottom: Math.max(bl[1], br[1]) / m.height };
+}
+
+/**
+ * How far down the phone's own height the end of a screenshot reaches, as a fraction of the phone (0 to 1). The
+ * screenshot is as wide as the screen, so it stands `shotHeight / shotWidth` screen-widths tall; one shorter than the
+ * screen only fills the top of it (the app's background colour fills the rest), and one taller is cropped by it.
+ */
+/** Within this share of the screen's height, a screenshot counts as filling the screen. */
+export const NEAR_FULL = 0.95;
+
+/** The screenshot's height as a share of what the screen is tall for its width (1 is exactly screen-shaped). */
+export const screenFill = (shotWidth: number, shotHeight: number): number => shotHeight / shotWidth / (SCREEN_H / SCREEN_W);
+
+/**
+ * True for a screenshot that is almost, but not quite, tall enough for the screen (real iPhone screenshots are 0.7% short
+ * of this render's screen). It is scaled up to fill the screen, trimming a sliver off its sides, instead of leaving a
+ * strip of the background colour along the bottom.
+ */
+export const fillsScreenByCover = (shotWidth: number, shotHeight: number): boolean => {
+  const f = screenFill(shotWidth, shotHeight);
+  return f >= NEAR_FULL && f < 1;
+};
+
+export function contentEndFrac(kind: MockupKind, shotWidth: number, shotHeight: number): number {
+  const { top, bottom } = screenSpan(kind);
+  const ratio = screenFill(shotWidth, shotHeight);
+  // Real phone screenshots are a hair off this render's screen shape (an iPhone 15's is 0.7% shorter): within 5% counts as full
+  // (and is drawn to fill the screen, see fillsScreenByCover).
+  const filled = ratio >= NEAR_FULL ? 1 : ratio;
+  return top + (bottom - top) * filled;
+}
+
+/**
+ * Where the top edge of a phone `heightPct` tall (% of its box) sits when it shows the BOTTOM of its screenshot, for a
+ * phone that hangs from `topPct` when it shows the top. The gap above the phone in a top view is repeated below it:
+ * the phone's bottom edge (its bezel included) sits `topPct` above the bottom of the box, so the phone is whole at
+ * both ends. A screenshot shorter than the screen ends higher up the phone, so the phone moves up by less, to put the
+ * end of the screenshot where a full one would end (it never slides up into empty background). Never lower than the
+ * top view.
+ */
+export function bottomViewTop(kind: MockupKind, shotWidth: number, shotHeight: number, topPct: number, heightPct: number): number {
+  const sb = screenSpan(kind).bottom;
+  return Math.min(topPct, 100 - topPct - heightPct * (1 - sb + contentEndFrac(kind, shotWidth, shotHeight)));
+}
+
+/** The top edge of a single phone for each view, in % of its box (see bottomViewTop). */
+export function phoneTops(kind: MockupKind, shotWidth: number, shotHeight: number, topPct = 7, heightPct = 165): { top: number; bottom: number } {
+  return { top: topPct, bottom: Math.round(bottomViewTop(kind, shotWidth, shotHeight, topPct, heightPct) * 10) / 10 };
 }

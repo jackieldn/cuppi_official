@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 interface RevealEntry {
@@ -53,17 +53,28 @@ interface RevealProps {
   hold?: boolean;
 }
 
+const InstantContext = createContext(false);
+
+/**
+ * Inside this, every Reveal is already shown and does not wait for the scroll. For previews (the
+ * admin's page builder) where the page sits in a scrolling box and nothing should be hidden.
+ */
+export function InstantReveal({ children }: { children: ReactNode }) {
+  return <InstantContext.Provider value>{children}</InstantContext.Provider>;
+}
+
 /**
  * Fades its children up the first time they scroll into view (the same fade-up
  * as the Works page). Respects prefers-reduced-motion.
  */
 export function Reveal({ children, className, stagger = 0, hold = false }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [state, setState] = useState({ shown: false, delay: 0 });
+  const instant = useContext(InstantContext);
+  const [state, setState] = useState({ shown: instant, delay: 0 });
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || hold) return;
+    if (!el || hold || instant) return;
     if (typeof IntersectionObserver === 'undefined') {
       setState({ shown: true, delay: 0 });
       return;
@@ -74,14 +85,15 @@ export function Reveal({ children, className, stagger = 0, hold = false }: Revea
       entries.delete(el);
       observer?.unobserve(el);
     };
-  }, [stagger, hold]);
+  }, [stagger, hold, instant]);
 
   return (
     <div
       ref={ref}
       className={cn(
         'opacity-0 motion-reduce:opacity-100',
-        state.shown && 'animate-[fade-in-up_0.6s_ease-out_forwards] motion-reduce:animate-none',
+        state.shown && !instant && 'animate-[fade-in-up_0.6s_ease-out_forwards] motion-reduce:animate-none',
+        instant && 'opacity-100',
         className
       )}
       // Lets children time their own animation to start after this fade-up

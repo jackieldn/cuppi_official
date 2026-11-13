@@ -10,9 +10,8 @@ import { isExternal, type DownloadButton, type MenuLink } from '@/lib/menu-setti
 import { GROUP_LABELS, MENU_GROUPS, hasPage, type Feature, type FeatureGroup } from '@/lib/features-types';
 import { ActionButton } from '../action-button';
 import { AppTile } from '../feature-icon';
+import { CuppiLogoLink } from '../logo-link';
 
-const ICON_URL =
-  'https://firebasestorage.googleapis.com/v0/b/studio-5700093446-89b93.firebasestorage.app/o/homeos_landing%2Fheader_landing%2FHomeOS-v2%2C2.png?alt=media&token=4ae309b8-7f9e-4060-b59d-39d087e0180a';
 
 type MenuKey = 'features' | 'yours';
 type Group = { group: FeatureGroup; items: Feature[] };
@@ -120,10 +119,7 @@ export function SiteHeader({ groups, links: configured, download }: { groups: Gr
           aria-label="Main"
           className="flex items-center justify-between gap-2 rounded-full border border-cuppi-line bg-cuppi-card/85 py-2 pl-[29px] pr-2 backdrop-blur-md"
         >
-          <Link href="/" aria-label="Cuppi Home, home page" className="flex shrink-0 items-center gap-2.5 pr-2">
-            <Image src={ICON_URL} alt="" width={38} height={38} />
-            <span className="whitespace-nowrap font-headline font-normal text-lg tracking-tight sm:text-xl">Cuppi Home</span>
-          </Link>
+          <CuppiLogoLink id="header" priority iconWidth={38} iconHeight={40} className="flex shrink-0 items-center gap-2.5 pr-2" textClassName="text-lg tracking-tight sm:text-xl" />
 
           {/* Desktop links */}
           <div ref={trackRef} className="relative hidden items-center lg:flex" onMouseLeave={() => moveTo(activeKey)}>
@@ -216,12 +212,12 @@ export function SiteHeader({ groups, links: configured, download }: { groups: Gr
             onMouseEnter={() => openMenu(open)}
             onMouseLeave={closeSoon}
           >
-            <div className="rounded-[2rem] border border-cuppi-line bg-cuppi-card p-4 shadow-[0_24px_60px_-24px_rgba(43,33,24,0.45)]">
+            <div className="rounded-[2rem] border border-cuppi-line bg-cuppi-card p-4 shadow-[0_24px_60px_-24px_rgb(var(--c-shadow)/0.45)]">
               <div className={cn('grid gap-4', open === 'features' && 'grid-cols-3')}>
                 {byGroup(MENU_GROUPS.find((m) => m.key === open)?.groups ?? []).map(({ group, items }, gi) => (
                   <div key={group} className="cuppi-fade-up" style={{ '--d': `${gi * 50}ms` } as React.CSSProperties}>
                     {open === 'features' && (
-                      <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-cuppi-ink-soft">{GROUP_LABELS[group].title}</p>
+                      <p className="px-3 pb-2 font-headline text-lg">{GROUP_LABELS[group].title}</p>
                     )}
                     <ul className="space-y-0.5">
                       {items.map((f) => (
@@ -248,7 +244,7 @@ export function SiteHeader({ groups, links: configured, download }: { groups: Gr
         {/* Mobile sheet */}
         {mobileOpen && (
           <div className="cuppi-pop absolute left-0 right-0 top-full z-50 mt-2 lg:hidden">
-            <div className="max-h-[75vh] overflow-y-auto rounded-[2rem] border border-cuppi-line bg-cuppi-card p-3 shadow-[0_24px_60px_-24px_rgba(43,33,24,0.45)]">
+            <div className="max-h-[75vh] overflow-y-auto rounded-[2rem] border border-cuppi-line bg-cuppi-card p-3 shadow-[0_24px_60px_-24px_rgb(var(--c-shadow)/0.45)]">
               {links.map((l) => {
                 const m = l.panel ? MENU_GROUPS.find((g) => g.key === l.panel) : undefined;
                 if (!m) {
@@ -274,7 +270,7 @@ export function SiteHeader({ groups, links: configured, download }: { groups: Gr
                         {byGroup(m.groups).map(({ group, items }) => (
                           <div key={group} className="pb-1">
                             {m.key === 'features' && (
-                              <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-[0.14em] text-cuppi-ink-soft">{GROUP_LABELS[group].title}</p>
+                              <p className="px-3 pb-1 pt-2 font-headline text-lg">{GROUP_LABELS[group].title}</p>
                             )}
                             {items.map((f) => (
                               <MenuItem key={f.slug} feature={f} />
@@ -294,6 +290,18 @@ export function SiteHeader({ groups, links: configured, download }: { groups: Gr
             </div>
           </div>
         )}
+      </div>
+
+      {/* Warm-up. The menu panels only exist while open, so their icons would start downloading at the
+          click and pop in. These are the same tiles, loaded quietly now and kept out of sight, so the
+          pictures are already in the browser's cache when a panel opens (desktop panel or phone menu). */}
+      <div aria-hidden className="pointer-events-none fixed left-0 top-0 h-0 w-0 overflow-hidden opacity-0">
+        {groups
+          .flatMap((g) => g.items)
+          .filter((f) => f.iconUrl)
+          .map((f) => (
+            <AppTile key={f.slug} feature={f} eager className="h-10 w-10" />
+          ))}
       </div>
     </header>
   );
