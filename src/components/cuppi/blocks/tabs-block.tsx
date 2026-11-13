@@ -7,6 +7,8 @@ import { Reveal } from '@/components/ui/reveal';
 import type { FeatureBlock } from '@/lib/features-types';
 import { Phone } from './phone';
 import { TINTS } from './tints';
+import { MarkedText } from '../marked-text';
+import { stripDisclaimers } from '@/lib/disclaimers';
 
 type Tabs = Extract<FeatureBlock, { type: 'tabs' }>;
 
@@ -27,8 +29,8 @@ export function TabsBlock({ block }: { block: Tabs }) {
       <section className="mx-auto max-w-6xl">
         {(block.title || block.intro) && (
           <div className="px-4 pb-6 sm:px-6">
-            {block.title && <h2 className="max-w-3xl font-headline font-normal text-3xl leading-tight tracking-tight sm:text-4xl">{block.title}</h2>}
-            {block.intro && <p className="mt-3 max-w-2xl text-lg leading-relaxed text-cuppi-ink-soft">{block.intro}</p>}
+            {block.title && <h2 className="max-w-3xl font-headline font-normal text-3xl leading-tight tracking-tight sm:text-4xl"><MarkedText text={block.title} /></h2>}
+            {block.intro && <p className="mt-3 max-w-2xl text-lg leading-relaxed text-cuppi-ink-soft"><MarkedText text={block.intro} /></p>}
           </div>
         )}
         <div className={cn('grid overflow-hidden rounded-[2rem] md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]', tint.surface, tint.text)}>
@@ -46,7 +48,7 @@ export function TabsBlock({ block }: { block: Tabs }) {
                       onClick={() => setActive(i)}
                       className="flex w-full items-start justify-between gap-4 py-5 text-left font-headline text-2xl font-normal leading-tight sm:text-3xl"
                     >
-                      {item.title}
+                      {stripDisclaimers(item.title)}
                       {isOpen ? <ChevronUp className="mt-1 h-6 w-6 shrink-0" aria-hidden /> : <ChevronDown className="mt-1 h-6 w-6 shrink-0 opacity-70" aria-hidden />}
                     </button>
                   </h3>
@@ -58,7 +60,7 @@ export function TabsBlock({ block }: { block: Tabs }) {
                     className={cn('grid transition-[grid-template-rows,opacity] duration-500 motion-reduce:transition-none', isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0')}
                   >
                     <div className="overflow-hidden">
-                      <p className={cn('whitespace-pre-line pb-6 text-lg leading-relaxed', tint.muted)}>{item.body}</p>
+                      <p className={cn('whitespace-pre-line pb-6 text-lg leading-relaxed', tint.muted)}><MarkedText text={item.body} /></p>
                     </div>
                   </div>
                 </div>

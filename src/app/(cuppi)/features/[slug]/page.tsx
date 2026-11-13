@@ -7,6 +7,7 @@ import { DownloadStrip } from '@/components/cuppi/blocks/download-strip';
 import { FeatureHero } from '@/components/cuppi/blocks/feature-hero';
 import { KeepExploring } from '@/components/cuppi/blocks/keep-exploring';
 import { getFeature, getPageFeatures } from '@/lib/features';
+import { stripDisclaimers } from '@/lib/disclaimers';
 
 export const revalidate = 60;
 
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (!feature) return {};
   return {
     title: feature.name,
-    description: feature.hero.intro,
+    description: stripDisclaimers(feature.hero.intro),
     alternates: { canonical: `/features/${feature.slug}` },
   };
 }

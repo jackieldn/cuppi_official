@@ -6,6 +6,7 @@ import type { PageFeature } from '@/lib/features-types';
 import { SpotlightPattern } from '../spotlight-pattern';
 import { Phone } from './phone';
 import { TINTS } from './tints';
+import { MarkedText } from '../marked-text';
 
 /** The top of a feature page: a big colour block, words on one side, the phone on the other. */
 export function FeatureHero({ feature }: { feature: PageFeature }) {
@@ -34,10 +35,10 @@ export function FeatureHero({ feature }: { feature: PageFeature }) {
               className="cuppi-fade-up font-headline font-normal text-4xl leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl"
               style={{ '--d': '160ms' } as React.CSSProperties}
             >
-              {feature.hero.headline}
+              <MarkedText text={feature.hero.headline} />
             </h1>
             <p className={cn('cuppi-fade-up max-w-xl text-lg leading-relaxed', tint.muted)} style={{ '--d': '260ms' } as React.CSSProperties}>
-              {feature.hero.intro}
+              <MarkedText text={feature.hero.intro} />
             </p>
 
           </div>
@@ -54,6 +55,13 @@ export function FeatureHero({ feature }: { feature: PageFeature }) {
                   priority
                   className="h-auto w-full drop-shadow-[0_24px_30px_rgb(var(--c-shadow)/0.18)]"
                 />
+              </div>
+            ) : feature.hero.image.fit === 'photo' ? (
+              // A photo sits in a rounded mask with a margin all round, so the block's colour and pattern frame it.
+              <div className="cuppi-rise absolute inset-0 p-4 sm:p-5" style={{ '--d': '200ms' } as React.CSSProperties}>
+                <div className="relative h-full w-full overflow-hidden rounded-[1.75rem]">
+                  <Image src={feature.hero.image.url} alt={feature.hero.image.alt} fill sizes="(max-width: 768px) 92vw, 46vw" priority className="object-cover" />
+                </div>
               </div>
             ) : (
               <div className="cuppi-rise absolute inset-0" style={{ '--d': '200ms' } as React.CSSProperties}>

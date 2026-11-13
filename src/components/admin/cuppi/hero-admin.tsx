@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { RotateCcw } from 'lucide-react';
-import { useDoc, useFirestore } from '@/firebase';
+import { useDoc, useFirestore, useStorage } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { DisclaimersProvider } from '@/components/cuppi/disclaimer';
 import { HomeHero } from '@/components/cuppi/home/hero';
 import { TINTS } from '@/components/cuppi/blocks/tints';
 import { Segmented } from '@/components/admin/apps/segmented';
@@ -29,9 +31,12 @@ import {
   type HeroSettings,
   type HeroTemplate,
 } from '@/lib/home-hero-settings';
+import { disclaimerTag, resolveDisclaimers, type Disclaimer } from '@/lib/disclaimers';
 import { PATTERNS } from '@/lib/patterns';
 import type { FeatureTint } from '@/lib/features-types';
 import { describeError } from './errors';
+import { FRAME_FIT, ImageEditor, PictureInput, UploadsContext, type AddFile } from './section-fields';
+import type { FeatureImage } from '@/lib/features-types';
 import { ScaledToFit } from './scaled-to-fit';
 
 const TINT_NAMES: Record<FeatureTint, string> = { honey: 'Honey', sky: 'Sky', moss: 'Moss', clay: 'Clay', lake: 'Lake' };
@@ -50,13 +55,24 @@ const PATTERN_LABELS: Record<(typeof PATTERN_NAMES)[number], string> = {
  */
 export function HeroAdmin() {
   const firestore = useFirestore();
+  const storage = useStorage();
   const ref = useMemo(() => (firestore ? doc(firestore, 'cuppi_home', 'hero') : null), [firestore]);
   const { data, isLoading } = useDoc<Record<string, unknown>>(ref);
+  const disclaimerRef = useMemo(() => (firestore ? doc(firestore, 'cuppi_home', 'disclaimers') : null), [firestore]);
+  const disclaimerDoc = useDoc<Record<string, unknown>>(disclaimerRef);
+  const disclaimers = useMemo(() => resolveDisclaimers(disclaimerDoc.data ?? null), [disclaimerDoc.data]);
 
   if (isLoading) return <Skeleton className="h-96 w-full" />;
   return (
     <HeroEditor
       initial={resolveHeroSettings(data ?? null)}
+      disclaimers={disclaimers}
+      upload={async (file) => {
+        if (!storage) throw new Error('Storage is not ready yet.');
+        const r = storageRef(storage, `cuppi_home/hero-screenshot-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`);
+        await uploadBytes(r, file, { contentType: file.type });
+        return getDownloadURL(r);
+      }}
       onSave={async (hero) => {
         if (!ref) throw new Error('The database is not ready yet.');
         await setDoc(ref, { ...hero, updatedAt: serverTimestamp() });
@@ -66,7 +82,18 @@ export function HeroAdmin() {
 }
 
 /** The form. It knows nothing about the database: it is given what is saved and a way to save. */
-export function HeroEditor({ initial, onSave }: { initial: HeroSettings; onSave: (hero: HeroSettings) => Promise<void> }) {
+export function HeroEditor({
+  initial,
+  disclaimers = [],
+  upload,
+  onSave,
+}: {
+  initial: HeroSettings;
+  disclaimers?: Disclaimer[];
+  /** Sends a chosen screenshot to storage and returns its address. */
+  upload?: (file: File) => Promise<string>;
+  onSave: (hero: HeroSettings) => Promise<void>;
+}) {
   const { toast } = useToast();
   const [hero, setHero] = useState<HeroSettings>(initial);
   /** What is saved, to tell whether there is anything unsaved. */
@@ -75,6 +102,28 @@ export function HeroEditor({ initial, onSave }: { initial: HeroSettings; onSave:
   const [problems, setProblems] = useState<string[]>([]);
   /** How many times Replay has been pressed: remounting the preview plays its opening shot again. */
   const [plays, setPlays] = useState(0);
+  /** A screenshot chosen but not sent yet, by the local address the preview shows it at. */
+  const chosen = useRef(new Map<string, File>());
+  useEffect(() => {
+    const held = chosen.current;
+    return () => held.forEach((_, url) => URL.revokeObjectURL(url));
+  }, []);
+
+  /** Checks a chosen file and keeps it until Save; returns the local address the preview shows it at (or null, having said why). */
+  const addFile = useCallback<AddFile>(
+    (file) => {
+      const refuse = (description: string) => {
+        toast({ variant: 'destructive', title: 'Cannot use that file', description });
+        return null;
+      };
+      if (!file.type.startsWith('image/')) return refuse(`${file.name} is not a picture.`);
+      if (file.size >= 10 * 1024 * 1024) return refuse(`${file.name} is over 10 MB.`);
+      const url = URL.createObjectURL(file);
+      chosen.current.set(url, file);
+      return url;
+    },
+    [toast],
+  );
 
   const preview = useMemo(() => buildHero(hero), [hero]);
 
@@ -91,9 +140,32 @@ export function HeroEditor({ initial, onSave }: { initial: HeroSettings; onSave:
     const found = validateHeroSettings(hero);
     setProblems(found);
     if (found.length > 0) return;
-    const clean: HeroSettings = { ...hero, headline: hero.headline.trim(), body: hero.body.trim(), button: { ...hero.button, label: hero.button.label.trim(), href: hero.button.href.trim() } };
+    let clean: HeroSettings = { ...hero, headline: hero.headline.trim(), body: hero.body.trim(), button: { ...hero.button, label: hero.button.label.trim(), href: hero.button.href.trim() } };
     setSaving(true);
     try {
+      // Screenshots chosen here are still on this computer: send them up first, then save their new addresses.
+      if (clean.screenshot) {
+        const sent = new Map<string, string>();
+        for (const local of [clean.screenshot.url, clean.screenshot.second?.url ?? ''].filter((u) => u.startsWith('blob:'))) {
+          const file = chosen.current.get(local);
+          if (!file || !upload) throw new Error('A chosen screenshot is no longer available. Choose it again.');
+          sent.set(local, await upload(file));
+        }
+        const shot = clean.screenshot;
+        clean = {
+          ...clean,
+          screenshot: {
+            ...shot,
+            url: sent.get(shot.url) ?? shot.url,
+            alt: shot.alt.trim() || 'The Cuppi app',
+            ...(shot.second ? { second: { ...shot.second, url: sent.get(shot.second.url) ?? shot.second.url, alt: shot.second.alt.trim() } } : {}),
+          },
+        };
+        sent.forEach((_, local) => {
+          URL.revokeObjectURL(local);
+          chosen.current.delete(local);
+        });
+      }
       await onSave(clean);
       setHero(clean);
       setSaved(clean);
@@ -110,7 +182,8 @@ export function HeroEditor({ initial, onSave }: { initial: HeroSettings; onSave:
   const tilt = hero.phone === 'tilt';
 
   return (
-    // Two columns from lg up: the preview on the left, the settings scrolling on the right, so every change is seen as it is made.
+    <UploadsContext.Provider value={addFile}>
+    {/* Two columns from lg up: the preview on the left, the settings scrolling on the right, so every change is seen as it is made. */}
     <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:h-full lg:grid-cols-[minmax(0,1.5fr)_minmax(360px,1fr)]">
       <div className="min-w-0 lg:overflow-y-auto">
         <div className="mb-2 flex items-center justify-between gap-3">
@@ -125,7 +198,9 @@ export function HeroEditor({ initial, onSave }: { initial: HeroSettings; onSave:
           <ScaledToFit designWidth={1200}>
             {/* The real hero, drawn from the form as it is now (saved or not). It starts settled; Replay remounts it so the opening shot plays again. */}
             <div className="pb-3">
-              <HomeHero key={plays} hero={preview} instant={plays === 0} />
+              <DisclaimersProvider items={disclaimers}>
+                <HomeHero key={plays} hero={preview} instant={plays === 0} />
+              </DisclaimersProvider>
             </div>
           </ScaledToFit>
         </div>
@@ -169,7 +244,7 @@ export function HeroEditor({ initial, onSave }: { initial: HeroSettings; onSave:
             <CardHeader>
               <CardTitle>Words and button</CardTitle>
               <CardDescription>
-                Put a word between *asterisks* to set it in orange italics, like *Vroom-vroom*. The button is the quiet link under the words; the Download button lives in the menu.
+                Put a word between *asterisks* to set it in orange italics, like *Vroom-vroom*.{disclaimers.length > 0 && ` A disclaimer tag straight after a word gives it an (i) icon: ${disclaimers.map((d) => disclaimerTag(d.id)).join(', ')}.`} The button is the quiet link under the words; the Download button lives in the menu.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -281,9 +356,38 @@ export function HeroEditor({ initial, onSave }: { initial: HeroSettings; onSave:
           <Card>
             <CardHeader>
               <CardTitle>Phone</CardTitle>
-              <CardDescription>The app screenshot stays the one from the codebase for now; this sets how the phone is shown.</CardDescription>
+              <CardDescription>The app screenshot in the phone, and how the phone is shown.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-wrap gap-x-8 gap-y-4">
+            <CardContent className="space-y-3 border-b pb-6">
+              {hero.screenshot ? (
+                <ImageEditor
+                  image={shotAsImage(hero)}
+                  onChange={(image) => set({ screenshot: imageAsShot(image) })}
+                  label="Screenshot"
+                  fits={[FRAME_FIT]}
+                  angle={false}
+                  hint="Remove goes back to the original screenshot."
+                />
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={preview.screenshot.url} alt="" className="h-24 w-auto max-w-[9rem] rounded-md border bg-muted object-contain" />
+                    <p className="text-sm text-muted-foreground">The original screenshot.</p>
+                  </div>
+                  <PictureInput
+                    label="Use your own screenshot"
+                    url=""
+                    empty="Upload a screenshot"
+                    onChange={(url, size) => url && set({ screenshot: { url, alt: '', width: size?.width ?? 1170, height: size?.height ?? 2532, bg: '#FFFFFF' } })}
+                  />
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Use a plain screenshot from the app, not one already in a phone: the site puts it in the phone for you. You can add a second phone beside it, show the bottom of the screen instead of the top, and have the phone slide to the other end when the cursor is over it. The hero shows the top part of the screen unless you choose the bottom, so crop out anything private (a profile photo, a number plate).
+              </p>
+            </CardContent>
+            <CardContent className="flex flex-wrap gap-x-8 gap-y-4 pt-6">
               <div className="space-y-2">
                 <Label>Angle</Label>
                 <div>
@@ -305,10 +409,17 @@ export function HeroEditor({ initial, onSave }: { initial: HeroSettings; onSave:
                     label="Which way the screen faces"
                     value={hero.facing}
                     onChange={(facing) => set({ facing })}
-                    options={[
-                      { value: 'left', label: 'Left', disabled: !tilt },
-                      { value: 'right', label: 'Right', disabled: !tilt },
-                    ]}
+                    options={
+                      hero.screenshot?.second
+                        ? [
+                            { value: 'right', label: 'Towards each other', disabled: !tilt },
+                            { value: 'left', label: 'Apart', disabled: !tilt },
+                          ]
+                        : [
+                            { value: 'left', label: 'Left', disabled: !tilt },
+                            { value: 'right', label: 'Right', disabled: !tilt },
+                          ]
+                    }
                   />
                 </div>
                 {!tilt && <p className="text-xs text-muted-foreground">A face-forward phone looks the same either way.</p>}
@@ -349,7 +460,29 @@ export function HeroEditor({ initial, onSave }: { initial: HeroSettings; onSave:
         </div>
       </div>
     </div>
+    </UploadsContext.Provider>
   );
+}
+
+/** The hero's screenshot as the picture editor works with it: framed, at the hero's angle and facing. */
+function shotAsImage(h: HeroSettings): FeatureImage {
+  return { ...h.screenshot!, fit: 'frame', frame: h.phone, flip: h.phone === 'tilt' && h.facing === 'left' };
+}
+
+/** What the picture editor gives back, as the hero's screenshot (no picture means back to the original). */
+function imageAsShot(i: FeatureImage): HeroSettings['screenshot'] {
+  if (!i.url) return null;
+  return {
+    url: i.url,
+    alt: i.alt,
+    width: i.width ?? 1170,
+    height: i.height ?? 2532,
+    bg: i.bg ?? '#FFFFFF',
+    ...(i.view === 'bottom' ? { view: 'bottom' as const } : {}),
+    ...(i.second ? { second: i.second } : {}),
+    ...(i.arrange ? { arrange: i.arrange } : {}),
+    ...(i.slide ? { slide: true } : {}),
+  };
 }
 
 function Control({ label, value, hint, children }: { label: string; value: string; hint: string; children: React.ReactNode }) {

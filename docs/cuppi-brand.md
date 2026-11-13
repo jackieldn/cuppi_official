@@ -229,7 +229,51 @@ case to `block-renderer.tsx`, then in `src/lib/feature-sections.ts` add it to `S
 `src/components/admin/cuppi/section-forms.tsx` and a thumbnail in `SectionThumb` (`feature-page-admin.tsx`). The
 unit tests (`tests/unit/feature-sections.test.mjs`) loop over `SECTION_TEMPLATES`, so they catch a missing piece.
 
+**The top picture** (the feature's hero image) is `phone` or `photo` too. A `photo` is set in a rounded mask with a margin all round, so the block's colour and pattern frame it: in its half of the page's
+top block (1rem of margin, 1.75rem corners) and in its card on the Features overview (1rem of margin, 1.25rem corners). It is
+cropped to fill the mask, never stretched. Without the setting a picture is treated as a phone crop and fitted whole inside a square, so a landscape
+photo would sit small and square-cornered. In the admin (Edit on the features list) the choice is "How the picture is shown":
+a landscape picture is set to Photo automatically when it is chosen, and it can be changed. A picture saved before the
+choice existed has none, so open its feature, pick Photo and Save.
+
 Built-in features start from `src/lib/features-seed.ts`; the admin's sections (below) replace them.
+
+## Disclaimers
+
+Cuppi suggests reminders for health, pets and money, so wherever the words could be read as advice there is a disclaimer: a
+small **(i)** beside the word, and a bubble with the notice when it is hovered, tapped or tabbed to.
+
+**How it works.** A disclaimer is written once, in the admin under **Cuppi > Disclaimers** (`/admin/cuppi-disclaimers`), with a
+tag name (`health`), the words for its bubble (up to 700 characters), and a name for the admin's own use. It is stored as one
+document, `cuppi_home/disclaimers` (public read, admin write: the existing `cuppi_home` rule), and read on the server
+(`getDisclaimers`, `src/lib/cuppi-site-data.ts`) through `resolveDisclaimers` (`src/lib/disclaimers.ts`), which drops an entry
+with a bad tag name or no words, so a bad document cannot break a page. The wording lives in one place: change it there and every
+use changes.
+
+**Using one.** Type its tag **straight after the word, with no space**, in any heading or paragraph on a feature page (every
+template) or the home hero: `Medication{i:health} reminders`. The word and its icon never wrap onto separate lines. A tag with no
+matching disclaimer shows nothing. Tags cannot go in a label chip, a tab's title (it is a button) or a page description; those
+strip them (`stripDisclaimers`). Wherever page text is drawn it goes through `MarkedText` (`src/components/cuppi/marked-text.tsx`),
+which works in server and client components; to support tags in a new place, wrap its text in that.
+
+**The bubble** (`DisclaimerMark`, `src/components/cuppi/disclaimer.tsx`):
+
+- Opens on a mouse hovering over the icon (after 120ms) and stays while the mouse is over the bubble, so the words can be read or
+  selected; closes 220ms after the mouse leaves both.
+- Opens when the icon is reached with the **keyboard** (a focus ring shows); Enter or Space toggles it; **Escape** closes it.
+- A **tap** toggles it, because a touch screen has no hover; a tap elsewhere closes it. A click after a hover does not close what the
+  hover opened.
+- It is drawn outside the card it sits in (a colour block's rounded edge never clips it) but inside `.theme-cuppi`, so it has the
+  right colours in light and dark. It flips below the icon when there is no room above, and is never wider than the screen.
+- The icon is `0.4em` (at least 1rem), raised like a footnote, at 60% opacity until hovered. The tap area is larger than the icon.
+  Its accessible name is "Important information: <name>".
+
+**In the admin**, the page builder and the home hero editor show the live disclaimers in their previews, the page builder lists
+the tags to copy, and saving a page reports a tag that has no disclaimer. The Disclaimers page has a "Try it" sample for each. A
+saved tag name cannot be renamed (pages may use it); to retire one, remove it and any page still using it shows no icon.
+
+The wording of a disclaimer is a legal matter: the site ships with none, and what to say (and where) should be agreed with
+whoever advises on it. Which features need one is a content decision: nothing is added to the existing copy.
 
 ## Features and their icons
 
@@ -259,8 +303,20 @@ The home page leads with whatever is newest: the latest release, a seasonal prom
 discount. It is one small piece of data (headline, text, one quiet link, a screenshot,
 which phone, a tint, a pattern), edited in the admin under **Cuppi > Home hero** and
 stored as `cuppi_home/hero`. `src/lib/home-hero.ts` is its starting point and holds the
-screenshot, which the admin does not change yet. Wrap a word in `*asterisks*` in the
+original screenshot. Wrap a word in `*asterisks*` in the
 headline to set it in italic.
+
+**The screenshot** in the hero's phone can be uploaded in the editor (Phone > Upload a screenshot): a plain app screenshot, which the
+site puts in the phone. The hero draws it with the same `FramedPhones` a feature page uses (`variant` `hero-split` or `hero-centred`
+sets where the phone hangs), so it has the same options (see Building a feature page): **one phone or two side by side** (right one
+lower, higher, or level), **the top or the bottom** of each screenshot, and a **slide** to the other end of the screenshot while the
+cursor is over the hero (one phone only). The phone's angle and facing stay the hero's own settings (with two phones "facing" means
+towards each other or apart). It is saved as `screenshot` in the hero document (`url`, `alt`, `width`, `height`, `bg`, and `view`,
+`second`, `arrange`, `slide` when set), read through the same `readImage` as a page's pictures, and uploaded on Save to `cuppi_home/` in
+Storage (images up to 10 MB; `storage.rules` allows it). Removing it goes back to the one in `home-hero.ts`. Without one saved, or
+with an address the site cannot show, the original is used, so the hero never loses its picture. The hero shows only the top part of the
+screen unless the bottom is chosen (the phone is 175% of the block's height), so crop out anything private. A full-length iPhone
+screenshot fills the screen right to the bezel (see Phone mockups).
 
 The hero has three templates (`split`, `split-reverse`, `centred`; `HomeHero` in
 `src/components/cuppi/home/hero.tsx`) that share the same words and phone. Everything
@@ -436,6 +492,7 @@ If the database cannot be reached, the built-in features and the default menu ar
 depends on it. Everything read back goes through `readOverride` / `resolveMenu`, which keep only fields of the
 right type and addresses that are safe (a path on this site, or https), so a bad document cannot break a page.
 
+- **Disclaimers** (`/admin/cuppi-disclaimers`): the notices behind the (i) icons in page text; see Disclaimers above.
 - **Page sections** (`/admin/cuppi-features/<slug>`, the **Sections** button on a feature that has a page): the page
   builder. Two columns like the home hero editor: the page as the site draws it on the left (the real `FeatureHero` and
   `BlockRenderer`, at desktop width, scaled to fit; click a section to edit it), the sections on the right. **Add a

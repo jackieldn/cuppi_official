@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { Segmented } from '@/components/admin/apps/segmented';
 import { describeError } from './errors';
 import { featuresSeed } from '@/lib/features-seed';
 import {
@@ -210,6 +211,8 @@ function FeatureEditor({
   const [intro, setIntro] = useState(feature?.hero?.intro ?? '');
   const [heroAlt, setHeroAlt] = useState(feature?.hero?.image.alt ?? '');
   const [heroImage, setHeroImage] = useState<Picked | null>(null);
+  /** How the top picture is shown: a transparent phone crop that rises from the bottom edge, or a photo that fills the block. */
+  const [heroFit, setHeroFit] = useState<'phone' | 'photo'>(feature?.hero?.image.fit === 'photo' ? 'photo' : 'phone');
   const [problem, setProblem] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -221,7 +224,18 @@ function FeatureEditor({
     if (!file.type.startsWith('image/')) return setProblem(`${file.name} is not a picture.`);
     if (file.size >= MAX_BYTES) return setProblem(`${file.name} is over 10 MB.`);
     setProblem('');
-    set({ file, preview: URL.createObjectURL(file) });
+    const preview = URL.createObjectURL(file);
+    set({ file, preview });
+    return preview;
+  };
+
+  /** A wide picture is a photo, and a square-ish one a phone crop: choose for the admin when a top picture is chosen (they can change it). */
+  const pickHero = (file: File | undefined) => {
+    const preview = pick(file, setHeroImage);
+    if (!preview) return;
+    const probe = new window.Image();
+    probe.onload = () => setHeroFit(probe.naturalWidth / probe.naturalHeight > 1.15 ? 'photo' : 'phone');
+    probe.src = preview;
   };
 
   const upload = async (file: File, kind: 'icon' | 'hero') => {
@@ -260,7 +274,9 @@ function FeatureEditor({
       };
       if (icon) data.iconUrl = await upload(icon.file, 'icon');
       if (headline.trim() && heroUrl) {
-        const image = heroImage ? { url: await upload(heroImage.file, 'hero'), alt: heroAlt.trim() } : { ...feature!.hero!.image, alt: heroAlt.trim() };
+        const { fit: _oldFit, ...kept } = feature?.hero?.image ?? { url: '', alt: '' };
+        const how = heroFit === 'photo' ? { fit: 'photo' as const } : {};
+        const image = heroImage ? { url: await upload(heroImage.file, 'hero'), alt: heroAlt.trim(), ...how } : { ...kept, alt: heroAlt.trim(), ...how };
         data.hero = { ...(feature?.hero ?? {}), headline: headline.trim(), intro: intro.trim(), image };
       }
       if (isNew) {
@@ -423,14 +439,34 @@ function FeatureEditor({
               )}
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted">
                 <ImagePlus className="h-4 w-4" /> {heroUrl ? 'Replace the picture' : 'Choose a picture'}
-                <input type="file" accept="image/*" className="sr-only" onChange={(e) => pick(e.target.files?.[0], setHeroImage)} />
+                <input type="file" accept="image/*" className="sr-only" onChange={(e) => pickHero(e.target.files?.[0])} />
               </label>
               <div className="min-w-[12rem] flex-1 space-y-2">
                 <Label htmlFor="f-alt">Describe the picture (for screen readers)</Label>
                 <Input id="f-alt" value={heroAlt} maxLength={200} onChange={(e) => setHeroAlt(e.target.value)} />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">A phone screenshot with a transparent background works best: it rises out of the bottom of the page&rsquo;s top block.</p>
+            {heroUrl && (
+              <div className="space-y-2">
+                <Label>How the picture is shown</Label>
+                <div>
+                  <Segmented
+                    label="How the top picture is shown"
+                    value={heroFit}
+                    onChange={setHeroFit}
+                    options={[
+                      { value: 'photo', label: 'Photo' },
+                      { value: 'phone', label: 'Phone screenshot' },
+                    ]}
+                  />
+                </div>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {heroFit === 'photo'
+                ? 'A photo fills its half of the page’s top block, and its card on the Features overview, right to the edges, so the block’s curved corners round it off. A wide picture works best.'
+                : 'A phone screenshot with a transparent background rises out of the bottom of the page’s top block.'}
+            </p>
           </fieldset>
 
           {problem && (

@@ -8,6 +8,7 @@
 // Only types are imported from features-types (it imports this file), so there is no cycle.
 
 import type { FeatureBlock, FeatureImage, FeatureShot, FeatureTint, FeatureVideo, VideoAspect } from './features-types.ts';
+import { disclaimerIds, hasDisclaimer } from './disclaimers.ts';
 import { safeImageUrl, safeVideoUrl } from './safe-urls.ts';
 
 export type SectionType = FeatureBlock['type'];
@@ -103,7 +104,8 @@ function readShot(v: unknown): FeatureShot | null {
   return { url, alt: text(r.alt, SECTION_LIMITS.alt) ?? '', ...(width && height ? { width, height } : {}), ...(r.view === 'bottom' ? { view: 'bottom' as const } : {}) };
 }
 
-function readImage(v: unknown): FeatureImage | null {
+/** A stored picture -> a safe one, or null when its address cannot be shown. Also reads the home hero's screenshot. */
+export function readImage(v: unknown): FeatureImage | null {
   const shot = readShot(v);
   const r = obj(v);
   if (!shot || !r) return null;
@@ -237,11 +239,43 @@ export function resolveBlocks(stored: unknown): FeatureBlock[] {
 // Checking a draft before it is saved
 // ---------------------------------------------------------------------------
 
-/** What is missing from each section, as sentences the admin can act on. Empty means it can be saved. */
-export function validateSections(blocks: FeatureBlock[]): string[] {
+/**
+ * Every piece of words in a section that can carry a disclaimer tag. The label chip and a tab's title cannot (a chip is
+ * too small, and a tab's title is a button), so they are listed apart.
+ */
+function sectionWords(b: FeatureBlock): { words: string[]; noTags: string[] } {
+  switch (b.type) {
+    case 'showcase':
+      return { words: [b.title, b.body], noTags: [b.eyebrow ?? ''] };
+    case 'cards':
+      return { words: [b.title, b.intro ?? '', ...(b.footnotes ?? []), ...b.cards.flatMap((c) => [c.title, c.body])], noTags: [] };
+    case 'callout':
+      return { words: [b.title, b.body ?? ''], noTags: [] };
+    case 'points':
+      return { words: [b.title ?? '', ...b.items.flatMap((i) => [i.title, i.body])], noTags: [] };
+    case 'tabs':
+      return { words: [b.title ?? '', b.intro ?? '', ...b.items.map((i) => i.body)], noTags: b.items.map((i) => i.title) };
+    case 'banner':
+      return { words: [b.title ?? '', b.intro ?? ''], noTags: [] };
+    case 'video':
+      return { words: [b.title ?? '', b.body ?? ''], noTags: [b.eyebrow ?? ''] };
+  }
+}
+
+/**
+ * What is missing from each section, as sentences the admin can act on. Empty means it can be saved.
+ * `knownDisclaimers`, when given, are the ids of the disclaimers that exist: a tag for any other is reported.
+ */
+export function validateSections(blocks: FeatureBlock[], knownDisclaimers?: readonly string[]): string[] {
   const problems: string[] = [];
   blocks.forEach((b, n) => {
     const at = (what: string) => problems.push(`Section ${n + 1} (${sectionName(b.type)}): ${what}`);
+    const { words, noTags } = sectionWords(b);
+    if (noTags.some(hasDisclaimer)) at('a disclaimer tag cannot go in a label or a topic title. Put it in the words instead.');
+    if (knownDisclaimers) {
+      const unknown = [...new Set(words.flatMap(disclaimerIds))].filter((id) => !knownDisclaimers.includes(id));
+      if (unknown.length) at(`there is no disclaimer called ${unknown.map((id) => `"${id}"`).join(', ')}. Add it under Disclaimers, or take the tag out.`);
+    }
     switch (b.type) {
       case 'showcase':
         if (!b.title.trim()) at('add a heading.');

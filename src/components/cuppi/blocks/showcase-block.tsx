@@ -3,6 +3,8 @@ import { Reveal } from '@/components/ui/reveal';
 import type { FeatureBlock } from '@/lib/features-types';
 import { Phone } from './phone';
 import { TINTS } from './tints';
+import { MarkedText } from '../marked-text';
+import { stripDisclaimers } from '@/lib/disclaimers';
 
 type Showcase = Extract<FeatureBlock, { type: 'showcase' }>;
 
@@ -21,13 +23,13 @@ export function ShowcaseBlock({ block }: { block: Showcase }) {
         >
           {block.eyebrow && (
             <span className={cn('w-fit rounded-full px-3.5 py-0.5 font-headline text-base', tint.chip)}>
-              {block.eyebrow}
+              {stripDisclaimers(block.eyebrow)}
             </span>
           )}
           <h2 className="font-headline font-normal text-3xl leading-tight tracking-tight sm:text-4xl">
-            {block.title}
+            <MarkedText text={block.title} />
           </h2>
-          <p className="max-w-lg whitespace-pre-line text-lg leading-relaxed text-cuppi-ink-soft">{block.body}</p>
+          <p className="max-w-lg whitespace-pre-line text-lg leading-relaxed text-cuppi-ink-soft"><MarkedText text={block.body} /></p>
         </div>
         <div className={cn('relative min-h-[22rem] overflow-hidden rounded-[2rem] md:min-h-[30rem]', tint.surface, textRight && 'md:order-1')}>
           <div className="cuppi-rise-scroll absolute inset-0">
