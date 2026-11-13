@@ -310,7 +310,8 @@ headline to set it in italic.
 site puts in the phone. The hero draws it with the same `FramedPhones` a feature page uses (`variant` `hero-split` or `hero-centred`
 sets where the phone hangs), so it has the same options (see Building a feature page): **one phone or two side by side** (right one
 lower, higher, or level), **the top or the bottom** of each screenshot, and a **slide** to the other end of the screenshot while the
-cursor is over the hero (one phone only). The phone's angle and facing stay the hero's own settings (with two phones "facing" means
+cursor is over the hero (one phone only). In the centred template the phone's window does not clip, so when it slides up it passes
+over the words above it (it paints on top) rather than being cut off; the hero block's rounded edge still trims it at the sides and bottom. The phone's angle and facing stay the hero's own settings (with two phones "facing" means
 towards each other or apart). It is saved as `screenshot` in the hero document (`url`, `alt`, `width`, `height`, `bg`, and `view`,
 `second`, `arrange`, `slide` when set), read through the same `readImage` as a page's pictures, and uploaded on Save to `cuppi_home/` in
 Storage (images up to 10 MB; `storage.rules` allows it). Removing it goes back to the one in `home-hero.ts`. Without one saved, or
