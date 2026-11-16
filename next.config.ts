@@ -26,6 +26,12 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // The admin lives on the portfolio's domain. robots.txt asks crawlers to stay out; this tells
+      // any that arrive anyway (or follow a link) not to index or archive the page.
+      {
+        source: '/admin/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive, nosnippet, noimageindex' }],
+      },
       // Resized and proxied pictures (see `images` below). The baseline policy above would replace the
       // image one, so repeat it here: it stops script in an SVG from running if one is ever opened directly.
       {

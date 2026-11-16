@@ -31,7 +31,8 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
     '/terms',
     '/privacy',
     '/family-safety',
-    '/security'
+    '/security',
+    '/pricing',
   ];
 
   const sectionOf: Record<string, Parameters<typeof isLive>[1]> = { '/': 'home', '/features': 'features', '/blog': 'blog', '/support': 'support' };

@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { headers } from 'next/headers';
+import { cuppiRobotsRules } from '@/lib/crawlers';
 import { SITE_ORIGINS, hostFromHeaders, portfolioEnabled, siteForHost } from '@/lib/sites';
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
@@ -17,10 +18,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   }
 
   return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-    },
+    rules: cuppiRobotsRules(),
     sitemap: `${baseUrl}/sitemap.xml`,
   };
 }
