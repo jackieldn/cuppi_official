@@ -64,6 +64,15 @@ service cloud.firestore {
     }
     
     /**
+     * @description Hourly counters behind the rate limits on the support form and beta signup,
+     * written only by the server (src/lib/rate-limit-server.ts, Admin SDK).
+     * @path /rate_limits/{limitId}
+     */
+    match /rate_limits/{limitId} {
+      allow read, write: if false;
+    }
+
+    /**
      * @description Controls read and write access to the snaps collection.
      * @path /snaps/{snapId}
      * @allow (read) Allow anyone to read any snap.
@@ -288,11 +297,23 @@ service cloud.firestore {
     }
 
     /**
-     * @description Checks if the user is an administrator by verifying the existence of a document in the /roles_admin/{userId} collection.
+     * @description Checks if the user is an administrator: signed in with a second factor (see
+     * hasSecondFactor) and with a document in the /roles_admin/{userId} collection.
      * @return {bool} True if the user is an admin, false otherwise.
      */
     function isAdmin() {
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      return request.auth != null
+        && hasSecondFactor()
+        && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * @description True when this sign-in used an authenticator-app code (Firebase multi-factor
+     * auth). Firebase puts `sign_in_second_factor: "totp"` in the token only then, so a stolen or
+     * guessed password alone never makes someone an admin. Keep in sync with storage.rules.
+     */
+    function hasSecondFactor() {
+      return request.auth.token.firebase.get('sign_in_second_factor', null) == 'totp';
     }
   }
 }

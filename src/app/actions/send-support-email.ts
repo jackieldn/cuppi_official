@@ -2,6 +2,10 @@
 
 import { sendBrevoEmail } from '@/lib/brevo';
 import { supportFormSchema } from '@/lib/support-schema';
+import { RATE_LIMITS } from '@/lib/rate-limit';
+import { consumeRateLimits, requesterSubject } from '@/lib/rate-limit-server';
+
+const RATE_LIMITED_MESSAGE = 'You have sent several messages recently. Please wait a while before sending another.';
 
 // Everything the visitor typed goes into an HTML email, so it must be escaped:
 // otherwise they could inject links, images or markup into your inbox.
@@ -33,6 +37,19 @@ export async function sendSupportEmail(formData: unknown, token: string) {
     return { success: false, message: "Server configuration error regarding security." };
   }
 
+  // 2b. Limit how often one visitor can send. Counted before the CAPTCHA is checked, so
+  // a script cannot hammer the check either. If the counters cannot be reached, refuse:
+  // an unprotected form is worse than a briefly unavailable one.
+  try {
+    const visitor = await requesterSubject();
+    if (!(await consumeRateLimits([{ scope: 'support-ip', subject: visitor, limit: RATE_LIMITS.support.ip }]))) {
+      return { success: false, message: RATE_LIMITED_MESSAGE };
+    }
+  } catch (e) {
+    console.error('Support form rate limit check failed:', e);
+    return { success: false, message: 'Failed to send your message. Please try again later.' };
+  }
+
   try {
     const params = new URLSearchParams();
     params.append('secret', secretKey);
@@ -60,7 +77,19 @@ export async function sendSupportEmail(formData: unknown, token: string) {
     };
   }
 
-  // 3. Send email with Brevo
+  // 3. Cap the whole site's volume. Counted only after the CAPTCHA passes, so a bot that
+  // fails it cannot use up the allowance and lock real people out. This protects the inbox
+  // and the email quota from a flood that arrives from many addresses at once.
+  try {
+    if (!(await consumeRateLimits([{ scope: 'support-site', subject: 'all', limit: RATE_LIMITS.support.site }]))) {
+      return { success: false, message: 'We are getting a lot of messages right now. Please try again later.' };
+    }
+  } catch (e) {
+    console.error('Support form rate limit check failed:', e);
+    return { success: false, message: 'Failed to send your message. Please try again later.' };
+  }
+
+  // 4. Send email with Brevo
   const { name, email, category, message } = parsed.data;
   const apiKey = process.env.BREVO_API_KEY;
   const fromEmail = process.env.SUPPORT_EMAIL_FROM;

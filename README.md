@@ -43,6 +43,64 @@ Set `PORTFOLIO_ENABLED` to `"false"` in `apphosting.yaml` and redeploy.
 jackiepoot.co.uk then shows a "Back soon" page and tells search engines to stay
 away; `/admin` still works. Set it back to `"true"` to restore the site.
 
+## Admin sign-in (two-step verification)
+
+`/admin` on jackiepoot.co.uk needs a password **and** a six-digit code from an
+authenticator app (Firebase Auth multi-factor, TOTP). The login page
+(`src/app/(portfolio)/admin/login/page.tsx`) asks for the code, and walks an
+admin through setting the app up the first time they sign in.
+
+The admin edits Firestore and Storage straight from the browser, so the real
+check is in `firestore.rules` and `storage.rules`: `isAdmin()` also requires the
+token's `sign_in_second_factor` to be `totp`, which Firebase sets only after a
+sign-in with a code. A password on its own can read nothing admin-only and change
+nothing. The pages only route people to the right screen
+(`src/lib/admin-mfa.ts`). The rules tests cover this.
+
+**One-off rollout. The order matters, or the admin locks itself out:**
+
+1. In the Firebase console, Authentication, Sign-in method, switch on
+   *Multi-factor authentication* and enable *TOTP*. (Firebase asks you to
+   upgrade to Identity Platform first; check its pricing, though TOTP sends no
+   SMS so has no per-message cost.)
+2. The admin account's email must be verified (Firebase requires it to add a
+   second factor). If it is not, the login page offers to send the link.
+3. Deploy the site (merge to `main`).
+4. Sign in at `/admin/login`, scan the QR code, enter the code, then sign in
+   again with a fresh code. **Do this straight away:** until an authenticator is
+   added, anyone who knows the password could add their own.
+5. Only now deploy the rules (they refuse any admin without a code):
+   `firebase deploy --only firestore:rules,storage`
+6. Keep the key (or a recovery code) from step 4 somewhere safe. To reset a lost
+   authenticator, remove the second factor on the account with the Admin SDK
+   (`auth.updateUser(uid, { multiFactor: { enrolledFactors: null } })`) and repeat step 4.
+
+Also worth switching on in the console: Authentication, Settings, *User actions*,
+turn off "Enable create (sign-up)" (only the owner ever signs in) and turn on email
+enumeration protection; restrict the web API key to the site's domains in Google
+Cloud, Credentials. Firebase Auth throttles repeated wrong passwords and codes by
+itself (`auth/too-many-requests`); the login page shows that as "wait a few minutes".
+
+## Rate limits
+
+Public forms that write or send something are capped per hour, in addition to
+their CAPTCHA (`src/lib/rate-limit.ts`, `rate-limit-server.ts`; the numbers are
+`RATE_LIMITS`). Visitors are told to wait; the hit is counted in Firestore
+(`rate_limits`, server-only) under a keyed hash of their address, never the address.
+
+| Where                                   | Limit per hour                                          |
+| --------------------------------------- | ------------------------------------------------------- |
+| Support form (sends an email)           | 5 per visitor, 60 for the whole site                    |
+| Beta signup (stores a row)              | 5 per visitor, 300 for the whole site                   |
+| Unlocking a locked project              | 10 per visitor per project, 100 per project, 40 per visitor across all projects |
+| FAQ "Was this helpful?"                 | tiered, see `src/lib/faq-feedback.ts`                   |
+
+One-off setup, so the counters clean themselves up:
+`gcloud firestore fields ttls update expireAt --collection-group=rate_limits --enable-ttl --project studio-5700093446-89b93`
+
+Plain page views are not limited here: that belongs in front of the app (Cloud
+Armor or a CDN rule), not in it.
+
 ## Cuppi's look and feature pages
 
 Cuppi has its own design system, separate from the portfolio's: the `.theme-cuppi`

@@ -5,6 +5,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import { firestore } from '@/firebase/server';
 import { clientIp, hourBucket } from '@/lib/faq-feedback';
+import { RATE_LIMITS } from '@/lib/rate-limit';
 import { PROJECT_SECRETS_COLLECTION, pickLockedContent, verifyPassword, type PasswordHash } from '@/lib/project-lock';
 
 export type UnlockResult =
@@ -40,17 +41,22 @@ export async function unlockProject(input: unknown): Promise<UnlockResult> {
     // IPv6 colons are fine in a document id; only "/" is not, and clientIp never returns one.
     const visitorLimit = limits.doc(`v_${projectId}_${ip}_${hour}`);
     const projectLimit = limits.doc(`p_${projectId}_${hour}`);
+    // The same visitor across every project, so guesses cannot be spread over many projects
+    // to stay under the per-project limit. Each check runs a slow hash, so this also bounds CPU.
+    const anyProjectLimit = limits.doc(`i_${ip}_${hour}`);
 
     // Count the attempt before checking it, so parallel guesses cannot skip the limit.
     const allowed = await firestore.runTransaction(async (tx) => {
-      const [v, p] = await tx.getAll(visitorLimit, projectLimit);
+      const [v, p, i] = await tx.getAll(visitorLimit, projectLimit, anyProjectLimit);
       const visitor = Number(v.get('count') ?? 0);
       const project = Number(p.get('count') ?? 0);
-      if (visitor >= LIMITS.visitor || project >= LIMITS.project) return false;
+      const anyProject = Number(i.get('count') ?? 0);
+      if (visitor >= LIMITS.visitor || project >= LIMITS.project || anyProject >= RATE_LIMITS.unlockAny.ip) return false;
       // Counters expire (TTL policy on `expireAt`, same as faq_feedback_limits).
       const expireAt = Timestamp.fromMillis(now.getTime() + 2 * 60 * 60 * 1000);
       tx.set(visitorLimit, { count: visitor + 1, expireAt });
       tx.set(projectLimit, { count: project + 1, expireAt });
+      tx.set(anyProjectLimit, { count: anyProject + 1, expireAt });
       return true;
     });
     if (!allowed) return { status: 'limited' };
