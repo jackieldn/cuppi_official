@@ -19,8 +19,10 @@ type Hero = HomeHeroData & { template?: HeroTemplate };
  *   split-reverse  phone left, words right
  *   centred        words in the middle, the phone rising from the bottom edge
  * `instant` plays no opening shot, so the hero is there at once (the admin's preview starts that way).
+ * `fill` stretches the block to the height of the cell it is in, for a slideshow whose heroes stack in one place:
+ * a shorter hero then still fills the space the tallest one makes, instead of leaving a gap under it.
  */
-export function HomeHero({ hero, instant = false }: { hero: Hero; instant?: boolean }) {
+export function HomeHero({ hero, instant = false, fill = false }: { hero: Hero; instant?: boolean; fill?: boolean }) {
   const tint = TINTS[hero.tint];
   const template = hero.template ?? 'split';
   const centred = template === 'centred';
@@ -88,13 +90,13 @@ export function HomeHero({ hero, instant = false }: { hero: Hero; instant?: bool
   );
 
   return (
-    <section className="w-full px-3 pt-3 sm:px-6">
+    <section className={cn('w-full px-3 pt-3 sm:px-6', fill && 'h-full')}>
       <HeroIntro
         template={template}
         seconds={hero.introSeconds}
         instant={instant}
         patternUrl={hero.pattern ? patternUrl(hero.pattern.url) : undefined}
-        className={cn('relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem]', tint.surface, tint.text)}
+        className={cn('relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem]', fill && 'h-full', tint.surface, tint.text)}
       >
         {/* Far layer: the pattern. The intro scales this wrapper, so the pattern inside keeps its own fade and cursor light. */}
         {hero.pattern && (
@@ -114,6 +116,9 @@ export function HomeHero({ hero, instant = false }: { hero: Hero; instant?: bool
         <div
           className={cn(
             'relative grid items-stretch',
+            // Filling a taller cell: the centred phone stays at the bottom edge, the words take the space above it.
+            fill && 'h-full',
+            fill && centred && 'grid-rows-[1fr_auto]',
             !centred && (reverse ? 'md:grid-cols-[1fr_1.1fr]' : 'md:grid-cols-[1.1fr_1fr]'),
           )}
         >

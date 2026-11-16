@@ -4,7 +4,7 @@ import { readOverride, type FeatureOverride } from './features-types';
 import { resolveMenu, type MenuSettings } from './menu-settings';
 import { APP_STORE_URL } from './invite';
 import { defaultPageStatus, resolvePageStatus, type PageStatus } from './page-status';
-import { defaultHeroSettings, resolveHeroSettings, type HeroSettings } from './home-hero-settings';
+import { defaultHeroSettings, resolveHeroList, type HeroSettings } from './home-hero-settings';
 import { resolveDisclaimers, type Disclaimer } from './disclaimers';
 import { resolveBanners, type Banner } from './banners';
 import { resolveHomeVideo, type HomeVideo } from './home-video';
@@ -15,7 +15,7 @@ import { emptyColourSettings, resolveColours, type ColourSettings } from './them
 //   cuppi_menu/main        the top menu: links, their order and switches, the Download button
 //   cuppi_features/{slug}  edits to a feature, or a whole new one (see mergeFeatures)
 //   cuppi_pages/status     which sections are live and which show "refresh in progress" (page-status.ts)
-//   cuppi_home/hero        the home page hero: template, words, colour, pattern, phone (home-hero-settings.ts)
+//   cuppi_home/hero        the home page heroes (up to five): template, words, colour, pattern, phone (home-hero-settings.ts)
 //   cuppi_home/disclaimers the disclaimers behind the (i) icons in page text (disclaimers.ts)
 //   cuppi_home/banners     the temporary banners under the menu, with their dates (banners.ts)
 //   cuppi_home/colours     the site's base colours, light and dark, when switched on (theme-colours.ts)
@@ -62,7 +62,7 @@ function remembered<T>(memo: { current?: Memo<T> }, empty: T, read: () => Promis
 const featureMemo: { current?: Memo<FeatureOverride[]> } = {};
 const menuMemo: { current?: Memo<MenuSettings> } = {};
 const pagesMemo: { current?: Memo<PageStatus> } = {};
-const heroMemo: { current?: Memo<HeroSettings> } = {};
+const heroMemo: { current?: Memo<HeroSettings[]> } = {};
 const fanMemo: { current?: Memo<unknown> } = {};
 const disclaimerMemo: { current?: Memo<Disclaimer[]> } = {};
 const bannerMemo: { current?: Memo<Banner[]> } = {};
@@ -90,10 +90,10 @@ export function getPageStatus(): Promise<PageStatus> {
   });
 }
 
-export function getHeroSettings(): Promise<HeroSettings> {
-  return remembered(heroMemo, defaultHeroSettings(), async () => {
+export function getHeroList(): Promise<HeroSettings[]> {
+  return remembered(heroMemo, [defaultHeroSettings()], async () => {
     const snap = await firestore.collection('cuppi_home').doc('hero').get();
-    return resolveHeroSettings(snap.exists ? snap.data() : null);
+    return resolveHeroList(snap.exists ? snap.data() : null);
   });
 }
 
