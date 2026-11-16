@@ -7,7 +7,7 @@
 //
 // Only types are imported from features-types (it imports this file), so there is no cycle.
 
-import type { FeatureBlock, FeatureImage, FeatureShot, FeatureTint, FeatureVideo, VideoAspect } from './features-types.ts';
+import type { FeatureBlock, FeatureImage, FeatureShot, FeatureTint, FeatureVideo, PlanRow, VideoAspect } from './features-types.ts';
 import { disclaimerIds, hasDisclaimer } from './disclaimers.ts';
 import { safeImageUrl, safeVideoUrl } from './safe-urls.ts';
 
@@ -22,6 +22,7 @@ export const SECTION_TEMPLATES: { type: SectionType; name: string; blurb: string
   { type: 'cards', name: 'Phone cards', blurb: 'A swipeable row of cards, each with a phone and a few lines.' },
   { type: 'callout', name: 'Big sentence', blurb: 'One warm sentence on a colour band. The page’s deep breath.' },
   { type: 'points', name: 'Reasons', blurb: 'Short promises in a grid, no pictures.' },
+  { type: 'plans', name: 'Free and Pro', blurb: 'The feature’s app icon, a title and a few words, over a table of what Free and Pro each get.' },
 ];
 
 export const sectionName = (type: SectionType): string => SECTION_TEMPLATES.find((t) => t.type === type)?.name ?? type;
@@ -33,6 +34,9 @@ export const SECTION_LIMITS = {
   sections: 30,
   /** Cards, tabs and reasons in one section. */
   items: 8,
+  /** Lines in a Free / Pro table, and the words in one of its cells. */
+  rows: 20,
+  cell: 80,
   eyebrow: 40,
   title: 160,
   /** The body of an item or section. */
@@ -78,7 +82,24 @@ export function newSection(type: SectionType, id: string = randomId()): FeatureB
       return { id, type, title: '', image: { ...EMPTY_IMAGE, fit: 'photo' }, tint: 'honey' };
     case 'video':
       return { id, type, title: '', layout: 'full', side: 'left', tint: 'honey', video: { url: '', aspect: '16:9' } };
+    case 'plans':
+      return { id, type, title: '', rows: [{ label: '', free: '', pro: '' }], tint: 'honey' };
   }
+}
+
+const YES_WORDS = new Set(['yes', 'y', 'tick', 'included', '✅', '✓', '✔', '✔️']);
+const NO_WORDS = new Set(['no', 'n', 'none', 'not included', '-', '–', '—', '❌', '✗', '✘', '✖️']);
+
+/**
+ * How a cell of a Free / Pro table is drawn: a tick (it is included), a dash (it is not), or its own words.
+ * Only a cell that is exactly one of those words counts, so "No limit" stays words. An empty cell is a dash.
+ */
+export function planCell(value: string): { kind: 'yes' | 'no' | 'text'; text: string } {
+  const text = value.trim();
+  const key = text.toLowerCase();
+  if (YES_WORDS.has(key)) return { kind: 'yes', text };
+  if (!text || NO_WORDS.has(key)) return { kind: 'no', text };
+  return { kind: 'text', text };
 }
 
 /** A copy of a section with a fresh id, for Duplicate. */
@@ -208,6 +229,16 @@ function readBlock(raw: unknown, id: string): FeatureBlock | null {
         video,
       };
     }
+    case 'plans': {
+      const rows = (Array.isArray(r.rows) ? r.rows.slice(0, SECTION_LIMITS.rows) : []).flatMap((row): PlanRow[] => {
+        const o = obj(row);
+        const label = text(o?.label, SECTION_LIMITS.title);
+        // A line needs its name; a cell left empty is read as "not included".
+        return o && label ? [{ label, free: text(o.free, SECTION_LIMITS.cell) ?? '', pro: text(o.pro, SECTION_LIMITS.cell) ?? '' }] : [];
+      });
+      if (!title || rows.length === 0) return null;
+      return { id, type: 'plans', title, ...(intro ? { intro } : {}), rows, tint };
+    }
     default:
       return null;
   }
@@ -259,6 +290,8 @@ function sectionWords(b: FeatureBlock): { words: string[]; noTags: string[] } {
       return { words: [b.title ?? '', b.intro ?? ''], noTags: [] };
     case 'video':
       return { words: [b.title ?? '', b.body ?? ''], noTags: [b.eyebrow ?? ''] };
+    case 'plans':
+      return { words: [b.title, b.intro ?? '', ...b.rows.flatMap((r) => [r.label, r.free, r.pro])], noTags: [] };
   }
 }
 
@@ -311,6 +344,14 @@ export function validateSections(blocks: FeatureBlock[], knownDisclaimers?: read
       case 'video':
         if (!b.video.url) at('add a video link, or upload a video.');
         else if (!b.video.url.startsWith('blob:') && !safeVideoUrl(b.video.url)) at('the video link must be a YouTube link or an https address of a video file.');
+        break;
+      case 'plans':
+        if (!b.title.trim()) at('add a title.');
+        b.rows.forEach((row, i) => {
+          if (!row.label.trim()) at(`line ${i + 1} needs a name.`);
+          if (!row.free.trim()) at(`line ${i + 1} needs something under Free (Yes, No, or words).`);
+          if (!row.pro.trim()) at(`line ${i + 1} needs something under Pro (Yes, No, or words).`);
+        });
         break;
     }
   });
@@ -372,5 +413,7 @@ export function sectionSummary(b: FeatureBlock): string {
       return b.title || '';
     case 'video':
       return b.title || (b.video.aspect === '9:16' ? 'Phone-shaped video' : 'Widescreen video');
+    case 'plans':
+      return b.title || `${b.rows.length} ${b.rows.length === 1 ? 'line' : 'lines'}`;
   }
 }

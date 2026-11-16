@@ -130,7 +130,12 @@ export type FeatureBlock =
       /** The label chip, and the card behind a phone-shaped video. */
       tint: FeatureTint;
       video: FeatureVideo;
-    };
+    }
+  // The feature's app icon over a title and a few words, then a Free / Pro table of what each plan gets.
+  | { id: string; type: 'plans'; title: string; intro?: string; rows: PlanRow[]; tint: FeatureTint };
+
+/** One line of a Free / Pro comparison. A cell is words ("10 a month"), or Yes / No, which the site draws as a tick or a dash. */
+export type PlanRow = { label: string; free: string; pro: string };
 
 export type VideoAspect = '16:9' | '9:16';
 
@@ -236,6 +241,7 @@ export function validateFeatures(features: Feature[]): string[] {
       if (b.type === 'tabs' && b.items.length === 0) problems.push(`${where}: tabs block "${b.id}" has no items.`);
       if (b.type === 'banner' && !b.image?.url) problems.push(`${where}: banner block "${b.id}" has no image.`);
       if (b.type === 'video' && !b.video?.url) problems.push(`${where}: video block "${b.id}" has no video.`);
+      if (b.type === 'plans' && b.rows.length === 0) problems.push(`${where}: plans block "${b.id}" has no rows.`);
     }
   }
   return problems;

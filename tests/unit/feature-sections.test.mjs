@@ -7,6 +7,7 @@ import {
   copySection,
   mapBlockUrls,
   newSection,
+  planCell,
   resolveBlocks,
   sectionSummary,
   validateSections,
@@ -75,9 +76,10 @@ describe('resolveBlocks', () => {
       { id: 'e', type: 'cards', title: 'Cards', cards: [{ title: 'c', body: 'b', image: img() }], footnotes: ['* note'] },
       { id: 'f', type: 'callout', title: 'Hello', tint: 'honey' },
       { id: 'g', type: 'points', items: [{ title: 'p', body: 'q' }] },
+      { id: 'h', type: 'plans', title: 'Free or Pro', intro: 'Pick what fits', rows: [{ label: 'Receipts', free: '10 a month', pro: 'Unlimited' }], tint: 'sky' },
     ];
     const out = resolveBlocks(stored);
-    assert.deepEqual(out.map((b) => b.type), ['showcase', 'tabs', 'banner', 'video', 'cards', 'callout', 'points']);
+    assert.deepEqual(out.map((b) => b.type), ['showcase', 'tabs', 'banner', 'video', 'cards', 'callout', 'points', 'plans']);
     assert.equal(out[1].items[0].image.fit, 'contain');
     assert.equal(out[3].video.aspect, '9:16');
     assert.equal(out[3].video.url, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
@@ -189,6 +191,68 @@ describe('screenshots in phone frames', () => {
     assert.equal(mapBlockUrls([ready], (u) => `https://x/${u}`)[0].image.second.url, 'https://x/blob:2');
     // switching away from frames makes the leftover empty second phone irrelevant
     assert.deepEqual(validateSections([{ ...b, image: { ...b.image, fit: 'photo' } }]), []);
+  });
+});
+
+describe('plans (Free and Pro table)', () => {
+  const row = (label, free, pro) => ({ label, free, pro });
+
+  test('keeps its title, description, lines and colour', () => {
+    const [b] = resolveBlocks([{ id: 'a', type: 'plans', title: ' Free or Pro ', intro: 'Words', rows: [row('Bins', '1', '5'), row('Reminders', 'Yes', 'Yes')], tint: 'moss' }]);
+    assert.equal(b.title, 'Free or Pro');
+    assert.equal(b.intro, 'Words');
+    assert.equal(b.tint, 'moss');
+    assert.deepEqual(b.rows, [row('Bins', '1', '5'), row('Reminders', 'Yes', 'Yes')]);
+  });
+
+  test('needs a title and at least one named line; a nameless line costs only itself', () => {
+    assert.deepEqual(resolveBlocks([{ id: 'a', type: 'plans', title: '', rows: [row('x', 'a', 'b')] }]), []);
+    assert.deepEqual(resolveBlocks([{ id: 'a', type: 'plans', title: 'T', rows: [] }]), []);
+    assert.deepEqual(resolveBlocks([{ id: 'a', type: 'plans', title: 'T', rows: 'nope' }]), []);
+    const [b] = resolveBlocks([{ id: 'a', type: 'plans', title: 'T', rows: [row('', 'a', 'b'), 'junk', row('Kept', '', 'Yes')] }]);
+    assert.deepEqual(b.rows, [row('Kept', '', 'Yes')]);
+  });
+
+  test('limits lines and cell length, and falls back to the default colour', () => {
+    const rows = Array.from({ length: 40 }, (_, i) => row(`r${i}`, 'x'.repeat(500), 'y'));
+    const [b] = resolveBlocks([{ id: 'a', type: 'plans', title: 'T', rows, tint: 'neon' }]);
+    assert.equal(b.rows.length, SECTION_LIMITS.rows);
+    assert.equal(b.rows[0].free.length, SECTION_LIMITS.cell);
+    assert.equal(b.tint, 'honey');
+  });
+
+  test('planCell turns Yes and No words into a tick or a dash, and leaves other words alone', () => {
+    for (const yes of ['Yes', ' yes ', 'YES', '✅', '✓']) assert.equal(planCell(yes).kind, 'yes', yes);
+    for (const no of ['No', 'no', '-', '—', '❌', '', '   ']) assert.equal(planCell(no).kind, 'no', JSON.stringify(no));
+    for (const words of ['No limit', 'Yes, with a family plan', '10 a month', 'Unlimited', 'Not now']) assert.equal(planCell(words).kind, 'text', words);
+    assert.equal(planCell(' 10 a month ').text, '10 a month');
+  });
+
+  test('a blank one is not ready to save, and every empty cell is named', () => {
+    const problems = validateSections([newSection('plans')]);
+    assert.ok(problems.every((p) => p.startsWith('Section 1 (Free and Pro)')));
+    assert.match(problems.join(' '), /add a title/);
+    assert.match(problems.join(' '), /line 1 needs a name/);
+    assert.match(problems.join(' '), /line 1 needs something under Free/);
+    assert.match(problems.join(' '), /line 1 needs something under Pro/);
+    assert.deepEqual(validateSections([{ ...newSection('plans'), title: 'T', rows: [row('Bins', 'No', 'Yes')] }]), []);
+  });
+
+  test('disclaimer tags are checked in the title, description and every cell', () => {
+    const b = { ...newSection('plans'), title: 'T{i:nope}', rows: [row('A', 'Yes', 'Yes')] };
+    assert.match(validateSections([b], ['health']).join(' '), /no disclaimer called "nope"/);
+    assert.deepEqual(validateSections([{ ...b, title: 'T{i:health}' }], ['health']), []);
+    const inCell = { ...b, title: 'T', rows: [row('A', 'Yes', 'Fast{i:gone}')] };
+    assert.match(validateSections([inCell], ['health']).join(' '), /no disclaimer called "gone"/);
+  });
+
+  test('has a summary and a copy of its own', () => {
+    const b = { ...newSection('plans', 'a'), title: 'Free or Pro', rows: [row('A', 'Yes', 'Yes')] };
+    assert.equal(sectionSummary(b), 'Free or Pro');
+    assert.equal(sectionSummary(newSection('plans')), '1 line');
+    const c = copySection(b);
+    c.rows[0].label = 'changed';
+    assert.equal(b.rows[0].label, 'A');
   });
 });
 

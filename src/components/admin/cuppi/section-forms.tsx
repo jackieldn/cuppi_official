@@ -41,6 +41,8 @@ export function SectionForm({ block, onChange }: { block: FeatureBlock; onChange
       return <BannerForm block={block} onChange={onChange} />;
     case 'video':
       return <VideoForm block={block} onChange={onChange} />;
+    case 'plans':
+      return <PlansForm block={block} onChange={onChange} />;
   }
 }
 
@@ -187,6 +189,46 @@ function BannerForm({ block, onChange }: Props<'banner'>) {
       </Field>
       <ImageEditor image={block.image} onChange={(image) => onChange({ image })} fits={BANNER_FITS} hint="A wide picture works best (about 16:9)." />
       <TintField value={block.tint} onChange={(tint) => onChange({ tint })} label="Colour behind it" hint="Only shows if the picture does not fill the frame." />
+    </>
+  );
+}
+
+function PlansForm({ block, onChange }: Props<'plans'>) {
+  return (
+    <>
+      <p className="rounded-lg border bg-background p-3 text-xs text-muted-foreground">The feature’s own app icon is shown above the title automatically.</p>
+      <Field label="Title">
+        <Input value={block.title} maxLength={L.title} onChange={(e) => onChange({ title: e.target.value })} />
+      </Field>
+      <Field label="Description" optional>
+        <Textarea rows={2} value={block.intro ?? ''} maxLength={L.intro} onChange={(e) => onChange({ intro: e.target.value })} />
+      </Field>
+      <TintField value={block.tint} onChange={(tint) => onChange({ tint })} label="Pro column colour" />
+      <p className="text-xs text-muted-foreground">
+        In each cell type <strong>Yes</strong> for a tick, <strong>No</strong> for a dash, or any words, like “10 a month” or “Unlimited”.
+      </p>
+      <RowList
+        noun="line"
+        max={L.rows}
+        items={block.rows}
+        onChange={(rows) => onChange({ rows })}
+        blank={() => ({ label: '', free: '', pro: '' })}
+        render={(row, update) => (
+          <>
+            <Field label="What it is">
+              <Input value={row.label} maxLength={L.title} placeholder="Receipts each month" onChange={(e) => update({ label: e.target.value })} />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Free">
+                <Input value={row.free} maxLength={L.cell} placeholder="10" onChange={(e) => update({ free: e.target.value })} />
+              </Field>
+              <Field label="Pro">
+                <Input value={row.pro} maxLength={L.cell} placeholder="Unlimited" onChange={(e) => update({ pro: e.target.value })} />
+              </Field>
+            </div>
+          </>
+        )}
+      />
     </>
   );
 }
