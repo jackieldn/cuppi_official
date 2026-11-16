@@ -22,8 +22,59 @@ function openFromHash() {
   target.scrollIntoView({ block: 'start' });
 }
 
+const ANIMATIONS = new WeakMap<HTMLDetailsElement, Animation>();
+
+/**
+ * Opens or closes an answer with a slide, which a native <details> does not do (it jumps). Opening sets `open` first so the answer
+ * is in the page, then grows it from nothing; closing shrinks it, and only then sets `open` off. Clicking again part-way reverses
+ * from wherever it has got to. The summary's chevron is turned back at once when closing, rather than after the slide.
+ */
+function toggleAnimated(details: HTMLDetailsElement) {
+  const body = details.querySelector<HTMLElement>(':scope > div');
+  if (!body) {
+    details.open = !details.open;
+    return;
+  }
+  const chevron = details.querySelector<SVGElement>(':scope > summary svg');
+  const opening = !details.open || details.dataset.closing === 'true';
+  const from = ANIMATIONS.get(details) ? body.getBoundingClientRect().height : opening ? 0 : body.scrollHeight;
+  ANIMATIONS.get(details)?.cancel();
+
+  details.open = true;
+  details.dataset.closing = opening ? 'false' : 'true';
+  chevron?.style.setProperty('transform', opening ? '' : 'rotate(0deg)');
+  const to = opening ? body.scrollHeight : 0;
+  body.style.overflow = 'hidden';
+
+  const animation = body.animate([{ height: `${from}px`, opacity: from === 0 ? 0 : 1 }, { height: `${to}px`, opacity: opening ? 1 : 0 }], {
+    duration: 280,
+    easing: 'cubic-bezier(0.22, 0.8, 0.3, 1)',
+  });
+  ANIMATIONS.set(details, animation);
+  animation.onfinish = () => {
+    ANIMATIONS.delete(details);
+    body.style.overflow = '';
+    delete details.dataset.closing;
+    chevron?.style.removeProperty('transform');
+    if (!opening) details.open = false;
+  };
+  // A cancelled slide (a newer click took over) leaves the newer one to tidy up.
+}
+
 export function FaqSectionEnhancer() {
   useEffect(() => {
+    // Answers slide open and shut. Not with reduced motion, and not on the keyboard/click default we cannot replace: the
+    // summary's own toggle is cancelled and done here, so Enter and Space (which fire a click on a summary) work the same.
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onSummaryClick = (event: MouseEvent) => {
+      if (reduced.matches || !('animate' in HTMLElement.prototype)) return;
+      const summary = (event.target as Element | null)?.closest<HTMLElement>('details[data-faq-entry] > summary');
+      if (!summary) return;
+      event.preventDefault();
+      toggleAnimated(summary.parentElement as HTMLDetailsElement);
+    };
+    document.addEventListener('click', onSummaryClick);
+
     // After the first paint, so Next's own scroll-to-hash has already run.
     const first = requestAnimationFrame(openFromHash);
     // Links to answers on this page arrive as hash changes. (router.push of a
@@ -69,6 +120,7 @@ export function FaqSectionEnhancer() {
       window.removeEventListener('hashchange', openFromHash);
       window.removeEventListener('popstate', openFromHash);
       document.removeEventListener('click', onClick);
+      document.removeEventListener('click', onSummaryClick);
       observer?.disconnect();
     };
   }, []);
