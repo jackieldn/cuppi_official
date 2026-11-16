@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import Link from 'next/link';
 import { deleteField, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
-import { ArrowDown, ArrowLeft, ArrowUp, Clapperboard, Copy, GalleryHorizontal, Image as ImageIcon, ListChecks, MoreHorizontal, PanelsTopLeft, Plus, Quote, Smartphone, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, Clapperboard, Copy, GalleryHorizontal, Image as ImageIcon, ListChecks, MoreHorizontal, PanelsTopLeft, Plus, Quote, Smartphone, Table2, Trash2 } from 'lucide-react';
 import { useDoc, useFirestore, useStorage } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +49,7 @@ const SECTION_ICONS: Record<SectionType, typeof Smartphone> = {
   cards: GalleryHorizontal,
   callout: Quote,
   points: ListChecks,
+  plans: Table2,
 };
 
 /**
@@ -328,7 +329,7 @@ export function FeaturePageEditor({
                   {blocks.length === 0 ? (
                     <p className="mx-auto my-16 max-w-md rounded-[2rem] border-2 border-dashed border-cuppi-line px-6 py-12 text-center text-xl text-cuppi-ink-soft">No sections yet. Add one from the right and it appears here.</p>
                   ) : (
-                    <BlockRenderer blocks={blocks} wrap={wrap} />
+                    <BlockRenderer blocks={blocks} feature={preview} wrap={wrap} />
                   )}
                 </div>
                 </DisclaimersProvider>
@@ -586,6 +587,21 @@ function SectionThumb({ type }: { type: SectionType }) {
           <div className="flex w-3/4 flex-col items-center gap-1.5">
             {bar('90%')}
             {bar('55%')}
+          </div>
+        </div>
+      );
+      break;
+    case 'plans':
+      body = (
+        <div className="flex h-full flex-col items-center gap-1.5">
+          <span className="block h-4 w-4 shrink-0 rounded-[30%] border-2 border-foreground/45 bg-foreground/10" />
+          {bar('45%')}
+          <div className="mt-0.5 grid w-full flex-1 grid-cols-[2fr_1fr_1fr] gap-x-2 gap-y-1.5 rounded-md border border-foreground/25 p-1.5">
+            {[0, 1, 2].flatMap((n) => [
+              <span key={`${n}a`} className="self-center">{bar('70%', false)}</span>,
+              <span key={`${n}b`} className="self-center justify-self-center">{bar('10px', false)}</span>,
+              <span key={`${n}c`} className="self-center justify-self-center">{bar('10px')}</span>,
+            ])}
           </div>
         </div>
       );

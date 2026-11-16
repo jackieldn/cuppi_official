@@ -177,7 +177,7 @@ Everything switches off under `prefers-reduced-motion`.
 ## Building a feature page
 
 A feature page is a hero plus a list of sections (blocks, `src/lib/features-types.ts`). Each section is one
-of seven templates, reusable layouts in `src/components/cuppi/blocks`:
+of eight templates, reusable layouts in `src/components/cuppi/blocks`:
 
 | Template (`type`) | What it is |
 | --- | --- |
@@ -188,6 +188,7 @@ of seven templates, reusable layouts in `src/components/cuppi/blocks`:
 | `cards` "Phone cards" | A swipeable row of phone cards |
 | `callout` "Big sentence" | One big warm sentence on a colour band |
 | `points` "Reasons" | Short reasons, no images |
+| `plans` "Free and Pro" | The current feature's app icon (`AppTile`), a title and a description, over a table of what Free and Pro each get (up to 20 lines). A cell is words, or `Yes` / `No` (also ✅ / ❌ / `-`; an empty cell counts as No) which draw a tick or a dash (`planCell`). The Pro column takes the section's colour. Needs the feature, so `BlockRenderer` is given `feature`. Wording and numbers should match the Pricing page. |
 
 Pictures (`FeatureImage.fit`) are:
 
@@ -225,7 +226,7 @@ file's first frame.
 
 **To add a template:** write the component in `blocks/`, add its type to `FeatureBlock` in `features-types.ts`, add a
 case to `block-renderer.tsx`, then in `src/lib/feature-sections.ts` add it to `SECTION_TEMPLATES`, `newSection`,
-`readBlock` (the safe reader), `validateSections` and `mapBlockUrls`; then a form in
+`readBlock` (the safe reader), `sectionWords`, `validateSections` and `sectionSummary` (and `mapBlockUrls` if it holds pictures); then a form in
 `src/components/admin/cuppi/section-forms.tsx` and a thumbnail in `SectionThumb` (`feature-page-admin.tsx`). The
 unit tests (`tests/unit/feature-sections.test.mjs`) loop over `SECTION_TEMPLATES`, so they catch a missing piece.
 

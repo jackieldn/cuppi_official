@@ -41,7 +41,7 @@ export default async function FeaturePage({ params }: { params: Promise<Params> 
       <CuppiHeader />
       <main className="flex-grow">
         <FeatureHero feature={feature} />
-        <BlockRenderer blocks={feature.blocks} />
+        <BlockRenderer blocks={feature.blocks} feature={feature} />
         <KeepExploring features={next} />
         <DownloadStrip />
       </main>
