@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { FadeImage } from '@/components/cuppi/fade-image';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -46,7 +46,7 @@ export function FeatureHero({ feature }: { feature: PageFeature }) {
           <div className={cn('relative min-h-[22rem] md:min-h-[34rem]', wide && 'flex items-center p-2 md:p-4')}>
             {wide ? (
               <div className="cuppi-rise w-full" style={{ '--d': '200ms' } as React.CSSProperties}>
-                <Image
+                <FadeImage
                   src={feature.hero.image.url}
                   alt={feature.hero.image.alt}
                   width={1319}
@@ -60,7 +60,7 @@ export function FeatureHero({ feature }: { feature: PageFeature }) {
               // A photo sits in a rounded mask with a margin all round, so the block's colour and pattern frame it.
               <div className="cuppi-rise absolute inset-0 p-4 sm:p-5" style={{ '--d': '200ms' } as React.CSSProperties}>
                 <div className="relative h-full w-full overflow-hidden rounded-[1.75rem]">
-                  <Image src={feature.hero.image.url} alt={feature.hero.image.alt} fill sizes="(max-width: 768px) 92vw, 46vw" priority className="object-cover" />
+                  <FadeImage src={feature.hero.image.url} alt={feature.hero.image.alt} fill sizes="(max-width: 768px) 92vw, 46vw" priority className="object-cover" />
                 </div>
               </div>
             ) : (

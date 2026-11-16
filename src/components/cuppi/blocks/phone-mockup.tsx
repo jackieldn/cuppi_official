@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { FadeImage } from '@/components/cuppi/fade-image';
 import { cn } from '@/lib/utils';
 import {
   MOCKUPS,
@@ -75,7 +75,7 @@ export function PhoneMockup({
           }}
         >
           {/* Almost screen-shaped: fill the whole screen (a sliver off the sides) rather than leave a strip of `bg` along the bottom. */}
-          <Image
+          <FadeImage
             src={src}
             alt={alt}
             width={imageWidth}
@@ -86,7 +86,7 @@ export function PhoneMockup({
           />
         </div>
         {/* The frame, on top: its bezel and Dynamic Island cover the screen's edges. */}
-        <Image
+        <FadeImage
           src={m.src}
           alt=""
           width={m.width}

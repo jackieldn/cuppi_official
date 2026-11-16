@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { FadeImage } from '@/components/cuppi/fade-image';
 import { cn } from '@/lib/utils';
 import type { FeatureImage } from '@/lib/features-types';
 import { FramedPhones } from './framed-phones';
@@ -37,7 +37,7 @@ export function Phone({
     return (
       <div className={cn('absolute inset-0 p-5 sm:p-8', className)}>
         <div className="relative h-full w-full">
-          <Image src={image.url} alt={image.alt} fill sizes={sizes} priority={priority} className="object-contain drop-shadow-[0_18px_24px_rgb(var(--c-shadow)/0.16)]" />
+          <FadeImage src={image.url} alt={image.alt} fill sizes={sizes} priority={priority} className="object-contain drop-shadow-[0_18px_24px_rgb(var(--c-shadow)/0.16)]" />
         </div>
       </div>
     );
@@ -47,7 +47,7 @@ export function Phone({
   if (image.fit === 'photo') {
     return (
       <div className={cn('absolute inset-0', className)}>
-        <Image src={image.url} alt={image.alt} fill sizes={sizes} priority={priority} className="object-cover" />
+        <FadeImage src={image.url} alt={image.alt} fill sizes={sizes} priority={priority} className="object-cover" />
       </div>
     );
   }
@@ -59,7 +59,7 @@ export function Phone({
       className={cn('absolute bottom-0 left-1/2 aspect-square', className)}
       style={{ height: `${scale}%`, transform: `translate(-50%, ${sink}%)` }}
     >
-      <Image
+      <FadeImage
         src={image.url}
         alt={image.alt}
         width={1000}

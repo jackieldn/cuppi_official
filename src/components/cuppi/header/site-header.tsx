@@ -202,48 +202,53 @@ export function SiteHeader({ groups, links: configured, download }: { groups: Gr
           </div>
         </nav>
 
-        {/* Desktop panel: re-mounts per menu so it replays its pop-in */}
-        {open && (
-          <div
-            key={open}
-            id={`menu-${open}`}
-            className="cuppi-pop absolute top-full z-50 mt-2 hidden lg:block"
-            style={{ left: panelLeft, width: PANEL_WIDTH[open] }}
-            onMouseEnter={() => openMenu(open)}
-            onMouseLeave={closeSoon}
-          >
-            <div className="rounded-[2rem] border border-cuppi-line bg-cuppi-card p-4 shadow-[0_24px_60px_-24px_rgb(var(--c-shadow)/0.45)]">
-              <div className={cn('grid gap-4', open === 'features' && 'grid-cols-3')}>
-                {byGroup(MENU_GROUPS.find((m) => m.key === open)?.groups ?? []).map(({ group, items }, gi) => (
-                  <div key={group} className="cuppi-fade-up" style={{ '--d': `${gi * 50}ms` } as React.CSSProperties}>
-                    {open === 'features' && (
-                      <p className="px-3 pb-2 font-headline text-lg">{GROUP_LABELS[group].title}</p>
-                    )}
-                    <ul className="space-y-0.5">
-                      {items.map((f) => (
-                        <li key={f.slug}>
-                          <MenuItem feature={f} />
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-              {open === 'features' && (
-                <div className="mt-3 border-t border-cuppi-line pt-3 text-right">
-                  <Link href="/features" className="group inline-flex items-center gap-1.5 px-3 text-sm font-semibold text-cuppi-brand-deep">
-                    See every feature
-                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden />
-                  </Link>
+        {/* Desktop panels. Both stay mounted for the life of the page and are only shown or hidden: a panel that mounts on
+            open makes the browser start every icon again (a request each, then a blank tile for a moment), which is the
+            "icons reload when I open the menu" bug. Closed, a panel is unseen and out of the tab order (`invisible`); opening
+            it replays its pop-in because the animation classes are only on while it is open. */}
+        {MENU_GROUPS.map((m) => {
+          const shown = open === m.key;
+          return (
+            <div
+              key={m.key}
+              id={`menu-${m.key}`}
+              aria-hidden={!shown}
+              className={cn('absolute top-full z-50 mt-2 hidden lg:block', shown ? 'cuppi-pop' : 'pointer-events-none invisible opacity-0')}
+              style={{ left: panelLeft, width: PANEL_WIDTH[m.key] }}
+              onMouseEnter={() => shown && openMenu(m.key)}
+              onMouseLeave={closeSoon}
+            >
+              <div className="rounded-[2rem] border border-cuppi-line bg-cuppi-card p-4 shadow-[0_24px_60px_-24px_rgb(var(--c-shadow)/0.45)]">
+                <div className={cn('grid gap-4', m.key === 'features' && 'grid-cols-3')}>
+                  {byGroup(m.groups).map(({ group, items }, gi) => (
+                    <div key={group} className={shown ? 'cuppi-fade-up' : undefined} style={{ '--d': `${gi * 50}ms` } as React.CSSProperties}>
+                      {m.key === 'features' && <p className="px-3 pb-2 font-headline text-lg">{GROUP_LABELS[group].title}</p>}
+                      <ul className="space-y-0.5">
+                        {items.map((f) => (
+                          <li key={f.slug}>
+                            <MenuItem feature={f} />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
                 </div>
-              )}
+                {m.key === 'features' && (
+                  <div className="mt-3 border-t border-cuppi-line pt-3 text-right">
+                    <Link href="/features" className="group inline-flex items-center gap-1.5 px-3 text-sm font-semibold text-cuppi-brand-deep">
+                      See every feature
+                      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden />
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })}
 
-        {/* Mobile sheet */}
-        {mobileOpen && (
-          <div className="cuppi-pop absolute left-0 right-0 top-full z-50 mt-2 lg:hidden">
+        {/* Mobile sheet: also always mounted (hidden with display:none when closed), and so is every section's list (collapsed
+            sections are `hidden`), so opening the sheet or a section never starts an icon downloading again. */}
+        <div className={cn('absolute left-0 right-0 top-full z-50 mt-2 lg:hidden', mobileOpen ? 'cuppi-pop' : 'hidden')}>
             <div className="max-h-[75vh] overflow-y-auto rounded-[2rem] border border-cuppi-line bg-cuppi-card p-3 shadow-[0_24px_60px_-24px_rgb(var(--c-shadow)/0.45)]">
               {links.map((l) => {
                 const m = l.panel ? MENU_GROUPS.find((g) => g.key === l.panel) : undefined;
@@ -265,8 +270,7 @@ export function SiteHeader({ groups, links: configured, download }: { groups: Gr
                       {l.label}
                       <ChevronDown className={cn('h-5 w-5 transition-transform duration-300', mobileSection === m.key && 'rotate-180')} aria-hidden />
                     </button>
-                    {mobileSection === m.key && (
-                      <div className="px-1 pb-2">
+                    <div className={cn('px-1 pb-2', mobileSection !== m.key && 'hidden')}>
                         {byGroup(m.groups).map(({ group, items }) => (
                           <div key={group} className="pb-1">
                             {m.key === 'features' && (
@@ -282,26 +286,12 @@ export function SiteHeader({ groups, links: configured, download }: { groups: Gr
                             See every feature →
                           </Link>
                         )}
-                      </div>
-                    )}
+                    </div>
                   </div>
                 );
               })}
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Warm-up. The menu panels only exist while open, so their icons would start downloading at the
-          click and pop in. These are the same tiles, loaded quietly now and kept out of sight, so the
-          pictures are already in the browser's cache when a panel opens (desktop panel or phone menu). */}
-      <div aria-hidden className="pointer-events-none fixed left-0 top-0 h-0 w-0 overflow-hidden opacity-0">
-        {groups
-          .flatMap((g) => g.items)
-          .filter((f) => f.iconUrl)
-          .map((f) => (
-            <AppTile key={f.slug} feature={f} eager className="h-10 w-10" />
-          ))}
+        </div>
       </div>
     </header>
   );
@@ -312,7 +302,7 @@ function MenuItem({ feature }: { feature: Feature }) {
   if (!hasPage(feature)) {
     return (
       <div className="flex items-center gap-3 rounded-2xl px-3 py-2 text-cuppi-ink-soft" aria-disabled="true">
-        <AppTile feature={feature} muted className="h-10 w-10" />
+        <AppTile feature={feature} muted eager instant className="h-10 w-10" />
         <span className="flex items-center gap-2 text-[0.95rem] font-semibold">
           {feature.name}
           <span className="rounded-full bg-cuppi-honey-soft px-2 py-px text-[0.65rem] font-semibold text-cuppi-ink-soft">Soon</span>
@@ -324,6 +314,8 @@ function MenuItem({ feature }: { feature: Feature }) {
     <Link href={`/features/${feature.slug}`} className="group flex items-center gap-3 rounded-2xl px-3 py-2 transition-colors hover:bg-cuppi-honey-soft/70">
       <AppTile
         feature={feature}
+        eager
+        instant
         className="h-10 w-10 transition-transform duration-500 [transition-timing-function:var(--ease-spring)] group-hover:scale-110"
       />
       <span className="text-[0.95rem] font-semibold">{feature.name}</span>
