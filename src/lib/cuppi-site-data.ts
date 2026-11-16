@@ -6,6 +6,8 @@ import { APP_STORE_URL } from './invite';
 import { defaultPageStatus, resolvePageStatus, type PageStatus } from './page-status';
 import { defaultHeroSettings, resolveHeroSettings, type HeroSettings } from './home-hero-settings';
 import { resolveDisclaimers, type Disclaimer } from './disclaimers';
+import { resolveBanners, type Banner } from './banners';
+import { resolveHomeVideo, type HomeVideo } from './home-video';
 
 // What the admin has changed about the Cuppi site, read on the server. Four collections, all
 // publicly readable and admin-writable (firestore.rules):
@@ -14,6 +16,8 @@ import { resolveDisclaimers, type Disclaimer } from './disclaimers';
 //   cuppi_pages/status     which sections are live and which show "refresh in progress" (page-status.ts)
 //   cuppi_home/hero        the home page hero: template, words, colour, pattern, phone (home-hero-settings.ts)
 //   cuppi_home/disclaimers the disclaimers behind the (i) icons in page text (disclaimers.ts)
+//   cuppi_home/banners     the temporary banners under the menu, with their dates (banners.ts)
+//   cuppi_home/video       the latest advertisement under "What's new" on the home page (home-video.ts)
 //   cuppi_home/fan         the icon banner: which features slide out of Cuppi's icon, and in what order (fan-settings.ts)
 //
 // The site must never be down because this is: every read has a short timeout, any failure
@@ -59,6 +63,8 @@ const pagesMemo: { current?: Memo<PageStatus> } = {};
 const heroMemo: { current?: Memo<HeroSettings> } = {};
 const fanMemo: { current?: Memo<unknown> } = {};
 const disclaimerMemo: { current?: Memo<Disclaimer[]> } = {};
+const bannerMemo: { current?: Memo<Banner[]> } = {};
+const homeVideoMemo: { current?: Memo<HomeVideo> } = {};
 
 export function getFeatureOverrides(): Promise<FeatureOverride[]> {
   return remembered(featureMemo, [], async () => {
@@ -93,6 +99,22 @@ export function getDisclaimers(): Promise<Disclaimer[]> {
   return remembered(disclaimerMemo, [], async () => {
     const snap = await firestore.collection('cuppi_home').doc('disclaimers').get();
     return resolveDisclaimers(snap.exists ? snap.data() : null);
+  });
+}
+
+/** Every banner the admin has saved, past, current and scheduled (pickBanner chooses today's). Empty when none or the database cannot be read. */
+export function getBanners(): Promise<Banner[]> {
+  return remembered(bannerMemo, [], async () => {
+    const snap = await firestore.collection('cuppi_home').doc('banners').get();
+    return resolveBanners(snap.exists ? snap.data() : null);
+  });
+}
+
+/** The home page's advertisement video (see home-video.ts). Nothing saved, or an unreadable database, gives the empty default, which shows no section. */
+export function getHomeVideo(): Promise<HomeVideo> {
+  return remembered(homeVideoMemo, resolveHomeVideo(null), async () => {
+    const snap = await firestore.collection('cuppi_home').doc('video').get();
+    return resolveHomeVideo(snap.exists ? snap.data() : null);
   });
 }
 

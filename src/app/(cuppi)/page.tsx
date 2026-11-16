@@ -2,6 +2,7 @@ import { CuppiFooter } from '@/components/cuppi/footer';
 import { CuppiHeader } from '@/components/cuppi/header';
 import { HomeHero } from '@/components/cuppi/home/hero';
 import { WhatsNew } from '@/components/cuppi/whats-new';
+import { LatestVideo } from '@/components/cuppi/home/latest-video';
 import { AppFan } from '@/components/cuppi/home/app-fan';
 import { getFanFeatures } from '@/lib/features';
 import { buildHero } from '@/lib/home-hero-settings';
@@ -32,6 +33,9 @@ export default async function CuppiPage() {
         <HomeHero hero={hero} />
 
         <WhatsNew />
+
+        {/* The latest advert, when there is one (Cuppi > Home video in the admin). */}
+        <LatestVideo />
 
         {/* One line on what Cuppi is. Cuppi's icon sits alone until it scrolls into view, then the in-app icons slide out of it. */}
         <section className="mx-auto w-full max-w-5xl px-6 pb-4 pt-24 text-center">

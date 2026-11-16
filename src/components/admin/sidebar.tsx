@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FolderKanban, GalleryHorizontal, UserCircle, Smile, Bot, AppWindow, Scale, Music, ListMusic, Images, NotebookPen, Clapperboard, PanelTop, Sparkles, ToggleRight, LayoutTemplate, Shapes, Info } from 'lucide-react';
+import { FolderKanban, GalleryHorizontal, UserCircle, Smile, Bot, AppWindow, Scale, Music, ListMusic, Images, NotebookPen, Clapperboard, PanelTop, Sparkles, ToggleRight, LayoutTemplate, Shapes, Info, Megaphone, Film } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,8 @@ const cuppiNavigation = [
   { name: 'Icon banner', href: '/admin/cuppi-icons', icon: Shapes },
   { name: 'Cuppi pages', href: '/admin/cuppi-pages', icon: ToggleRight },
   { name: 'Cuppi menu', href: '/admin/cuppi-menu', icon: PanelTop },
+  { name: 'Home video', href: '/admin/cuppi-video', icon: Film },
+  { name: 'Banners', href: '/admin/cuppi-banners', icon: Megaphone },
   { name: 'Cuppi features', href: '/admin/cuppi-features', icon: Sparkles },
   { name: 'Disclaimers', href: '/admin/cuppi-disclaimers', icon: Info },
 ];
