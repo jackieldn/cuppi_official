@@ -270,7 +270,17 @@ export function SiteHeader({ groups, links: configured, download }: { groups: Gr
                       {l.label}
                       <ChevronDown className={cn('h-5 w-5 transition-transform duration-300', mobileSection === m.key && 'rotate-180')} aria-hidden />
                     </button>
-                    <div className={cn('px-1 pb-2', mobileSection !== m.key && 'hidden')}>
+                    {/* Slides open and shut: the row's height eases between 0 and its content's. The list stays mounted (its icons are
+                        already downloaded); closed, it is unseen and out of the tab order once the slide has finished. */}
+                    <div
+                      aria-hidden={mobileSection !== m.key}
+                      className={cn(
+                        'grid transition-[grid-template-rows,opacity,visibility] duration-300 [transition-timing-function:var(--ease-calm)] motion-reduce:transition-none',
+                        mobileSection === m.key ? 'grid-rows-[1fr] opacity-100' : 'invisible grid-rows-[0fr] opacity-0',
+                      )}
+                    >
+                    <div className="overflow-hidden">
+                    <div className="px-1 pb-2">
                         {byGroup(m.groups).map(({ group, items }) => (
                           <div key={group} className="pb-1">
                             {m.key === 'features' && (
@@ -286,6 +296,8 @@ export function SiteHeader({ groups, links: configured, download }: { groups: Gr
                             See every feature →
                           </Link>
                         )}
+                    </div>
+                    </div>
                     </div>
                   </div>
                 );

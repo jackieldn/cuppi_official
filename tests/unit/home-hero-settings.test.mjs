@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveHeroSettings, defaultHeroSettings, validateHeroSettings, buildHero, HERO_TEMPLATES, LIMITS } from '../../src/lib/home-hero-settings.ts';
+import { resolveHeroSettings, resolveHeroList, validateHeroList, newHeroSettings, defaultHeroSettings, validateHeroSettings, buildHero, HERO_TEMPLATES, LIMITS, MAX_HEROES } from '../../src/lib/home-hero-settings.ts';
 import { homeHero } from '../../src/lib/home-hero.ts';
 
 describe('resolveHeroSettings', () => {
@@ -170,3 +170,51 @@ describe('the hero screenshot', () => {
   });
 });
 
+
+describe('several heroes', () => {
+  test('there can be five, and a hero list is never empty', () => {
+    assert.equal(MAX_HEROES, 5);
+    for (const bad of [undefined, null, 'x', 5, [], {}, { heroes: [] }, { heroes: 'no' }, { heroes: [null, 5, 'x', []] }]) {
+      assert.deepEqual(resolveHeroList(bad), [defaultHeroSettings()], JSON.stringify(bad));
+    }
+  });
+
+  test('a hero saved before there could be several is a list of one', () => {
+    const list = resolveHeroList({ template: 'centred', headline: 'Old *hero*', tint: 'lake' });
+    assert.equal(list.length, 1);
+    assert.equal(list[0].template, 'centred');
+    assert.equal(list[0].headline, 'Old *hero*');
+  });
+
+  test('each saved hero is read on its own, in order, and anything past the fifth is dropped', () => {
+    const heroes = Array.from({ length: 8 }, (_, i) => ({ headline: `Hero ${i + 1}`, tint: i === 1 ? 'purple' : 'sky' }));
+    const list = resolveHeroList({ heroes });
+    assert.equal(list.length, MAX_HEROES);
+    assert.deepEqual(list.map((h) => h.headline), ['Hero 1', 'Hero 2', 'Hero 3', 'Hero 4', 'Hero 5']);
+    assert.equal(list[1].tint, defaultHeroSettings().tint, 'a bad field costs only that field');
+    assert.equal(list[0].tint, 'sky');
+  });
+
+  test('entries that are not heroes are skipped rather than turned into the original', () => {
+    const list = resolveHeroList({ heroes: [null, { headline: 'Real' }, 'junk'] });
+    assert.deepEqual(list.map((h) => h.headline), ['Real']);
+  });
+
+  test('a new hero is valid and is not a copy of the original words', () => {
+    assert.deepEqual(validateHeroSettings(newHeroSettings()), []);
+    assert.notEqual(newHeroSettings().headline, defaultHeroSettings().headline);
+  });
+
+  test('validation names the hero with the problem, by position', () => {
+    const ok = defaultHeroSettings();
+    assert.deepEqual(validateHeroList([ok, newHeroSettings()]), []);
+    const found = validateHeroList([ok, { ...ok, headline: ' ' }]);
+    assert.equal(found.length, 1);
+    assert.equal(found[0].index, 1);
+    assert.match(found[0].problem, /^Hero 2: /);
+    // with only one hero there is no number to name
+    assert.doesNotMatch(validateHeroList([{ ...ok, headline: ' ' }])[0].problem, /^Hero/);
+    assert.equal(validateHeroList([]).length, 1);
+    assert.equal(validateHeroList(Array.from({ length: 6 }, () => ok)).length, 1);
+  });
+});

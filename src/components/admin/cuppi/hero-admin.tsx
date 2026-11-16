@@ -3,14 +3,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
-import { RotateCcw } from 'lucide-react';
+import { Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { useDoc, useFirestore, useStorage } from '@/firebase';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Slider } from '@/components/ui/slider';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -20,14 +31,17 @@ import { HomeHero } from '@/components/cuppi/home/hero';
 import { TINTS } from '@/components/cuppi/blocks/tints';
 import { Segmented } from '@/components/admin/apps/segmented';
 import {
+  HERO_HOLD_SECONDS,
   HERO_TEMPLATES,
   LIMITS,
+  MAX_HEROES,
   PATTERN_NAMES,
   TINTS_IN_ORDER,
   buildHero,
   defaultHeroSettings,
-  resolveHeroSettings,
-  validateHeroSettings,
+  newHeroSettings,
+  resolveHeroList,
+  validateHeroList,
   type HeroSettings,
   type HeroTemplate,
 } from '@/lib/home-hero-settings';
@@ -48,10 +62,11 @@ const PATTERN_LABELS: Record<(typeof PATTERN_NAMES)[number], string> = {
 };
 
 /**
- * Edits the hero at the top of the Cuppi home page: which template it uses, the words and the
- * button, the colour, the pattern and the phone. Saved as one document (cuppi_home/hero). What
- * is stored is read back through resolveHeroSettings and drawn by buildHero + HomeHero, the same
- * code the website uses, so the preview here is the real hero rather than a lookalike.
+ * Edits the heroes at the top of the Cuppi home page (one to five, each in its own tab): which template
+ * it uses, the words and the button, the colour, the pattern and the phone. With more than one the home
+ * page shows them as a slideshow. Saved as one document (cuppi_home/hero). What is stored is read back
+ * through resolveHeroList and drawn by buildHero + HomeHero, the same code the website uses, so the
+ * preview here is the real hero rather than a lookalike.
  */
 export function HeroAdmin() {
   const firestore = useFirestore();
@@ -65,7 +80,7 @@ export function HeroAdmin() {
   if (isLoading) return <Skeleton className="h-96 w-full" />;
   return (
     <HeroEditor
-      initial={resolveHeroSettings(data ?? null)}
+      initial={resolveHeroList(data ?? null)}
       disclaimers={disclaimers}
       upload={async (file) => {
         if (!storage) throw new Error('Storage is not ready yet.');
@@ -73,9 +88,9 @@ export function HeroAdmin() {
         await uploadBytes(r, file, { contentType: file.type });
         return getDownloadURL(r);
       }}
-      onSave={async (hero) => {
+      onSave={async (heroes) => {
         if (!ref) throw new Error('The database is not ready yet.');
-        await setDoc(ref, { ...hero, updatedAt: serverTimestamp() });
+        await setDoc(ref, { heroes, updatedAt: serverTimestamp() });
       }}
     />
   );
@@ -88,16 +103,21 @@ export function HeroEditor({
   upload,
   onSave,
 }: {
-  initial: HeroSettings;
+  initial: HeroSettings[];
   disclaimers?: Disclaimer[];
   /** Sends a chosen screenshot to storage and returns its address. */
   upload?: (file: File) => Promise<string>;
-  onSave: (hero: HeroSettings) => Promise<void>;
+  onSave: (heroes: HeroSettings[]) => Promise<void>;
 }) {
   const { toast } = useToast();
-  const [hero, setHero] = useState<HeroSettings>(initial);
+  const [heroes, setHeroes] = useState<HeroSettings[]>(initial);
   /** What is saved, to tell whether there is anything unsaved. */
-  const [saved, setSaved] = useState<HeroSettings>(initial);
+  const [saved, setSaved] = useState<HeroSettings[]>(initial);
+  /** Which hero's tab is open. */
+  const [active, setActive] = useState(0);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const index = Math.min(active, heroes.length - 1);
+  const hero = heroes[index];
   const [saving, setSaving] = useState(false);
   const [problems, setProblems] = useState<string[]>([]);
   /** How many times Replay has been pressed: remounting the preview plays its opening shot again. */
@@ -127,8 +147,23 @@ export function HeroEditor({
 
   const preview = useMemo(() => buildHero(hero), [hero]);
 
-  const set = (patch: Partial<HeroSettings>) => setHero({ ...hero, ...patch });
-  const dirty = JSON.stringify(hero) !== JSON.stringify(saved);
+  /** Changes the hero whose tab is open. */
+  const set = (patch: Partial<HeroSettings>) => setHeroes(heroes.map((h, i) => (i === index ? { ...h, ...patch } : h)));
+  const dirty = JSON.stringify(heroes) !== JSON.stringify(saved);
+
+  const addHero = () => {
+    if (heroes.length >= MAX_HEROES) return;
+    setHeroes([...heroes, newHeroSettings()]);
+    setActive(heroes.length);
+    setProblems([]);
+  };
+  const deleteHero = () => {
+    if (heroes.length <= 1) return;
+    setHeroes(heroes.filter((_, i) => i !== index));
+    setActive(Math.max(0, index - 1));
+    setProblems([]);
+    setConfirmDelete(false);
+  };
 
   const pickTemplate = (key: HeroTemplate) => {
     // A template with the words to one side turns the phone to look at them; the admin can still turn it back.
@@ -136,42 +171,51 @@ export function HeroEditor({
     set({ template: key, ...(facing ? { facing } : {}) });
   };
 
+  /** One hero as it is saved: words trimmed, and any screenshot chosen here (still on this computer) sent up, its new address kept. */
+  const prepare = async (h: HeroSettings, sent: Map<string, string>): Promise<HeroSettings> => {
+    const clean: HeroSettings = { ...h, headline: h.headline.trim(), body: h.body.trim(), button: { ...h.button, label: h.button.label.trim(), href: h.button.href.trim() } };
+    const shot = clean.screenshot;
+    if (!shot) return clean;
+    for (const local of [shot.url, shot.second?.url ?? ''].filter((u) => u.startsWith('blob:') && !sent.has(u))) {
+      const file = chosen.current.get(local);
+      if (!file || !upload) throw new Error('A chosen screenshot is no longer available. Choose it again.');
+      sent.set(local, await upload(file));
+    }
+    return {
+      ...clean,
+      screenshot: {
+        ...shot,
+        url: sent.get(shot.url) ?? shot.url,
+        alt: shot.alt.trim() || 'The Cuppi app',
+        ...(shot.second ? { second: { ...shot.second, url: sent.get(shot.second.url) ?? shot.second.url, alt: shot.second.alt.trim() } } : {}),
+      },
+    };
+  };
+
   const save = async () => {
-    const found = validateHeroSettings(hero);
-    setProblems(found);
-    if (found.length > 0) return;
-    let clean: HeroSettings = { ...hero, headline: hero.headline.trim(), body: hero.body.trim(), button: { ...hero.button, label: hero.button.label.trim(), href: hero.button.href.trim() } };
+    const found = validateHeroList(heroes);
+    setProblems(found.map((f) => f.problem));
+    if (found.length > 0) {
+      // Show the first hero with something to fix.
+      setActive(Math.min(found[0].index, heroes.length - 1));
+      return;
+    }
     setSaving(true);
     try {
-      // Screenshots chosen here are still on this computer: send them up first, then save their new addresses.
-      if (clean.screenshot) {
-        const sent = new Map<string, string>();
-        for (const local of [clean.screenshot.url, clean.screenshot.second?.url ?? ''].filter((u) => u.startsWith('blob:'))) {
-          const file = chosen.current.get(local);
-          if (!file || !upload) throw new Error('A chosen screenshot is no longer available. Choose it again.');
-          sent.set(local, await upload(file));
-        }
-        const shot = clean.screenshot;
-        clean = {
-          ...clean,
-          screenshot: {
-            ...shot,
-            url: sent.get(shot.url) ?? shot.url,
-            alt: shot.alt.trim() || 'The Cuppi app',
-            ...(shot.second ? { second: { ...shot.second, url: sent.get(shot.second.url) ?? shot.second.url, alt: shot.second.alt.trim() } } : {}),
-          },
-        };
-        sent.forEach((_, local) => {
-          URL.revokeObjectURL(local);
-          chosen.current.delete(local);
-        });
-      }
+      const sent = new Map<string, string>();
+      const clean: HeroSettings[] = [];
+      for (const h of heroes) clean.push(await prepare(h, sent));
       await onSave(clean);
-      setHero(clean);
+      // Only once everything is saved are the local copies let go, so a failed save loses no chosen screenshot.
+      sent.forEach((_, local) => {
+        URL.revokeObjectURL(local);
+        chosen.current.delete(local);
+      });
+      setHeroes(clean);
       setSaved(clean);
-      toast({ title: 'Home hero saved', description: 'The site picks it up within a minute.' });
+      toast({ title: clean.length > 1 ? 'Home heroes saved' : 'Home hero saved', description: 'The site picks it up within a minute.' });
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Could not save the hero', description: describeError(error) });
+      toast({ variant: 'destructive', title: 'Could not save the heroes', description: describeError(error) });
     } finally {
       setSaving(false);
     }
@@ -183,8 +227,41 @@ export function HeroEditor({
 
   return (
     <UploadsContext.Provider value={addFile}>
+    <div className="flex flex-col gap-4 lg:h-full">
+    {/* One tab per hero, then + to add another (up to five). */}
+    <div className="flex flex-wrap items-center gap-2">
+      <Tabs value={String(index)} onValueChange={(v) => setActive(Number(v))} className="min-w-0">
+        <TabsList aria-label="Heroes" className="h-auto flex-wrap justify-start gap-1">
+          {heroes.map((h, i) => (
+            <TabsTrigger key={i} value={String(i)} title={plainHeadline(h.headline)} className="max-w-[13rem] gap-2">
+              <span className="font-semibold">{i + 1}</span>
+              <span className="truncate font-normal">{plainHeadline(h.headline) || 'Untitled'}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        onClick={addHero}
+        disabled={heroes.length >= MAX_HEROES}
+        aria-label="Add a hero"
+        title={heroes.length >= MAX_HEROES ? `The home page can have up to ${MAX_HEROES} heroes` : 'Add a hero'}
+      >
+        <Plus className="h-4 w-4" />
+      </Button>
+      <span className="text-xs text-muted-foreground">
+        {heroes.length} of {MAX_HEROES}
+        {heroes.length > 1 && ` · each shows for ${HERO_HOLD_SECONDS} seconds`}
+      </span>
+      <Button type="button" variant="outline" size="sm" className="ml-auto text-destructive hover:text-destructive" disabled={heroes.length <= 1} title={heroes.length <= 1 ? 'The home page needs at least one hero' : undefined} onClick={() => setConfirmDelete(true)}>
+        <Trash2 className="mr-2 h-4 w-4" /> Delete this hero
+      </Button>
+    </div>
+
     {/* Two columns from lg up: the preview on the left, the settings scrolling on the right, so every change is seen as it is made. */}
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:h-full lg:grid-cols-[minmax(0,1.5fr)_minmax(360px,1fr)]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1.5fr)_minmax(360px,1fr)]">
       <div className="min-w-0 lg:overflow-y-auto">
         <div className="mb-2 flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Preview</h2>
@@ -199,12 +276,15 @@ export function HeroEditor({
             {/* The real hero, drawn from the form as it is now (saved or not). It starts settled; Replay remounts it so the opening shot plays again. */}
             <div className="pb-3">
               <DisclaimersProvider items={disclaimers}>
-                <HomeHero key={plays} hero={preview} instant={plays === 0} />
+                <HomeHero key={`${index}-${plays}`} hero={preview} instant={plays === 0} />
               </DisclaimersProvider>
             </div>
           </ScaledToFit>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">Drawn at desktop width and scaled to fit. Change the length below, then Replay.</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Drawn at desktop width and scaled to fit. Change the length below, then Replay.
+          {heroes.length > 1 && ` On the site, dots under the hero show the others, and a line fills up over ${HERO_HOLD_SECONDS} seconds before the next one takes over.`}
+        </p>
       </div>
 
       <div className="flex min-h-0 min-w-0 flex-col">
@@ -430,7 +510,10 @@ export function HeroEditor({
           <Card>
             <CardHeader>
               <CardTitle>Opening animation</CardTitle>
-              <CardDescription>How long the camera takes to pull back when the page opens. The words, phone, pattern and button keep their timing relative to each other. Press Replay above to watch it.</CardDescription>
+              <CardDescription>
+                How long the camera takes to pull back when the page opens. The words, phone, pattern and button keep their timing relative to each other. Press Replay above to watch it.
+                {heroes.length > 1 && index > 0 && ' Only the first hero plays this when the page opens: the others fade in when their turn comes.'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Control label="Length" value={`${hero.introSeconds.toFixed(1)}s`} hint={`The original is 4.4s. Between ${LIMITS.intro.min} and ${LIMITS.intro.max} seconds.`}>
@@ -453,16 +536,35 @@ export function HeroEditor({
           <Button onClick={save} disabled={saving || !dirty}>
             {saving ? 'Saving…' : 'Save hero'}
           </Button>
-          <Button type="button" variant="outline" disabled={saving} onClick={() => setHero(defaultHeroSettings())}>
-            Start again from the original
+          <Button type="button" variant="outline" disabled={saving} onClick={() => setHeroes(heroes.map((h, i) => (i === index ? defaultHeroSettings() : h)))}>
+            Start this hero again from the original
           </Button>
           {dirty && <span className="text-sm text-muted-foreground">Unsaved changes</span>}
         </div>
       </div>
     </div>
+
+    <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete hero {index + 1}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            “{plainHeadline(hero.headline)}” comes out of the slideshow. Nothing changes on the site until you press Save.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Keep it</AlertDialogCancel>
+          <AlertDialogAction onClick={deleteHero}>Delete hero</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </div>
     </UploadsContext.Provider>
   );
 }
+
+/** A headline without its *asterisks*, for a tab or a sentence. */
+const plainHeadline = (headline: string) => headline.replace(/\*/g, '').trim();
 
 /** The hero's screenshot as the picture editor works with it: framed, at the hero's angle and facing. */
 function shotAsImage(h: HeroSettings): FeatureImage {

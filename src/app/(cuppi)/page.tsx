@@ -1,17 +1,18 @@
 import { CuppiFooter } from '@/components/cuppi/footer';
 import { CuppiHeader } from '@/components/cuppi/header';
 import { HomeHero } from '@/components/cuppi/home/hero';
+import { HeroCarousel } from '@/components/cuppi/home/hero-carousel';
 import { WhatsNew } from '@/components/cuppi/whats-new';
 import { LatestVideo } from '@/components/cuppi/home/latest-video';
 import { AppFan } from '@/components/cuppi/home/app-fan';
 import { getFanFeatures } from '@/lib/features';
-import { buildHero } from '@/lib/home-hero-settings';
-import { getHeroSettings } from '@/lib/cuppi-site-data';
+import { HERO_HOLD_SECONDS, buildHero } from '@/lib/home-hero-settings';
+import { getHeroList } from '@/lib/cuppi-site-data';
 import { refreshMetadata, refreshPage } from '@/components/cuppi/section-gate';
 
-// "What's new" re-checks the latest Cosy Corner posts every minute. The hero is
-// set in the admin (Cuppi home), with src/lib/home-hero.ts as its starting point and its
-// screenshot; everything else that used to live on this page
+// "What's new" re-checks the latest Cosy Corner posts every minute. The heroes (one to five, a
+// slideshow when there are several) are set in the admin (Cuppi home), with src/lib/home-hero.ts as
+// the starting point and the original screenshot; everything else that used to live on this page
 // now has its own page under /features.
 export const revalidate = 60;
 
@@ -24,13 +25,21 @@ export default async function CuppiPage() {
 
   // The icons that slide out of Cuppi: chosen and ordered in the admin (Cuppi > Icon banner).
   const features = await getFanFeatures();
-  const hero = buildHero(await getHeroSettings());
+  const heroes = (await getHeroList()).map(buildHero);
 
   return (
     <div className="bg-background text-foreground flex flex-col min-h-screen">
       <CuppiHeader />
       <main className="flex-grow w-full flex flex-col items-center">
-        <HomeHero hero={hero} />
+        {heroes.length > 1 ? (
+          <HeroCarousel tints={heroes.map((h) => h.tint)} holdSeconds={HERO_HOLD_SECONDS} firstDelaySeconds={heroes[0].introSeconds ?? 4.4}>
+            {heroes.map((hero, i) => (
+              <HomeHero key={i} hero={hero} fill />
+            ))}
+          </HeroCarousel>
+        ) : (
+          <HomeHero hero={heroes[0]} />
+        )}
 
         <WhatsNew />
 

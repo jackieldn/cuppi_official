@@ -9,7 +9,7 @@ export default function CuppiHomeAdminPage() {
     <div className="flex flex-col gap-4 py-4 lg:h-[calc(100vh-60px)]">
       <div>
         <h1 className="font-headline text-2xl font-bold">Home hero</h1>
-        <p className="text-sm text-muted-foreground">The big block at the top of the Cuppi home page: pick a template, then change the words, colour, pattern, phone and opening animation.</p>
+        <p className="text-sm text-muted-foreground">The big block at the top of the Cuppi home page. Add up to five with the + and they take turns, each for 7 seconds. For each one, pick a template, then change the words, colour, pattern, phone and opening animation.</p>
       </div>
       <div className="lg:min-h-0 lg:flex-1">
         <HeroAdmin />

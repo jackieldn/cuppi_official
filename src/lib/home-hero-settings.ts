@@ -1,5 +1,7 @@
-// The home page hero as the admin sets it. One document (cuppi_home/hero) holds the template,
-// the words and button, the colour, the pattern and the phone. Whatever is stored is only ever
+// The home page hero as the admin sets it. One document (cuppi_home/hero) holds up to five heroes
+// (`heroes`), each with its template, words and button, colour, pattern and phone; with more than one
+// the home page turns them into a slideshow. Before there could be several, the document held one
+// hero's fields at the top level: that is still read, as a list of one. Whatever is stored is only ever
 // read through resolveHeroSettings, which fills gaps from the defaults, clamps every number and
 // drops anything unsafe, so a bad document can make the hero look plain but never break the page.
 //
@@ -34,6 +36,12 @@ export type Facing = 'left' | 'right';
 
 export const TINTS_IN_ORDER: FeatureTint[] = ['honey', 'sky', 'moss', 'clay', 'lake'];
 export const PATTERN_NAMES = Object.keys(PATTERNS) as PatternName[];
+
+/** How many heroes the home page can rotate through. */
+export const MAX_HEROES = 5;
+
+/** How long each hero stays up before the next one, in seconds. */
+export const HERO_HOLD_SECONDS = 7;
 
 export const LIMITS = {
   headline: 90,
@@ -117,6 +125,11 @@ export function defaultHeroSettings(): HeroSettings {
   };
 }
 
+/** A starting point for a hero added in the admin: the original look, with words that ask to be replaced. */
+export function newHeroSettings(): HeroSettings {
+  return { ...defaultHeroSettings(), headline: 'Your new *headline*', body: 'Say a little more here.' };
+}
+
 const text = (v: unknown, max: number, fallback: string): string => {
   const t = typeof v === 'string' ? v.trim().slice(0, max) : '';
   return t || fallback;
@@ -172,6 +185,18 @@ export function resolveHeroSettings(stored: unknown): HeroSettings {
   };
 }
 
+/**
+ * Stored document -> one to five safe heroes. A document with a `heroes` list is read entry by entry
+ * (anything that is not an object is skipped, and any past the fifth is dropped); one without is the older
+ * single hero, kept as a list of one; nothing at all is the original hero.
+ */
+export function resolveHeroList(stored: unknown): HeroSettings[] {
+  const s = stored && typeof stored === 'object' ? (stored as Record<string, unknown>) : null;
+  const list = s && Array.isArray(s.heroes) ? s.heroes.filter((h) => h && typeof h === 'object' && !Array.isArray(h)) : [];
+  if (list.length === 0) return [resolveHeroSettings(stored)];
+  return list.slice(0, MAX_HEROES).map((h) => resolveHeroSettings(h));
+}
+
 /** Plain-English problems with settings being saved (empty when fine). The admin form shows these. */
 export function validateHeroSettings(h: HeroSettings): string[] {
   const problems: string[] = [];
@@ -183,6 +208,13 @@ export function validateHeroSettings(h: HeroSettings): string[] {
     if (!safeHref(h.button.href)) problems.push('The button needs an address that starts with / (a page on this site) or https://.');
   }
   return problems;
+}
+
+/** The problems across every hero, each with the position (from 0) of the hero it belongs to, and naming that hero when there is more than one. */
+export function validateHeroList(list: HeroSettings[]): { index: number; problem: string }[] {
+  if (list.length === 0) return [{ index: 0, problem: 'There needs to be at least one hero.' }];
+  if (list.length > MAX_HEROES) return [{ index: MAX_HEROES, problem: `There can be at most ${MAX_HEROES} heroes.` }];
+  return list.flatMap((h, index) => validateHeroSettings(h).map((p) => ({ index, problem: list.length > 1 ? `Hero ${index + 1}: ${p}` : p })));
 }
 
 /** Settings -> what the hero component draws. */

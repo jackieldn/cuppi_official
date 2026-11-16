@@ -910,6 +910,16 @@ html.theme-changing *::after {
 [data-intro='play'] .intro-near { transition: transform var(--intro-dur, 4.4s) var(--ease-camera), opacity calc(var(--intro-dur, 4.4s) * 0.27) ease-out; }
 [data-intro='play'] .intro-late { transition: transform 0.9s var(--ease-calm) calc(var(--intro-dur, 4.4s) * 0.59), opacity 0.9s ease-out calc(var(--intro-dur, 4.4s) * 0.59); }
 
+/* The home hero slideshow's countdown (HeroCarousel): the active slide's line fills from left to right over --hero-hold,
+   then the next slide takes over. --hero-delay holds the first fill back until the opening shot has played. Hovering the
+   hero pauses it. With reduced motion there is no fill and no automatic change: the line is simply full. */
+@keyframes hero-countdown { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.hero-countdown { transform-origin: left center; animation: hero-countdown var(--hero-hold, 7s) linear var(--hero-delay, 0s) both; }
+.hero-countdown[data-paused='true'] { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-countdown { animation: none; }
+}
+
 /* No JavaScript, or it never got going: show everything after 8 seconds (3.6 past the move) regardless. */
 @keyframes intro-failsafe { to { opacity: 1; transform: none; } }
 [data-intro='prep'] .intro-far,
