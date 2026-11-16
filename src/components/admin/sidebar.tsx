@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FolderKanban, GalleryHorizontal, UserCircle, Smile, Bot, AppWindow, Scale, Music, ListMusic, Images, NotebookPen, Clapperboard, PanelTop, Sparkles, ToggleRight, LayoutTemplate, Shapes, Info, Megaphone, Film } from 'lucide-react';
+import { FolderKanban, GalleryHorizontal, UserCircle, Smile, Bot, AppWindow, Scale, Music, ListMusic, Images, NotebookPen, Clapperboard, PanelTop, Sparkles, ToggleRight, LayoutTemplate, Shapes, Info, Megaphone, Film, Palette } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ const navigation = [
 
 // The Cuppi website (cuppi.co.uk), edited here.
 const cuppiNavigation = [
+  { name: 'Colours', href: '/admin/cuppi-colours', icon: Palette },
   { name: 'Home hero', href: '/admin/cuppi-home', icon: LayoutTemplate },
   { name: 'Icon banner', href: '/admin/cuppi-icons', icon: Shapes },
   { name: 'Cuppi pages', href: '/admin/cuppi-pages', icon: ToggleRight },

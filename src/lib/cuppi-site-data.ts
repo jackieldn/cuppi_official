@@ -8,6 +8,7 @@ import { defaultHeroSettings, resolveHeroSettings, type HeroSettings } from './h
 import { resolveDisclaimers, type Disclaimer } from './disclaimers';
 import { resolveBanners, type Banner } from './banners';
 import { resolveHomeVideo, type HomeVideo } from './home-video';
+import { emptyColourSettings, resolveColours, type ColourSettings } from './theme-colours';
 
 // What the admin has changed about the Cuppi site, read on the server. Four collections, all
 // publicly readable and admin-writable (firestore.rules):
@@ -17,6 +18,7 @@ import { resolveHomeVideo, type HomeVideo } from './home-video';
 //   cuppi_home/hero        the home page hero: template, words, colour, pattern, phone (home-hero-settings.ts)
 //   cuppi_home/disclaimers the disclaimers behind the (i) icons in page text (disclaimers.ts)
 //   cuppi_home/banners     the temporary banners under the menu, with their dates (banners.ts)
+//   cuppi_home/colours     the site's base colours, light and dark, when switched on (theme-colours.ts)
 //   cuppi_home/video       the latest advertisement under "What's new" on the home page (home-video.ts)
 //   cuppi_home/fan         the icon banner: which features slide out of Cuppi's icon, and in what order (fan-settings.ts)
 //
@@ -65,6 +67,7 @@ const fanMemo: { current?: Memo<unknown> } = {};
 const disclaimerMemo: { current?: Memo<Disclaimer[]> } = {};
 const bannerMemo: { current?: Memo<Banner[]> } = {};
 const homeVideoMemo: { current?: Memo<HomeVideo> } = {};
+const coloursMemo: { current?: Memo<ColourSettings> } = {};
 
 export function getFeatureOverrides(): Promise<FeatureOverride[]> {
   return remembered(featureMemo, [], async () => {
@@ -115,6 +118,14 @@ export function getHomeVideo(): Promise<HomeVideo> {
   return remembered(homeVideoMemo, resolveHomeVideo(null), async () => {
     const snap = await firestore.collection('cuppi_home').doc('video').get();
     return resolveHomeVideo(snap.exists ? snap.data() : null);
+  });
+}
+
+/** The admin's colour changes (see theme-colours.ts). Nothing saved, or an unreadable database, gives the designed palette. */
+export function getColours(): Promise<ColourSettings> {
+  return remembered(coloursMemo, emptyColourSettings(), async () => {
+    const snap = await firestore.collection('cuppi_home').doc('colours').get();
+    return resolveColours(snap.exists ? snap.data() : null);
   });
 }
 
