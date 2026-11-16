@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { FeatureImage, FeatureShot } from '@/lib/features-types';
-import { contentEndFrac, phoneTops, screenSpan } from '@/lib/phone-mockups';
+import { MOCKUPS, contentEndFrac, phoneTops, screenSpan } from '@/lib/phone-mockups';
 import { PhoneMockup } from './phone-mockup';
 
 // What a screenshot is assumed to measure until its real size is known (a current iPhone screenshot).
@@ -64,11 +64,21 @@ export function FramedPhones({ image, sizes, priority, className, variant = 'car
     // With the tick on, the cursor slides it to the other end of the screenshot.
     const slide = image.slide ? `${Math.round(((bottomView ? tops.top : tops.bottom) - rest) / g.height * 1000) / 10}%` : undefined;
     return (
-      // `phone-slide-host` / `phone-slide` (globals.css): the phone eases to the other end while the cursor is over the card.
-      <div className={cn('absolute inset-0', slide && 'phone-slide-host', className)}>
+      // `phone-slide-host` / `phone-slide` (globals.css): the phone eases to the other end while the cursor is over the phone.
+      // The hover target is `phone-hit`, not the whole box: a transparent strip as wide as the phone and as tall as the box, laid over
+      // it. It stays put while the phone moves under it (so the phone cannot slide out from under the cursor and flicker), and the
+      // empty space beside the phone does nothing. The host is a size container so the strip's width can follow the phone's height.
+      <div className={cn('absolute inset-0', slide && 'phone-slide-host pointer-events-none [container-type:size]', className)}>
         <div className={cn('absolute left-1/2', slide ? 'phone-slide' : '-translate-x-1/2')} style={{ top: `${rest}%`, height: `${g.height}%`, ...(slide ? ({ '--slide': slide } as React.CSSProperties) : {}) }}>
           {phone(image, flip)}
         </div>
+        {slide && (
+          <div
+            aria-hidden
+            className="phone-hit pointer-events-auto absolute inset-y-0 left-1/2 z-10 -translate-x-1/2"
+            style={{ width: `calc(${g.height}cqh * ${MOCKUPS[kind].width / MOCKUPS[kind].height})`, maxWidth: '100%' }}
+          />
+        )}
       </div>
     );
   }

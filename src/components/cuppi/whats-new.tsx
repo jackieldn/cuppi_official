@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import { FadeImage } from '@/components/cuppi/fade-image';
 import { sanityClient, urlFor } from '@/lib/sanity-client';
 import { CosyCornerPost } from '@/lib/blog-types';
 import { format } from 'date-fns';
@@ -55,7 +55,7 @@ export async function WhatsNew() {
           >
             {post.mainImage && (
               <div className="relative mb-4 aspect-video w-full overflow-hidden rounded-[1.5rem]">
-                <Image
+                <FadeImage
                   src={urlFor(post.mainImage).width(800).quality(100).url()}
                   alt={post.mainImage.alt || post.title}
                   fill

@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { FadeImage } from '@/components/cuppi/fade-image';
 import { Cake, House, PawPrint, Receipt, ShieldCheck, Sparkles, Star, Trash2, User, Users, Wallet, Palette, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Feature, FeatureIcon, TileColour } from '@/lib/features-types';
@@ -95,6 +95,7 @@ export function AppTile({
   className,
   muted,
   eager,
+  instant,
 }: {
   feature: Pick<Feature, 'iconUrl' | 'icon' | 'tile' | 'name'>;
   className?: string;
@@ -106,16 +107,19 @@ export function AppTile({
    * shows as a blank tile that then pops in.
    */
   eager?: boolean;
+  /** No fade-in: for tiles inside a menu that is hidden until opened, which must be complete the moment it opens. */
+  instant?: boolean;
 }) {
   return (
     <TileShell colours={TILE_COLOURS[feature.tile]} className={className} muted={muted}>
       {feature.iconUrl ? (
-        <Image
+        <FadeImage
           src={feature.iconUrl}
           alt=""
           width={512}
           height={512}
           sizes="96px"
+          instant={instant}
           {...(eager ? { loading: 'eager' as const, fetchPriority: 'low' as const } : {})}
           className="relative h-[66%] w-[66%] object-contain"
         />
@@ -130,7 +134,7 @@ export function AppTile({
 export function CuppiTile({ className, priority }: { className?: string; priority?: boolean }) {
   return (
     <TileShell colours={CUPPI_TILE} className={className}>
-      <Image src={CUPPI_LOGO} alt="" width={380} height={397} priority={priority} className="relative h-[64%] w-[64%] object-contain" />
+      <FadeImage src={CUPPI_LOGO} alt="" width={380} height={397} priority={priority} className="relative h-[64%] w-[64%] object-contain" />
     </TileShell>
   );
 }

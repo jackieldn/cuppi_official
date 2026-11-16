@@ -2,7 +2,7 @@ import { sanityClient, urlFor } from '@/lib/sanity-client';
 import { PortableText } from '@/components/portable-text';
 import { CosyCornerPost } from '@/lib/blog-types';
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
+import { FadeImage } from '@/components/cuppi/fade-image';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import type { Metadata } from 'next';
@@ -144,7 +144,7 @@ export default async function CosyCornerPostPage({ params }: Props) {
 
           {post.mainImage && (
             <div className="relative aspect-video mb-12 rounded-2xl overflow-hidden shadow-xl">
-              <Image
+              <FadeImage
                 src={urlFor(post.mainImage).width(1600).quality(100).url()}
                 alt={post.mainImage.alt || post.title}
                 width={1200}

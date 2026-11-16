@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import Image from 'next/image';
+import { FadeImage } from '@/components/cuppi/fade-image';
 import { ArrowUpRight } from 'lucide-react';
 import { CuppiFooter } from '@/components/cuppi/footer';
 import { CuppiHeader } from '@/components/cuppi/header';
@@ -78,7 +78,7 @@ export default async function FeaturesPage() {
                         {f.hero.image.fit === 'photo' && f.hero.imageStyle !== 'wide' ? (
                           // A photo fills the rest of the card in a rounded mask, with a margin round it so the card's colour frames it.
                           <div className="relative -mx-3 -mb-3 mt-5 min-h-[14rem] flex-1 overflow-hidden rounded-[1.25rem]">
-                            <Image
+                            <FadeImage
                               src={f.hero.image.url}
                               alt=""
                               fill
@@ -89,7 +89,7 @@ export default async function FeaturesPage() {
                         ) : (
                         <div className="relative mt-4 flex-1">
                           {f.hero.imageStyle === 'wide' ? (
-                            <Image
+                            <FadeImage
                               src={f.hero.image.url}
                               alt=""
                               width={1319}

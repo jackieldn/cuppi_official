@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import { FadeImage } from '@/components/cuppi/fade-image';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { sanityClient, urlFor } from '@/lib/sanity-client';
@@ -67,7 +67,7 @@ export default async function CosyCornerPage({ searchParams }: Props) {
                 <Link key={post._id} href={`/blog/${post.slug.current}`} className="group grid items-center gap-8 md:grid-cols-3">
                   {post.mainImage && (
                     <div className="relative aspect-video overflow-hidden rounded-[1.5rem] transition-transform duration-500 [transition-timing-function:var(--ease-spring)] group-hover:-translate-y-1 md:col-span-1">
-                      <Image
+                      <FadeImage
                         src={urlFor(post.mainImage).width(800).quality(100).url()}
                         alt={post.mainImage.alt || post.title}
                         width={400}
@@ -142,7 +142,7 @@ function LatestHero({ post }: { post: CosyCornerPost }) {
         {post.mainImage && (
           <div className="order-1 p-3 sm:p-4 md:order-2 md:p-5">
             <div className="relative aspect-video overflow-hidden rounded-[2rem]">
-              <Image
+              <FadeImage
                 src={urlFor(post.mainImage).width(1400).quality(90).url()}
                 alt={post.mainImage.alt || post.title}
                 fill
