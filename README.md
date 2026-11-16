@@ -72,8 +72,9 @@ nothing. The pages only route people to the right screen
 5. Only now deploy the rules (they refuse any admin without a code):
    `firebase deploy --only firestore:rules,storage`
 6. Keep the key (or a recovery code) from step 4 somewhere safe. To reset a lost
-   authenticator, remove the second factor on the account with the Admin SDK
-   (`auth.updateUser(uid, { multiFactor: { enrolledFactors: null } })`) and repeat step 4.
+   authenticator, run `node scripts/reset-admin-mfa.mjs` (a dry run that lists the
+   admins), then again with `--apply --email <admin email>`, and repeat step 4.
+   It needs `gcloud auth application-default login` first.
 
 Also worth switching on in the console: Authentication, Settings, *User actions*,
 turn off "Enable create (sign-up)" (only the owner ever signs in) and turn on email
