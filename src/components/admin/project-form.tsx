@@ -17,11 +17,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useFirestore, useStorage } from '@/firebase';
-import { collection, doc, addDoc, updateDoc, query, orderBy } from 'firebase/firestore';
+import { collection, doc, getDoc, writeBatch, deleteField, query, orderBy, type DocumentData } from 'firebase/firestore';
 import { useFetchCollection } from '@/firebase';
 import type { Testimonial } from '@/lib/about-types';
 import { useToast } from '@/hooks/use-toast';
 import { Project } from '@/lib/projects';
+import { hashPassword, LOCKED_FIELDS, PROJECT_SECRETS_COLLECTION, splitLockedFields, type PasswordHash } from '@/lib/project-lock';
 import { useEffect, useMemo, useState } from 'react';
 import { ref, uploadBytesResumable, getDownloadURL, UploadTaskSnapshot, deleteObject } from "firebase/storage";
 import { Progress } from '../ui/progress';
@@ -63,16 +64,10 @@ const formSchema = z.object({
   aiDisclaimer: z.string().optional(),
   privacy: z.object({
     isPasswordProtected: z.boolean().default(false),
+    // Write-only: a new key to set. Blank keeps the current one. Never read back,
+    // never stored as typed (it is hashed into project_secrets).
     password: z.string().optional(),
   }).optional(),
-}).refine(data => {
-    if (data.privacy?.isPasswordProtected && !data.privacy.password) {
-        return false;
-    }
-    return true;
-}, {
-    message: "Password is required when project is protected.",
-    path: ["privacy.password"],
 });
 
 type ProjectFormValues = z.infer<typeof formSchema>;
@@ -113,6 +108,10 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
   const [pendingVideos, setPendingVideos] = useState<File[]>([]);
   // Once the slug is edited by hand, stop overwriting it from the title.
   const [slugTouched, setSlugTouched] = useState(false);
+  // A locked project's content and key hash live in project_secrets/{id} (admin-only).
+  // Saving is blocked until it has loaded, so a quick save can't wipe that content.
+  const [storedHash, setStoredHash] = useState<PasswordHash | null>(null);
+  const [secretState, setSecretState] = useState<'idle' | 'loading' | 'ready' | 'failed'>('idle');
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(formSchema),
@@ -151,20 +150,45 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
   
   useEffect(() => {
     if (project) {
-      form.reset({
-        ...project,
-        tags: project.tags?.join(', '),
-        software: project.software?.join(', '),
-      });
-      setGalleryPreviews(project.galleryImages || []);
-      setVideoPreviews(project.videoUrls || []);
+      let cancelled = false;
+      const fill = (source: Project) => {
+        form.reset({
+          ...source,
+          tags: source.tags?.join(', '),
+          software: source.software?.join(', '),
+          privacy: { isPasswordProtected: Boolean(source.privacy?.isPasswordProtected), password: '' },
+        });
+        setGalleryPreviews(source.galleryImages || []);
+        setVideoPreviews(source.videoUrls || []);
+      };
+      fill(project);
       setImagesToDelete([]);
       setVideosToDelete([]);
       setPendingGallery([]);
       setPendingVideos([]);
       // Existing projects keep their slug: it is the page URL.
       setSlugTouched(true);
+      setStoredHash(null);
+      if (firestore) {
+        setSecretState('loading');
+        getDoc(doc(firestore, PROJECT_SECRETS_COLLECTION, project.id))
+          .then((snap) => {
+            if (cancelled) return;
+            const secret = snap.data();
+            setStoredHash((secret?.password as PasswordHash | undefined) ?? null);
+            if (secret?.content) fill({ ...project, ...secret.content });
+            setSecretState('ready');
+          })
+          .catch((err) => {
+            if (cancelled) return;
+            console.error('Could not load project secrets:', err);
+            setSecretState('failed');
+          });
+      }
+      return () => { cancelled = true; };
     } else {
+      setStoredHash(null);
+      setSecretState('idle');
       form.reset({
         title: '',
         slug: '',
@@ -197,7 +221,7 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
       setPendingVideos([]);
       setSlugTouched(false);
     }
-  }, [project, form]);
+  }, [project, form, firestore]);
 
   const coverFile = form.watch('image')?.[0] as File | undefined;
   const blurredFile = form.watch('blurredImage')?.[0] as File | undefined;
@@ -291,7 +315,19 @@ const deleteFilesFromStorage = async (urls: string[]) => {
 
   const onSubmit = async (data: ProjectFormValues) => {
     if (!firestore) return;
-    
+    if (secretState === 'loading' || secretState === 'failed') return;
+
+    const isProtected = Boolean(data.privacy?.isPasswordProtected);
+    const newPassword = data.privacy?.password || '';
+    // Projects not yet migrated may still carry a plain-text key on the public doc:
+    // keep it working by hashing it into project_secrets on this save.
+    const legacyPassword = (project as { privacy?: { password?: unknown } } | null | undefined)?.privacy?.password;
+    const keepPassword = typeof legacyPassword === 'string' ? legacyPassword : '';
+    if (isProtected && !newPassword && !storedHash && !keepPassword) {
+        form.setError('privacy.password', { message: 'Password is required when project is protected.' });
+        return;
+    }
+
     setUploadProgress(0);
 
     try {
@@ -336,7 +372,7 @@ const deleteFilesFromStorage = async (urls: string[]) => {
         
         setUploadProgress(null);
 
-        const processedData = {
+        const processedData: DocumentData = {
           ...data,
           tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
           software: data.software?.split(',').map(s => s.trim()).filter(Boolean) || [],
@@ -353,15 +389,36 @@ const deleteFilesFromStorage = async (urls: string[]) => {
         delete (processedData as any).galleryImageUrls;
         
 
-        if (project) {
-            const projectRef = doc(firestore, 'projects', project.id);
-            await updateDoc(projectRef, processedData);
-            toast({ title: 'Project updated successfully!' });
+        // Never let a typed key reach the public doc.
+        processedData.privacy = { isPasswordProtected: isProtected };
+
+        const projectRef = project
+            ? doc(firestore, 'projects', project.id)
+            : doc(collection(firestore, 'projects'));
+        const secretRef = doc(firestore, PROJECT_SECRETS_COLLECTION, projectRef.id);
+        // One batch, so the public doc and its secrets never disagree.
+        const batch = writeBatch(firestore);
+
+        if (isProtected) {
+            const { publicData, content } = splitLockedFields(processedData);
+            const password = newPassword
+                ? await hashPassword(newPassword)
+                : storedHash ?? await hashPassword(keepPassword);
+            batch.set(secretRef, { password, content });
+            if (project) {
+                // Replaces the whole privacy map, which also drops any legacy plain-text key.
+                const removeLocked = Object.fromEntries(LOCKED_FIELDS.map((f) => [f, deleteField()]));
+                batch.update(projectRef, { ...publicData, ...removeLocked } as DocumentData);
+            } else {
+                batch.set(projectRef, publicData as DocumentData);
+            }
         } else {
-            const projectsCol = collection(firestore, 'projects');
-            await addDoc(projectsCol, processedData);
-            toast({ title: 'Project added successfully!' });
+            if (project) batch.update(projectRef, processedData);
+            else batch.set(projectRef, processedData);
+            batch.delete(secretRef);
         }
+        await batch.commit();
+        toast({ title: project ? 'Project updated successfully!' : 'Project added successfully!' });
         
         onFinished();
 
@@ -870,8 +927,16 @@ const deleteFilesFromStorage = async (urls: string[]) => {
                     <FormItem>
                       <FormLabel>Project Password</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="Enter password" {...field} />
+                        <Input
+                          type="password"
+                          autoComplete="new-password"
+                          placeholder={storedHash ? "Leave blank to keep the current password" : "Enter password"}
+                          {...field}
+                        />
                       </FormControl>
+                      <FormDescription>
+                        Stored hashed and admin-only. It can be changed but not shown.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -887,7 +952,15 @@ const deleteFilesFromStorage = async (urls: string[]) => {
         )}
         <div className="flex justify-end gap-4">
             <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
-            <Button type="submit" disabled={uploadProgress !== null && uploadProgress < 100}>{project ? 'Update' : 'Add'} Project</Button>
+            {secretState === 'failed' && (
+              <p className="self-center text-sm text-destructive">Could not load this project&apos;s locked content, so saving is disabled.</p>
+            )}
+            <Button
+              type="submit"
+              disabled={(uploadProgress !== null && uploadProgress < 100) || secretState === 'loading' || secretState === 'failed'}
+            >
+              {project ? 'Update' : 'Add'} Project
+            </Button>
         </div>
       </form>
     </Form>

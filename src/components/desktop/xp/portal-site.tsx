@@ -11,6 +11,8 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { cn } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize-html';
 import { youtubeEmbedUrl, youtubeId } from '@/lib/youtube';
+import { unlockProject } from '@/app/actions/unlock-project';
+import type { Project } from '@/lib/projects';
 import { MediaSkin } from './xp-media-skin';
 import { clip, plain, projectImage, useGallery, type PortalData } from './portal-data';
 import styles from './portal.module.css';
@@ -558,10 +560,14 @@ function ProjectPage({
   slug?: string;
   go: (p: PortalPage, slug?: string) => void;
 }) {
-  const project = data.projects.find((p) => p.slug === slug);
   const [key, setKey] = useState('');
-  const [wrong, setWrong] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
+  const [wrong, setWrong] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  // A locked project's content is returned by the server once the key matches; the public doc never holds it.
+  const [unlockedContent, setUnlockedContent] = useState<Partial<Project> | null>(null);
+  const unlocked = unlockedContent !== null;
+  const found = data.projects.find((p) => p.slug === slug);
+  const project = found && unlockedContent ? { ...found, ...unlockedContent } : found;
   // A picture clicked in the gallery, shown big above the list.
   const [big, setBig] = useState<string | null>(null);
 
@@ -612,10 +618,19 @@ function ProjectPage({
         {locked ? (
           <form
             className={styles.guestForm}
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              if (project.privacy?.password === key) setUnlocked(true);
-              else setWrong(true);
+              if (checking) return;
+              setChecking(true);
+              try {
+                const result = await unlockProject({ projectId: project.id, password: key });
+                if (result.status === 'unlocked') setUnlockedContent(result.content as Partial<Project>);
+                else setWrong(result.status === 'wrong' ? ' Wrong key!' : result.status === 'limited' ? ' Too many tries, come back later!' : ' Could not check the key, try again!');
+              } catch {
+                setWrong(' Could not check the key, try again!');
+              } finally {
+                setChecking(false);
+              }
             }}
           >
             <p className={styles.locked}>
@@ -629,14 +644,14 @@ function ProjectPage({
                 value={key}
                 onChange={(e) => {
                   setKey(e.target.value);
-                  setWrong(false);
+                  setWrong(null);
                 }}
               />
             </label>
-            <button type="submit" className={styles.oldButton}>
+            <button type="submit" className={styles.oldButton} disabled={checking}>
               Unlock
             </button>
-            {wrong && <span className={styles.locked}> Wrong key!</span>}
+            {wrong && <span className={styles.locked}>{wrong}</span>}
           </form>
         ) : (
           <>

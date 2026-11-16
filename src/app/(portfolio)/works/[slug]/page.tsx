@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { NoAiIcon } from "@/components/icons/no-ai-icon";
 import { cn, getResizedImageUrl } from "@/lib/utils";
 import { SHINE_STYLE, TILT_TRANSFORM, useCursorTilt } from "@/lib/use-cursor-tilt";
+import { unlockProject } from "@/app/actions/unlock-project";
 
 // Tags and gallery outlines cycle through the portfolio palette.
 const TAG_COLOURS = [
@@ -43,8 +44,12 @@ const GALLERY_RINGS = [
 export default function ProjectPage() {
   const firestore = useFirestore();
   const desktop = useDesktop();
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  // Content of a locked project, returned by the server once the key matches. The
+  // public doc never holds it (see src/lib/project-lock.ts).
+  const [unlockedContent, setUnlockedContent] = useState<Partial<Project> | null>(null);
+  const isUnlocked = unlockedContent !== null;
   const [password, setPassword] = useState('');
+  const [isChecking, setIsChecking] = useState(false);
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const { toast } = useToast();
@@ -60,8 +65,8 @@ export default function ProjectPage() {
 
   const project = useMemo(() => {
     if (!projects || projects.length === 0) return null;
-    return projects[0];
-  }, [projects]);
+    return unlockedContent ? { ...projects[0], ...unlockedContent } : projects[0];
+  }, [projects, unlockedContent]);
 
   // Only fetch the testimonials pool when this project picked some.
   const hasTestimonials = (project?.testimonialIds?.length ?? 0) > 0;
@@ -167,17 +172,26 @@ export default function ProjectPage() {
     return () => window.removeEventListener('popstate', onPopState, { capture: true });
   }, [slug]);
 
-  const handlePasswordSubmit =(e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (project?.privacy?.password === password) {
-      setIsUnlocked(true);
-      toast({ title: "Project unlocked!" });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "The key you entered is incorrect.",
-      });
+    if (!project || isChecking) return;
+    setIsChecking(true);
+    try {
+      const result = await unlockProject({ projectId: project.id, password });
+      if (result.status === 'unlocked') {
+        setUnlockedContent(result.content as Partial<Project>);
+        toast({ title: "Project unlocked!" });
+        return;
+      }
+      const description =
+        result.status === 'wrong' ? "The key you entered is incorrect." :
+        result.status === 'limited' ? "Too many attempts. Please try again later." :
+        "We could not check the key. Please try again later.";
+      toast({ variant: "destructive", title: "Error", description });
+    } catch {
+      toast({ variant: "destructive", title: "Error", description: "We could not check the key. Please try again later." });
+    } finally {
+      setIsChecking(false);
     }
   };
   
@@ -210,8 +224,8 @@ export default function ProjectPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full">
-                  Unlock
+                <Button type="submit" className="w-full" disabled={isChecking}>
+                  {isChecking ? "Checking…" : "Unlock"}
                 </Button>
               </form>
             </CardContent>
