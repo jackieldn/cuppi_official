@@ -42,9 +42,8 @@ export default async function FeaturesPage() {
           const soon = items.filter((f) => !hasPage(f));
           return (
             <section key={group} className="mx-auto max-w-6xl px-3 py-6 sm:px-6">
-              <Reveal className="flex items-baseline justify-between gap-4 px-4 pb-4 sm:px-2">
+              <Reveal className="px-4 pb-4 sm:px-2">
                 <h2 className="font-headline font-normal text-2xl">{GROUP_LABELS[group].title}</h2>
-                <p className="hidden text-cuppi-ink-soft sm:block">{GROUP_LABELS[group].blurb}</p>
               </Reveal>
 
               <div className="grid gap-4 sm:grid-cols-2">

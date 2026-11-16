@@ -58,9 +58,20 @@ export function getThemePref(): ThemePref {
   return parseThemePref(document.documentElement.getAttribute('data-theme-pref'));
 }
 
-/** Point the browser's own chrome (theme-color meta) at the page colour. */
+/**
+ * The page colour in force right now, read from the page itself so it includes any change made in the admin
+ * (Cuppi > Colours). Falls back to the designed colour if it cannot be read.
+ */
+function pageColour(theme: ResolvedTheme): string {
+  const channels = getComputedStyle(document.body).getPropertyValue('--c-paper').trim().split(/\s+/).map(Number);
+  if (channels.length !== 3 || channels.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return THEME_COLOURS[theme];
+  return '#' + channels.map((n) => n.toString(16).padStart(2, '0')).join('');
+}
+
+/** Point the browser's own chrome (theme-color meta) at the page colour. Call after the theme attributes are set. */
 export function syncBrowserChrome(theme: ResolvedTheme) {
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', THEME_COLOURS[theme]));
+  const colour = pageColour(theme);
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', colour));
 }
 
 /** Put a choice into effect on the page. Does not save it. */

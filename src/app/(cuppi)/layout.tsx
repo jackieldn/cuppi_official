@@ -1,10 +1,11 @@
 import type {Metadata, Viewport} from 'next';
 import '../globals.css';
-import { THEME_COLOURS, THEME_SCRIPT } from '@/lib/theme';
+import { THEME_SCRIPT } from '@/lib/theme';
+import { browserChrome, buildColourCss } from '@/lib/theme-colours';
 import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from '@/firebase';
 import { CookieConsentBanner } from '@/components/layout/CookieConsentBanner';
-import { getDisclaimers } from '@/lib/cuppi-site-data';
+import { getColours, getDisclaimers } from '@/lib/cuppi-site-data';
 import { DisclaimersProvider } from '@/components/cuppi/disclaimer';
 
 const siteUrl = 'https://cuppi.co.uk';
@@ -41,20 +42,26 @@ export const metadata: Metadata = {
 
 // The browser's own chrome (a phone's address bar) takes the page colour. These follow the device;
 // ThemeToggle re-points them when the visitor overrides it.
-export const viewport: Viewport = {
-  colorScheme: 'light dark',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: THEME_COLOURS.light },
-    { media: '(prefers-color-scheme: dark)', color: THEME_COLOURS.dark },
-  ],
-};
+// The page colours are the designed ones unless the admin has changed them (Cuppi > Colours).
+export async function generateViewport(): Promise<Viewport> {
+  const chrome = browserChrome(await getColours());
+  return {
+    colorScheme: 'light dark',
+    themeColor: [
+      { media: '(prefers-color-scheme: light)', color: chrome.light },
+      { media: '(prefers-color-scheme: dark)', color: chrome.dark },
+    ],
+  };
+}
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const disclaimers = await getDisclaimers();
+  const [disclaimers, colours] = await Promise.all([getDisclaimers(), getColours()]);
+  // Only ever #rrggbb colours, turned into CSS variables (buildColourCss); empty when the colours are off or unchanged.
+  const colourCss = buildColourCss(colours);
   return (
     // suppressHydrationWarning: THEME_SCRIPT sets data-theme and the dark class on <html> before React loads.
     <html lang="en" suppressHydrationWarning>
@@ -66,6 +73,8 @@ export default async function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
       </head>
       <body className="theme-cuppi font-body antialiased">
+        {/* After the site's stylesheet, so these win. */}
+        {colourCss && <style dangerouslySetInnerHTML={{ __html: colourCss }} />}
         <FirebaseClientProvider>
           <DisclaimersProvider items={disclaimers}>{children}</DisclaimersProvider>
           <Toaster />
