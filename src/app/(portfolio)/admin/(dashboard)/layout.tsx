@@ -8,6 +8,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { AdminSidebar } from '@/components/admin/sidebar';
 import { FirestorePermissionError, errorEmitter } from '@/firebase';
+import { hasSecondFactor } from '@/lib/admin-mfa';
 
 export default function AdminLayout({
   children,
@@ -41,7 +42,11 @@ export default function AdminLayout({
         const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
         try {
           const docSnap = await getDoc(adminRoleRef);
-          if (docSnap.exists()) {
+          // An admin must also have signed in with an authenticator-app code. The rules
+          // enforce this too (a password-only session cannot change anything); this just
+          // sends such a session back to the login page instead of showing a broken dashboard.
+          const token = await user.getIdTokenResult();
+          if (docSnap.exists() && hasSecondFactor(token.claims)) {
             setIsAdmin(true); // User is an admin.
           } else {
             // User is authenticated but not an admin, redirect.

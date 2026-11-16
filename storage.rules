@@ -8,8 +8,13 @@ service firebase.storage {
     // collection (the same check firestore.rules uses). This cross-service
     // lookup needs the Firebase Rules service agent to have Firestore access;
     // `firebase deploy` offers to grant it the first time.
+    //
+    // It also needs a second factor: Firebase only puts `sign_in_second_factor: "totp"` in the
+    // token when the sign-in used an authenticator-app code, so a password alone is not enough.
+    // Keep in sync with firestore.rules.
     function isAdmin() {
       return request.auth != null
+        && request.auth.token.firebase.get('sign_in_second_factor', null) == 'totp'
         && firestore.exists(/databases/(default)/documents/roles_admin/$(request.auth.uid));
     }
 

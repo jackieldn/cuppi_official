@@ -1,7 +1,8 @@
 // Run with `npm run test:rules` (starts the Firestore and Storage emulators;
 // needs Java). Guards the two things that must never regress: a signed-in
 // stranger cannot make themselves an admin, and only admins can change data
-// or files.
+// or files, and an admin only counts as one when the sign-in used an authenticator-app
+// code (Firebase multi-factor auth), not on a password alone.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -9,7 +10,7 @@ import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebas
 import { doc, getDoc, setDoc, updateDoc, getDocs, collection, query, where } from 'firebase/firestore';
 import { ref, uploadString, getBytes } from 'firebase/storage';
 
-let env, anon, stranger, admin;
+let env, anon, stranger, admin, adminPasswordOnly;
 
 before(async () => {
   env = await initializeTestEnvironment({
@@ -34,7 +35,10 @@ before(async () => {
   });
   anon = env.unauthenticatedContext();
   stranger = env.authenticatedContext('stranger');
-  admin = env.authenticatedContext('admin');
+  // What Firebase puts in the token after a sign-in with an authenticator-app code.
+  admin = env.authenticatedContext('admin', { firebase: { sign_in_provider: 'password', sign_in_second_factor: 'totp' } });
+  // The same person signed in with the password alone (no second factor yet).
+  adminPasswordOnly = env.authenticatedContext('admin', { firebase: { sign_in_provider: 'password' } });
 });
 
 after(async () => { await env?.cleanup(); });
@@ -102,6 +106,51 @@ describe('Firestore rules', () => {
   test('signup emails are never readable from a client', async () => {
     await assertFails(getDoc(doc(admin.firestore(), 'beta_signups/s1')));
     await assertFails(getDoc(doc(anon.firestore(), 'beta_signups/s1')));
+  });
+});
+
+describe('Admin two-step verification', () => {
+  test('a password-only admin session can read its own role, so the login page can offer setup', async () => {
+    await assertSucceeds(getDoc(doc(adminPasswordOnly.firestore(), 'roles_admin/admin')));
+  });
+
+  test('a password-only admin session cannot change or read anything admin-only in Firestore', async () => {
+    await assertFails(setDoc(doc(adminPasswordOnly.firestore(), 'projects/p9'), { title: 'y' }));
+    await assertFails(updateDoc(doc(adminPasswordOnly.firestore(), 'projects/p1'), { title: 'changed' }));
+    await assertFails(setDoc(doc(adminPasswordOnly.firestore(), 'cuppi_menu/main'), { items: [] }));
+    await assertFails(getDoc(doc(adminPasswordOnly.firestore(), 'project_secrets/locked1')));
+    await assertFails(getDocs(collection(adminPasswordOnly.firestore(), 'chatbot_knowledge')));
+    await assertFails(getDocs(collection(adminPasswordOnly.firestore(), 'journal_posts')));
+  });
+
+  test('a password-only admin session cannot upload to Storage', async () => {
+    await assertFails(uploadString(ref(adminPasswordOnly.storage(), 'projects/pw-only.txt'), 'x'));
+    await assertFails(uploadString(ref(adminPasswordOnly.storage(), 'cv/cv.pdf'), 'x', 'raw', { contentType: 'application/pdf' }));
+  });
+
+  test('another second factor, or a claim set anywhere but where Firebase sets it, does not count', async () => {
+    const phone = env.authenticatedContext('admin', { firebase: { sign_in_provider: 'password', sign_in_second_factor: 'phone' } });
+    const topLevel = env.authenticatedContext('admin', { sign_in_second_factor: 'totp' });
+    for (const ctx of [phone, topLevel]) {
+      await assertFails(setDoc(doc(ctx.firestore(), 'projects/p9'), { title: 'y' }));
+      await assertFails(uploadString(ref(ctx.storage(), 'projects/other.txt'), 'x'));
+    }
+  });
+
+  test('a stranger with a second factor is still not an admin: it takes the role record too', async () => {
+    const strangerWithTotp = env.authenticatedContext('stranger', { firebase: { sign_in_provider: 'password', sign_in_second_factor: 'totp' } });
+    await assertFails(setDoc(doc(strangerWithTotp.firestore(), 'projects/p9'), { title: 'y' }));
+    await assertFails(uploadString(ref(strangerWithTotp.storage(), 'projects/stranger.txt'), 'x'));
+  });
+});
+
+describe('Rate limit counter rules', () => {
+  test('nobody can read or write rate limit counters from a client, not even an admin', async () => {
+    for (const ctx of [anon, stranger, adminPasswordOnly, admin]) {
+      await assertFails(getDoc(doc(ctx.firestore(), 'rate_limits/support-ip_x_2026-11-16T09')));
+      await assertFails(getDocs(collection(ctx.firestore(), 'rate_limits')));
+      await assertFails(setDoc(doc(ctx.firestore(), 'rate_limits/support-ip_x_2026-11-16T09'), { count: 0 }));
+    }
   });
 });
 

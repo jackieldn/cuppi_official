@@ -3,6 +3,8 @@
 import { firestore } from '@/firebase/server';
 import { BetaSignupInputSchema, SignupFormValues } from '@/lib/beta-signup-schema';
 import { FieldValue } from 'firebase-admin/firestore';
+import { RATE_LIMITS } from '@/lib/rate-limit';
+import { consumeRateLimits, requesterSubject } from '@/lib/rate-limit-server';
 
 export async function submitBetaSignup(data: SignupFormValues, token: string) {
   
@@ -26,6 +28,18 @@ export async function submitBetaSignup(data: SignupFormValues, token: string) {
   if (!secretKey) {
     console.error("RECAPTCHA_SECRET_KEY is not set.");
     return { success: false, message: "Server configuration error." };
+  }
+
+  // Limit how often one visitor can sign up. Counted before the CAPTCHA is checked, so a
+  // script cannot hammer the check either. If the counters cannot be reached, refuse.
+  try {
+    const visitor = await requesterSubject();
+    if (!(await consumeRateLimits([{ scope: 'signup-ip', subject: visitor, limit: RATE_LIMITS.signup.ip }]))) {
+      return { success: false, message: "Too many attempts. Please try again later." };
+    }
+  } catch (e) {
+    console.error("Beta signup rate limit check failed:", e);
+    return { success: false, message: "An unexpected error occurred. Please try again later." };
   }
 
   try {
@@ -60,6 +74,12 @@ export async function submitBetaSignup(data: SignupFormValues, token: string) {
 
   // 3. Save signup data to Firestore
   try {
+    // Cap the whole site's volume (after the CAPTCHA, so a bot that fails it cannot use up
+    // the allowance). Stops the list, and the bill, growing without bound from many addresses.
+    if (!(await consumeRateLimits([{ scope: 'signup-site', subject: 'all', limit: RATE_LIMITS.signup.site }]))) {
+      return { success: false, message: "We are getting a lot of signups right now. Please try again later." };
+    }
+
     // Check for existing email
     const existingSignup = await firestore.collection("beta_signups")
       .where("email", "==", normalizedEmail)
