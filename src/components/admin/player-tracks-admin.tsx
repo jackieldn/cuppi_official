@@ -10,6 +10,7 @@ import { deleteObject, getDownloadURL, ref, uploadBytesResumable, type FirebaseS
 import { Music, Pencil, XCircle } from 'lucide-react';
 
 import { useCollection, useFirestore, useStorage } from '@/firebase';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,6 +102,7 @@ export function PlayerTracksAdmin() {
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
 
   const [fields, setFields] = useState<Fields>(EMPTY);
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -175,7 +177,7 @@ export function PlayerTracksAdmin() {
 
   const handleDelete = async (track: PlayerTrack) => {
     if (!firestore || !storage) return;
-    if (!window.confirm(`Delete "${track.title}" from the playlist?`)) return;
+    if (!(await confirm({ title: `Delete "${track.title}" from the playlist?`, confirmLabel: 'Delete', destructive: true, description: 'Its audio file and cover are removed too.' }))) return;
     try {
       await deleteDoc(doc(firestore, PLAYER_TRACKS, track.id));
       await Promise.allSettled(
@@ -378,6 +380,7 @@ export function PlayerTracksAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

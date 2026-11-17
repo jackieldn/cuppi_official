@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { AboutProfile } from '@/lib/about-types';
 
@@ -35,6 +36,7 @@ export function CvAdmin() {
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const fileInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -110,7 +112,7 @@ export function CvAdmin() {
 
   const handleRemove = async () => {
     if (!profile?.cvUrl || !firestore || !storage) return;
-    if (!window.confirm('Remove your CV? The Download CV button will disappear from your About page.')) return;
+    if (!(await confirm({ title: 'Remove your CV?', confirmLabel: 'Remove CV', destructive: true, description: 'The Download CV button will disappear from your About page.' }))) return;
 
     setIsRemoving(true);
     try {
@@ -215,6 +217,7 @@ export function CvAdmin() {
         <Upload aria-hidden="true" />
         {isUploading ? 'Uploading...' : profile?.cvUrl ? 'Replace CV' : 'Upload CV'}
       </Button>
+      {confirmDialog}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -46,6 +47,7 @@ const defaultFormValues: TestimonialFormValues = {
 export function TestimonialsAdmin() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
 
@@ -80,7 +82,7 @@ export function TestimonialsAdmin() {
 
   const handleDelete = async (testimonial: Testimonial) => {
     if (!firestore) return;
-    if (!window.confirm(`Are you sure you want to delete the testimonial from "${testimonial.name}"?`)) return;
+    if (!(await confirm({ title: `Delete the testimonial from "${testimonial.name}"?`, confirmLabel: 'Delete', destructive: true, description: 'It is removed from your About page.' }))) return;
 
     try {
       deleteDocumentNonBlocking(doc(firestore, 'testimonials', testimonial.id));
@@ -198,6 +200,7 @@ export function TestimonialsAdmin() {
           </Form>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { BANNER_COLOURS, BANNER_LIMITS as L, newBanner, phaseOf, resolveBanners, ukDay, validateBanners, type Banner, type BannerColour } from '@/lib/banners';
 import { cn } from '@/lib/utils';
@@ -60,6 +61,7 @@ export function BannersEditor({
   onUploadIcon: (file: File) => Promise<string>;
 }) {
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const [items, setItems] = useState<Banner[]>(initial);
   const [saved, setSaved] = useState<Banner[]>(initial);
   const [problems, setProblems] = useState<string[]>([]);
@@ -230,8 +232,9 @@ export function BannersEditor({
                   type="button"
                   variant="ghost"
                   className="text-destructive hover:text-destructive"
-                  onClick={() => {
-                    if (window.confirm(`Remove ${b.text.trim() ? `"${b.text.trim()}"` : 'this banner'}?`)) setItems((list) => list.filter((x) => x.id !== b.id));
+                  onClick={async () => {
+                    const yes = await confirm({ title: `Remove ${b.text.trim() ? `"${b.text.trim()}"` : 'this banner'}?`, description: 'It goes from the list now, and from the site when you save.', confirmLabel: 'Remove', destructive: true });
+                    if (yes) setItems((list) => list.filter((x) => x.id !== b.id));
                   }}
                 >
                   <Trash2 className="mr-2 h-4 w-4" /> Remove
@@ -271,6 +274,7 @@ export function BannersEditor({
         </Button>
         {dirty && <span className="text-sm text-muted-foreground">Unsaved changes</span>}
       </div>
+      {confirmDialog}
     </div>
   );
 }

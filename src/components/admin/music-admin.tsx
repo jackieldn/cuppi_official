@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { XCircle, Pencil } from 'lucide-react';
 import {
@@ -39,6 +40,7 @@ export function MusicAdmin() {
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const [files, setFiles] = useState<FileList | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [editing, setEditing] = useState<MusicCover | null>(null);
@@ -124,7 +126,7 @@ export function MusicAdmin() {
 
   const handleDelete = async (cover: MusicCover) => {
     if (!firestore || !storage) return;
-    if (!window.confirm('Are you sure you want to delete this cover?')) return;
+    if (!(await confirm({ title: 'Delete this cover?', confirmLabel: 'Delete', destructive: true }))) return;
     try {
       await deleteDoc(doc(firestore, 'music_covers', cover.id));
       await deleteObject(ref(storage, cover.imageUrl));
@@ -276,6 +278,7 @@ export function MusicAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { deleteObject, getDownloadURL, ref, uploadBytesResumable, type FirebaseS
 import { Pencil, XCircle } from 'lucide-react';
 
 import { useCollection, useFirestore, useStorage } from '@/firebase';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +58,7 @@ export function XpPicturesAdmin() {
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
 
   const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState<number | null>(null);
@@ -112,7 +114,7 @@ export function XpPicturesAdmin() {
 
   const handleDelete = async (picture: XpPicture) => {
     if (!firestore || !storage) return;
-    if (!window.confirm(`Delete "${picture.title}"?`)) return;
+    if (!(await confirm({ title: `Delete "${picture.title}"?`, confirmLabel: 'Delete', destructive: true }))) return;
     try {
       await deleteDoc(doc(firestore, XP_PICTURES, picture.id));
       await deleteObject(ref(storage, picture.imagePath)).catch(() => {});
@@ -250,6 +252,7 @@ export function XpPicturesAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

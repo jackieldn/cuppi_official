@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Segmented } from '@/components/admin/apps/segmented';
 import { describeError } from './errors';
@@ -196,6 +197,7 @@ function FeatureEditor({
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const isNew = feature === null;
   const isBuiltIn = feature ? SEED_SLUGS.has(feature.slug) : false;
 
@@ -298,8 +300,12 @@ function FeatureEditor({
 
   const remove = async () => {
     if (!firestore || !feature) return;
-    const ask = isBuiltIn ? `Undo every change you made to ${feature.name} and go back to how it was built?` : `Delete ${feature.name}? Its page disappears from the site. This cannot be undone.`;
-    if (!window.confirm(ask)) return;
+    const yes = await confirm(
+      isBuiltIn
+        ? { title: `Undo every change to ${feature.name}?`, description: 'It goes back to how it was built.', confirmLabel: 'Undo changes', destructive: true }
+        : { title: `Delete ${feature.name}?`, description: 'Its page disappears from the site. This cannot be undone.', confirmLabel: 'Delete', destructive: true },
+    );
+    if (!yes) return;
     try {
       await deleteDoc(doc(firestore, 'cuppi_features', feature.slug));
       toast({ title: isBuiltIn ? `${feature.name} is back to its original` : `${feature.name} deleted` });
@@ -494,6 +500,7 @@ function FeatureEditor({
           </div>
         </DialogFooter>
       </DialogContent>
+      {confirmDialog}
     </Dialog>
   );
 }

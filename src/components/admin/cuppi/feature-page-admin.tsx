@@ -7,6 +7,7 @@ import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage
 import { ArrowDown, ArrowLeft, ArrowUp, Clapperboard, Copy, GalleryHorizontal, CircleHelp, Image as ImageIcon, ListChecks, MoreHorizontal, Newspaper, PanelsTopLeft, Plus, Quote, Smartphone, Table2, Trash2 } from 'lucide-react';
 import { useDoc, useFirestore, useStorage } from '@/firebase';
 import { Button } from '@/components/ui/button';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -149,6 +150,7 @@ export function FeaturePageEditor({
   upload: (file: File, kind: 'image' | 'video') => Promise<string>;
 }) {
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const [blocks, setBlocks] = useState<FeatureBlock[]>(feature.blocks);
   const [saved, setSaved] = useState<FeatureBlock[]>(feature.blocks);
   const [isCustom, setIsCustom] = useState(customised);
@@ -205,8 +207,14 @@ export function FeaturePageEditor({
       next.splice(index + by, 0, x);
       return next;
     });
-  const remove = (b: FeatureBlock) => {
-    if (!window.confirm(`Remove this ${sectionName(b.type).toLowerCase()} section? You can still leave without saving to get it back.`)) return;
+  const remove = async (b: FeatureBlock) => {
+    const yes = await confirm({
+      title: `Remove this ${sectionName(b.type).toLowerCase()} section?`,
+      description: 'It goes from the preview now, and from the page when you press Save page. Press Discard changes, or leave without saving, to get it back.',
+      confirmLabel: 'Remove section',
+      destructive: true,
+    });
+    if (!yes) return;
     setBlocks((bs) => bs.filter((x) => x.id !== b.id));
     if (selected === b.id) setSelected(null);
   };
@@ -265,8 +273,12 @@ export function FeaturePageEditor({
   };
 
   const startAgain = async () => {
-    const ask = original.length > 0 ? 'Throw away every change to the sections and go back to how this page was built?' : 'Remove every section from this page?';
-    if (!window.confirm(ask)) return;
+    const yes = await confirm(
+      original.length > 0
+        ? { title: 'Start again from the original?', description: 'This throws away every change to the sections, saved ones too, and goes back to how this page was built.', confirmLabel: 'Start again', destructive: true }
+        : { title: 'Remove every section?', description: 'The page keeps its top block and loses everything below it.', confirmLabel: 'Remove all', destructive: true },
+    );
+    if (!yes) return;
     try {
       setBusy('Resetting…');
       await onReset();
@@ -453,6 +465,8 @@ export function FeaturePageEditor({
           </div>
         </div>
       </div>
+
+      {confirmDialog}
 
       <Dialog open={!!picker} onOpenChange={(o) => !o && setPicker(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">

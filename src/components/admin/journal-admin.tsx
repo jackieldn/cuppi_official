@@ -9,6 +9,7 @@ import { addDoc, collection, deleteDoc, doc, query, serverTimestamp, updateDoc }
 import { Pencil, Plus, XCircle } from 'lucide-react';
 
 import { useCollection, useFirestore, useStorage } from '@/firebase';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ export function JournalAdmin() {
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
 
   // null: closed. A post's id, or 'new'.
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -90,7 +92,7 @@ export function JournalAdmin() {
 
   const handleDelete = async (post: JournalPost) => {
     if (!firestore) return;
-    if (!window.confirm(`Delete "${post.title}"? This can't be undone.`)) return;
+    if (!(await confirm({ title: `Delete "${post.title}"?`, confirmLabel: 'Delete', destructive: true, description: 'This can\'t be undone.' }))) return;
     try {
       await deleteDoc(doc(firestore, JOURNAL_POSTS, post.id));
       toast({ title: 'Post deleted.' });
@@ -231,6 +233,7 @@ export function JournalAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

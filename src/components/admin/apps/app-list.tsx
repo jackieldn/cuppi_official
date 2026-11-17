@@ -6,6 +6,7 @@ import { deleteObject, ref } from 'firebase/storage';
 import { format } from 'date-fns';
 import { ArrowDown, ArrowUp, ExternalLink, Globe, ImageIcon, Images, Palette, Plus, Smartphone, Square } from 'lucide-react';
 import { useCollection, useFirestore, useStorage } from '@/firebase';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -63,6 +64,7 @@ export function AppList() {
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const [target, setTarget] = useState<FormTarget | null>(null);
 
   const appsQuery = useMemo(() => (firestore ? query(collection(firestore, 'apps')) : null), [firestore]);
@@ -115,7 +117,7 @@ export function AppList() {
 
   const handleDelete = async (app: App) => {
     if (!firestore || !storage) return;
-    if (!window.confirm(`Delete "${app.title}"? Its page and all its pictures are removed for good.`)) return;
+    if (!(await confirm({ title: `Delete "${app.title}"?`, confirmLabel: 'Delete', destructive: true, description: 'Its page and all its pictures are removed for good.' }))) return;
     try {
       await deleteDoc(doc(firestore, 'apps', app.id));
       const urls = [
@@ -300,6 +302,7 @@ export function AppList() {
           );
         })
       )}
+      {confirmDialog}
     </div>
   );
 }

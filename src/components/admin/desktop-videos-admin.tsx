@@ -21,6 +21,7 @@ import {
 import { ExternalLink, Pencil, XCircle } from 'lucide-react';
 
 import { useCollection, useFirestore } from '@/firebase';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -235,6 +236,7 @@ function VideoFields({ id, form, onChange }: { id: string; form: Form; onChange:
 export function DesktopVideosAdmin() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
 
   const [form, setForm] = useState<Form>(EMPTY);
   const [saving, setSaving] = useState(false);
@@ -275,7 +277,7 @@ export function DesktopVideosAdmin() {
 
   const handleDelete = async (video: DesktopVideo) => {
     if (!firestore) return;
-    if (!window.confirm(`Delete "${video.title}"?`)) return;
+    if (!(await confirm({ title: `Delete "${video.title}"?`, confirmLabel: 'Delete', destructive: true }))) return;
     try {
       await deleteDoc(doc(firestore, DESKTOP_VIDEOS, video.id));
       toast({ title: 'Video deleted.' });
@@ -439,6 +441,7 @@ export function DesktopVideosAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

@@ -16,6 +16,7 @@ import {
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { XCircle, Pencil } from 'lucide-react';
@@ -54,6 +55,7 @@ export function FreeTimeAdmin() {
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const [files, setFiles] = useState<FileList | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [editingImage, setEditingImage] = useState<HobbyImage | null>(null);
@@ -153,7 +155,7 @@ export function FreeTimeAdmin() {
   const handleDelete = async (image: HobbyImage) => {
     if (!firestore || !storage) return;
 
-    if (window.confirm('Are you sure you want to delete this image?')) {
+    if (await confirm({ title: 'Delete this image?', confirmLabel: 'Delete', destructive: true })) {
       try {
         await deleteDoc(doc(firestore, 'hobby_images', image.id));
         const imageRef = ref(storage, image.imageUrl);
@@ -292,6 +294,7 @@ export function FreeTimeAdmin() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

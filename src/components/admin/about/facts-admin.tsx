@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -39,6 +40,7 @@ const defaultFormValues: FactFormValues = {
 export function FactsAdmin() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFact, setEditingFact] = useState<Fact | null>(null);
 
@@ -70,7 +72,7 @@ export function FactsAdmin() {
 
   const handleDelete = async (fact: Fact) => {
     if (!firestore) return;
-    if (!window.confirm(`Are you sure you want to delete the fact "${fact.title}"?`)) return;
+    if (!(await confirm({ title: `Delete the fact "${fact.title}"?`, confirmLabel: 'Delete', destructive: true, description: 'It is removed from your About page.' }))) return;
 
     try {
       deleteDocumentNonBlocking(doc(firestore, 'facts', fact.id));
@@ -162,6 +164,7 @@ export function FactsAdmin() {
           </Form>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }
