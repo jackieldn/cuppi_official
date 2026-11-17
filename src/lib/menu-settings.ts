@@ -3,8 +3,8 @@
 // stored is only ever read through resolveMenu, which fills gaps from the defaults and drops
 // anything unsafe, so a bad document can make the menu look plain but never break a page.
 
-/** The two links that open a panel of features; the rest are plain links. */
-export type MenuPanel = 'features' | 'yours';
+/** The links that open a panel (two of features, one of tools); the rest are plain links. */
+export type MenuPanel = 'features' | 'yours' | 'tools';
 
 export type MenuLink = {
   /** Built-in links have a fixed key; links the admin adds are "custom-...". */
@@ -25,6 +25,7 @@ export type MenuSettings = { links: MenuLink[]; download: DownloadButton };
 export const BUILT_IN_LINKS: MenuLink[] = [
   { key: 'features', label: 'Features', href: '/features', visible: true, panel: 'features' },
   { key: 'yours', label: 'Your Home', href: '/features', visible: true, panel: 'yours' },
+  { key: 'tools', label: 'Tools', href: '/tools', visible: true, panel: 'tools' },
   { key: 'blog', label: 'The Cosy Corner', href: '/blog', visible: true },
   { key: 'faq', label: 'FAQ', href: '/faq', visible: true },
   { key: 'support', label: 'Support', href: '/support', visible: true },
@@ -56,7 +57,11 @@ const label = (v: unknown, fallback: string): string => {
   return t || fallback;
 };
 
-/** Stored document -> a complete, safe menu. Order is the stored order; missing built-ins are added at the end. */
+/**
+ * Stored document -> a complete, safe menu. Order is the stored order. A built-in link the document does not have yet
+ * (one added to the site after the menu was saved, like Tools) goes straight after the link that comes before it by
+ * default, so a new link lands where it was designed to, not at the far end; the admin can move it from there.
+ */
 export function resolveMenu(stored: unknown, downloadHref: string): MenuSettings {
   const base = defaultMenu(downloadHref);
   const s = stored && typeof stored === 'object' ? (stored as Record<string, unknown>) : {};
@@ -76,7 +81,7 @@ export function resolveMenu(stored: unknown, downloadHref: string): MenuSettings
       links.push({
         ...builtIn,
         label: label(r.label, builtIn.label),
-        // Panel links are the feature list, so their address is fixed.
+        // Panel links open a fixed list (the features, or the tools), so their address is fixed.
         href: builtIn.panel ? builtIn.href : (safeHref(r.href) ?? builtIn.href),
         visible,
       });
@@ -88,7 +93,12 @@ export function resolveMenu(stored: unknown, downloadHref: string): MenuSettings
       links.push({ key, label: label(r.label, 'Link'), href, visible, custom: true });
     }
   }
-  for (const b of base.links) if (!seen.has(b.key)) links.push(b);
+  base.links.forEach((b, i) => {
+    if (seen.has(b.key)) return;
+    const before = i > 0 ? links.findIndex((l) => l.key === base.links[i - 1].key) : -1;
+    if (before >= 0) links.splice(before + 1, 0, b);
+    else links.push(b);
+  });
 
   const d = s.download && typeof s.download === 'object' ? (s.download as Record<string, unknown>) : {};
   return {

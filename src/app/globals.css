@@ -972,3 +972,36 @@ html.theme-changing *::after {
 @media (prefers-reduced-motion: reduce) {
   .phone-slide, .phone-slide-host:has(.phone-hit:hover) .phone-slide { transition-duration: 0.01ms; }
 }
+
+/*
+  Rolling numbers (AnimatedText, src/components/cuppi/tools/animated-number.tsx). When a figure changes, each
+  digit that changed rolls: the old one leaves, fading and blurring, and the new one arrives from the other side.
+  A figure that went up rolls up; one that went down rolls down. The units digit goes first and the rest follow
+  (--roll-delay), so a changing number ripples rather than flashing. The old digit floats over the same spot as the
+  new one, so nothing around it moves. Reduced motion changes the digit with no movement at all.
+*/
+@keyframes cuppi-roll-in-up    { from { opacity: 0; transform: translateY(0.55em);  filter: blur(5px); } to { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes cuppi-roll-in-down  { from { opacity: 0; transform: translateY(-0.55em); filter: blur(5px); } to { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes cuppi-roll-out-up   { from { opacity: 1; transform: none; filter: blur(0); } to { opacity: 0; transform: translateY(-0.55em); filter: blur(5px); } }
+@keyframes cuppi-roll-out-down { from { opacity: 1; transform: none; filter: blur(0); } to { opacity: 0; transform: translateY(0.55em);  filter: blur(5px); } }
+
+.cuppi-digit { display: inline-block; position: relative; }
+/* The leaving digit floats over the same spot (out of the flow), so it never moves the text around it and the text reads and copies as one figure. */
+.cuppi-digit > .cuppi-digit-out { position: absolute; left: 0; top: 0; }
+.cuppi-digit-in,
+.cuppi-digit-out {
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.22, 0.8, 0.3, 1);
+  animation-fill-mode: both;
+  animation-delay: var(--roll-delay, 0ms);
+}
+.cuppi-digit-out { animation-duration: 0.38s; pointer-events: none; }
+.cuppi-digit[data-dir='up']   > .cuppi-digit-in  { animation-name: cuppi-roll-in-up; }
+.cuppi-digit[data-dir='down'] > .cuppi-digit-in  { animation-name: cuppi-roll-in-down; }
+.cuppi-digit[data-dir='up']   > .cuppi-digit-out { animation-name: cuppi-roll-out-up; }
+.cuppi-digit[data-dir='down'] > .cuppi-digit-out { animation-name: cuppi-roll-out-down; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cuppi-digit-in { animation: none; }
+  .cuppi-digit-out { display: none; }
+}

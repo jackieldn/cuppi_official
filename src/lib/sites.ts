@@ -41,6 +41,7 @@ export function originForSite(site: Site, currentHost: string, protocol: string)
 // to keep each domain serving only its own pages.
 export const CUPPI_PATHS = [
   'features',
+  'tools',
   'blog',
   'faq',
   'support',

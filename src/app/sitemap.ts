@@ -4,7 +4,9 @@ import { sanityClient } from '@/lib/sanity-client';
 import { CosyCornerPost } from '@/lib/blog-types';
 import { SITE_ORIGINS, hostFromHeaders, portfolioEnabled, siteForHost } from '@/lib/sites';
 import { getFaqModel } from '@/lib/faq';
-import { getPageStatus } from '@/lib/cuppi-site-data';
+import { getPageStatus, getTools } from '@/lib/cuppi-site-data';
+import { liveTools } from '@/lib/tools/settings';
+import { PROPERTY_TAX } from '@/lib/tools/rates';
 import { isLive } from '@/lib/page-status';
 
 async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
@@ -70,8 +72,26 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  // The tools hub and each tool the admin has switched on. The Stamp Duty page is dated by when its rates were last checked.
+  let toolUrls: MetadataRoute.Sitemap = [];
+  if (isLive(status, 'tools')) {
+    const live = liveTools(await getTools());
+    if (live.length > 0) {
+      toolUrls = [
+        { url: `${baseUrl}/tools`, changeFrequency: 'monthly' as 'monthly', priority: 0.7 },
+        ...live.map(t => ({
+          url: `${baseUrl}/tools/${t.slug}`,
+          ...(t.slug === 'stamp-duty-calculator' ? { lastModified: new Date(PROPERTY_TAX.england.reviewed) } : {}),
+          changeFrequency: 'monthly' as 'monthly',
+          priority: 0.8,
+        })),
+      ];
+    }
+  }
+
   return [
     ...staticUrls,
+    ...toolUrls,
     ...(isLive(status, 'features') ? featureUrls : []),
     ...(isLive(status, 'faq') ? faqUrls : []),
     ...(isLive(status, 'blog') ? postUrls : []),

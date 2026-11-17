@@ -1,6 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { getPageFeatures } from '@/lib/features';
+import { getTools } from '@/lib/cuppi-site-data';
+import { liveTools } from '@/lib/tools/settings';
 import { APP_STORE_URL } from '@/lib/invite';
 import { CuppiLogoLink } from './logo-link';
 import { ThemeToggle } from './theme-toggle';
@@ -41,12 +43,12 @@ const LEGAL = [
 const linkClass = 'text-cuppi-ink-soft transition-colors hover:text-cuppi-brand-deep';
 
 export async function CuppiFooter() {
-  const features = await getPageFeatures();
+  const [features, tools] = await Promise.all([getPageFeatures(), getTools().then(liveTools)]);
 
   return (
     <footer className="mt-10 px-3 pb-3 sm:px-6 sm:pb-6">
       <div className="mx-auto max-w-6xl rounded-[2.5rem] bg-cuppi-paper-deep px-7 py-12 sm:px-12">
-        <div className="grid gap-10 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1.25fr_1fr_1fr]">
           {/* The grid stretches this column to the height of the tallest one, so the badge sits at the bottom, level with the last link. */}
           <div className="flex flex-col items-start justify-between gap-6">
             <CuppiLogoLink id="footer" iconWidth={44} iconHeight={46} className="inline-flex items-center gap-3" textClassName="text-2xl" />
@@ -64,6 +66,17 @@ export async function CuppiFooter() {
               </li>
             ))}
           </FooterColumn>
+          {tools.length > 0 && (
+            <FooterColumn title="Tools">
+              {tools.map((t) => (
+                <li key={t.slug}>
+                  <Link href={`/tools/${t.slug}`} className={linkClass}>
+                    {t.name}
+                  </Link>
+                </li>
+              ))}
+            </FooterColumn>
+          )}
           <FooterColumn title="Help">
             {HELP.map((l) => (
               <li key={l.href}>
