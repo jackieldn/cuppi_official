@@ -88,7 +88,7 @@ export function MenuAdmin() {
         <CardHeader>
           <CardTitle>Menu links</CardTitle>
           <CardDescription>
-            Reorder with the arrows, rename, or switch a link off to hide it. The two with a panel open the list of features; the features in them are chosen on the Cuppi Features page.
+            Reorder with the arrows, rename, or switch a link off to hide it. The three with a panel open a list: two of features (chosen on the Cuppi features page) and one of tools (chosen on the Cuppi tools page).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -104,7 +104,7 @@ export function MenuAdmin() {
               </div>
               <Input aria-label="Name" value={l.label} maxLength={MAX_LABEL} onChange={(e) => setLink(i, { label: e.target.value })} />
               {l.panel ? (
-                <p className="text-sm text-muted-foreground">Opens the panel of features</p>
+                <p className="text-sm text-muted-foreground">{l.panel === 'tools' ? 'Opens the panel of tools' : 'Opens the panel of features'}</p>
               ) : (
                 <Input aria-label="Address" value={l.href} placeholder="/page or https://…" onChange={(e) => setLink(i, { href: e.target.value })} />
               )}

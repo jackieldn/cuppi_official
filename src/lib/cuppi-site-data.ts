@@ -9,6 +9,7 @@ import { resolveDisclaimers, type Disclaimer } from './disclaimers';
 import { resolveBanners, type Banner } from './banners';
 import { resolveHomeVideo, type HomeVideo } from './home-video';
 import { emptyColourSettings, resolveColours, type ColourSettings } from './theme-colours';
+import { resolveTools, type ResolvedTool } from './tools/settings';
 
 // What the admin has changed about the Cuppi site, read on the server. Four collections, all
 // publicly readable and admin-writable (firestore.rules):
@@ -20,6 +21,7 @@ import { emptyColourSettings, resolveColours, type ColourSettings } from './them
 //   cuppi_home/banners     the temporary banners under the menu, with their dates (banners.ts)
 //   cuppi_home/colours     the site's base colours, light and dark, when switched on (theme-colours.ts)
 //   cuppi_home/video       the latest advertisement under "What's new" on the home page (home-video.ts)
+//   cuppi_home/tools       the Tools: which are live, in the menu, their tile colour and icon, and the order (tools/settings.ts)
 //   cuppi_home/fan         the icon banner: which features slide out of Cuppi's icon, and in what order (fan-settings.ts)
 //
 // The site must never be down because this is: every read has a short timeout, any failure
@@ -68,6 +70,7 @@ const disclaimerMemo: { current?: Memo<Disclaimer[]> } = {};
 const bannerMemo: { current?: Memo<Banner[]> } = {};
 const homeVideoMemo: { current?: Memo<HomeVideo> } = {};
 const coloursMemo: { current?: Memo<ColourSettings> } = {};
+const toolsMemo: { current?: Memo<ResolvedTool[]> } = {};
 
 export function getFeatureOverrides(): Promise<FeatureOverride[]> {
   return remembered(featureMemo, [], async () => {
@@ -134,5 +137,13 @@ export function getFanStored(): Promise<unknown> {
   return remembered<unknown>(fanMemo, null, async () => {
     const snap = await firestore.collection('cuppi_home').doc('fan').get();
     return snap.exists ? snap.data() : null;
+  });
+}
+
+/** Every tool with what the admin has set for it, in the admin's order (see tools/settings.ts). Nothing saved, or an unreadable database, gives every tool live and in the menu. */
+export function getTools(): Promise<ResolvedTool[]> {
+  return remembered(toolsMemo, resolveTools(null), async () => {
+    const snap = await firestore.collection('cuppi_home').doc('tools').get();
+    return resolveTools(snap.exists ? snap.data() : null);
   });
 }

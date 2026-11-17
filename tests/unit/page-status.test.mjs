@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { SECTIONS, ALWAYS_LIVE, defaultPageStatus, resolvePageStatus, isLive } from '../../src/lib/page-status.ts';
 
 describe('page status', () => {
-  test('the defaults keep home, Cosy Corner, FAQ and support live and refresh the feature pages', () => {
-    assert.deepEqual(defaultPageStatus(), { home: 'live', blog: 'live', faq: 'live', support: 'live', features: 'refresh' });
+  test('the defaults keep home, Cosy Corner, FAQ, support and the tools live and refresh the feature pages', () => {
+    assert.deepEqual(defaultPageStatus(), { home: 'live', blog: 'live', faq: 'live', support: 'live', tools: 'live', features: 'refresh' });
   });
 
   test('nothing stored, or rubbish, gives the defaults', () => {

@@ -5,7 +5,7 @@
 // Legal pages and the other pages people may need (privacy, terms, family safety, security,
 // invite links) are deliberately not in this list: they cannot be switched off.
 
-export type SectionKey = 'home' | 'features' | 'blog' | 'faq' | 'support';
+export type SectionKey = 'home' | 'features' | 'blog' | 'faq' | 'support' | 'tools';
 export type SectionStatus = 'live' | 'refresh';
 
 export type Section = {
@@ -25,6 +25,7 @@ export const SECTIONS: Section[] = [
   { key: 'blog', phrase: 'the Cosy Corner', label: 'The Cosy Corner', covers: 'The article list and every article', path: '/blog', defaultStatus: 'live' },
   { key: 'faq', phrase: 'the help centre', label: 'FAQ', covers: 'The help centre, its topics and search', path: '/faq', defaultStatus: 'live' },
   { key: 'support', phrase: 'the support page', label: 'Support', covers: 'The support page and message form', path: '/support', defaultStatus: 'live' },
+  { key: 'tools', phrase: 'the tools', label: 'Tools', covers: 'The tools overview and every calculator (each can also be switched off on its own, under Cuppi tools)', path: '/tools', defaultStatus: 'live' },
   { key: 'features', phrase: 'the feature pages', label: 'Features', covers: 'The overview and every feature page', path: '/features', defaultStatus: 'refresh' },
 ];
 

@@ -31,10 +31,27 @@ describe('resolveMenu', () => {
     assert.equal(m.links[1].label, 'What it does');
   });
 
-  test('built-ins missing from the document are added at the end', () => {
+  test('built-ins missing from the document are added, and the stored ones keep their place', () => {
     const m = resolveMenu({ links: [{ key: 'faq', label: 'FAQ', visible: true }] }, STORE);
     assert.equal(m.links.length, BUILT_IN_LINKS.length);
     assert.equal(m.links[0].key, 'faq');
+  });
+
+  test('a link added to the site later (Tools) lands after the link it was designed to follow', () => {
+    // A menu saved before Tools existed.
+    const saved = { links: ['features', 'yours', 'blog', 'faq', 'support'].map((key) => ({ key, label: key, visible: true })) };
+    const m = resolveMenu(saved, STORE);
+    assert.deepEqual(m.links.map((l) => l.key), ['features', 'yours', 'tools', 'blog', 'faq', 'support']);
+    assert.equal(m.links[2].panel, 'tools');
+    assert.equal(m.links[2].href, '/tools');
+  });
+
+  test('the Tools link keeps its fixed address and an admin can still rename or hide it', () => {
+    const m = resolveMenu({ links: [{ key: 'tools', label: 'Calculators', href: '/elsewhere', visible: false }] }, STORE);
+    const tools = m.links.find((l) => l.key === 'tools');
+    assert.equal(tools.label, 'Calculators');
+    assert.equal(tools.href, '/tools');
+    assert.equal(tools.visible, false);
   });
 
   test('panel links keep their fixed address, plain ones can change theirs', () => {
@@ -93,7 +110,7 @@ describe('validateMenu and newCustomKey', () => {
   test('a good menu has no problems; bad addresses and empty names are explained', () => {
     assert.deepEqual(validateMenu(defaultMenu(STORE)), []);
     const m = defaultMenu(STORE);
-    m.links[2].href = 'nope';
+    m.links.find((l) => l.key === 'blog').href = 'nope';
     m.download.href = 'http://insecure.example';
     m.download.label = ' ';
     assert.equal(validateMenu(m).length, 3);

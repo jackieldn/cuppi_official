@@ -25,7 +25,7 @@ const ICONS: Record<FeatureIcon, LucideIcon> = {
 // saturated band that sits at the very top and bottom; and a deeper `line`, the
 // 1px outline.
 type TileSet = { fill: string; edge: string; shine: string; line: string };
-const TILE_COLOURS: Record<TileColour, TileSet> = {
+export const TILE_COLOURS: Record<TileColour, TileSet> = {
   pink: { fill: '#EA9EDB', edge: '#F2AAEB', shine: '#F6C8FB', line: '#E57FD0' },
   green: { fill: '#98B958', edge: '#A4C85E', shine: '#C9F56F', line: '#84A34A' },
   blue: { fill: '#A5CDFA', edge: '#AFD9FB', shine: '#CFF7FE', line: '#76B1F8' },
@@ -46,7 +46,7 @@ export function FeatureGlyph({ icon, className }: { icon: FeatureIcon; className
  * top and bottom that curves up into the corners. `className` sets the size (e.g. "h-10 w-10"). The
  * shine is sized in container units, so it stays in proportion at any size.
  */
-function TileShell({
+export function TileShell({
   colours: c,
   className,
   muted,
