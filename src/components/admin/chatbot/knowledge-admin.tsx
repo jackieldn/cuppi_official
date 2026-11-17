@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -42,6 +43,7 @@ const defaultFormValues: KnowledgeFormValues = {
 export function KnowledgeAdmin() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingKnowledge, setEditingKnowledge] = useState<ChatbotKnowledge | null>(null);
 
@@ -72,7 +74,7 @@ export function KnowledgeAdmin() {
 
   const handleDelete = async (knowledge: ChatbotKnowledge) => {
     if (!firestore) return;
-    if (!window.confirm(`Are you sure you want to delete the knowledge entry "${knowledge.title}"?`)) return;
+    if (!(await confirm({ title: `Delete the knowledge entry "${knowledge.title}"?`, confirmLabel: 'Delete', destructive: true, description: 'The chatbot stops using it.' }))) return;
 
     try {
       deleteDocumentNonBlocking(doc(firestore, 'chatbot_knowledge', knowledge.id));
@@ -154,6 +156,7 @@ export function KnowledgeAdmin() {
           </Form>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

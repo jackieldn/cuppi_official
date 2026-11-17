@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -47,6 +48,7 @@ export function ExperienceAdmin() {
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExperience, setEditingExperience] = useState<WorkExperience | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -97,7 +99,7 @@ export function ExperienceAdmin() {
 
   const handleDelete = async (experience: WorkExperience) => {
     if (!firestore || !storage) return;
-    if (!window.confirm(`Are you sure you want to delete the experience at "${experience.companyName}"?`)) return;
+    if (!(await confirm({ title: `Delete the experience at "${experience.companyName}"?`, confirmLabel: 'Delete', destructive: true, description: 'It is removed from your About page.' }))) return;
 
     try {
       deleteDocumentNonBlocking(doc(firestore, 'work_experience', experience.id));
@@ -257,6 +259,7 @@ export function ExperienceAdmin() {
           </Form>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebas
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -60,6 +61,7 @@ export function SkillsAdmin() {
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSkill, setEditingSkill] = useState<TechnicalSkill | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -92,7 +94,7 @@ export function SkillsAdmin() {
 
   const handleDelete = async (skill: TechnicalSkill) => {
     if (!firestore || !storage) return;
-    if (!window.confirm(`Are you sure you want to delete the skill "${skill.name}"?`)) return;
+    if (!(await confirm({ title: `Delete the skill "${skill.name}"?`, confirmLabel: 'Delete', destructive: true, description: 'It is removed from your About page.' }))) return;
 
     try {
       deleteDocumentNonBlocking(doc(firestore, 'technical_skills', skill.id));
@@ -267,6 +269,7 @@ export function SkillsAdmin() {
           </Form>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

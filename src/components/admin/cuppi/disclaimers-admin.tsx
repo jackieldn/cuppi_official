@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { DISCLAIMER_LIMITS as L, disclaimerTag, resolveDisclaimers, validateDisclaimers, type Disclaimer } from '@/lib/disclaimers';
 import { slugify } from '@/lib/features-types';
@@ -41,6 +42,7 @@ export function DisclaimersAdmin() {
 /** The form. It knows nothing about the database: it is given what is saved and a way to save. */
 export function DisclaimersEditor({ initial, onSave }: { initial: Disclaimer[]; onSave: (items: Disclaimer[]) => Promise<void> }) {
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const [items, setItems] = useState<Disclaimer[]>(initial);
   const [saved, setSaved] = useState<Disclaimer[]>(initial);
   /** Ids that are already saved: a page may use them, so they are not renamed here. */
@@ -149,9 +151,14 @@ export function DisclaimersEditor({ initial, onSave }: { initial: Disclaimer[]; 
                 type="button"
                 variant="ghost"
                 className="text-destructive hover:text-destructive"
-                onClick={() => {
-                  const ask = locked.has(d.id) ? `Remove "${d.label || d.id}"? Any page that still uses ${disclaimerTag(d.id)} will show no icon, and the save cannot be undone.` : `Remove "${d.label || d.id || 'this disclaimer'}"?`;
-                  if (window.confirm(ask)) setItems((list) => list.filter((_, n) => n !== i));
+                onClick={async () => {
+                  const yes = await confirm({
+                    title: `Remove "${d.label || d.id || 'this disclaimer'}"?`,
+                    description: locked.has(d.id) ? `Any page that still uses ${disclaimerTag(d.id)} will show no icon, and the save cannot be undone.` : 'It goes from the list now, and from the site when you save.',
+                    confirmLabel: 'Remove',
+                    destructive: true,
+                  });
+                  if (yes) setItems((list) => list.filter((_, n) => n !== i));
                 }}
               >
                 <Trash2 className="mr-2 h-4 w-4" /> Remove
@@ -182,6 +189,7 @@ export function DisclaimersEditor({ initial, onSave }: { initial: Disclaimer[]; 
         </Button>
         {dirty && <span className="text-sm text-muted-foreground">Unsaved changes</span>}
       </div>
+      {confirmDialog}
     </div>
   );
 }

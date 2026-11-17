@@ -16,6 +16,7 @@ import {
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { XCircle, Pencil } from 'lucide-react';
@@ -54,6 +55,7 @@ export function SnapsGalleryAdmin() {
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
+  const { confirm, confirmDialog } = useConfirm();
   const [files, setFiles] = useState<FileList | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [editingSnap, setEditingSnap] = useState<Snap | null>(null);
@@ -155,7 +157,7 @@ export function SnapsGalleryAdmin() {
   const handleDelete = async (snap: Snap) => {
     if (!firestore || !storage) return;
 
-    if (window.confirm('Are you sure you want to delete this snap?')) {
+    if (await confirm({ title: 'Delete this snap?', confirmLabel: 'Delete', destructive: true })) {
       try {
         await deleteDoc(doc(firestore, 'snaps', snap.id));
         const imageRef = ref(storage, snap.imageUrl);
@@ -294,6 +296,7 @@ export function SnapsGalleryAdmin() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

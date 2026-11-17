@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useConfirm } from '@/components/admin/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -102,6 +103,7 @@ function SortableHead({ label, sortKey, sort, onSort, ascLabel, descLabel }: {
 }
 
 export function ProjectList() {
+  const { confirm, confirmDialog } = useConfirm();
   const firestore = useFirestore();
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -164,7 +166,7 @@ export function ProjectList() {
   
   const handleDelete = async (projectId: string) => {
     if (!firestore) return;
-    if(window.confirm('Are you sure you want to delete this project?')) {
+    if (await confirm({ title: 'Delete this project?', confirmLabel: 'Delete', destructive: true, description: 'Its page, and its key if it is locked, are removed.' })) {
         const batch = writeBatch(firestore);
         batch.delete(doc(firestore, 'projects', projectId));
         // A locked project's content and key hash live here (see src/lib/project-lock.ts).
@@ -254,6 +256,7 @@ export function ProjectList() {
           </TableBody>
         </Table>
       </div>
+      {confirmDialog}
     </div>
   );
 }
