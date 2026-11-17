@@ -1,7 +1,11 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAssetsReady } from '@/lib/use-assets-ready';
+import { useHeroSlide } from './hero-slide';
+
+/** How long a hero that has just been replaced stays as it was, so it is not stripped bare while the next one fades over it. */
+const LINGER_MS = 1000;
 
 /**
  * The hero's frame, and the director of its opening shot: the camera pulling back out of
@@ -16,6 +20,10 @@ import { useAssetsReady } from '@/lib/use-assets-ready';
  * It cannot leave the hero hidden: if something never finishes loading it plays after 6
  * seconds anyway, and with no JavaScript at all CSS reveals it after 8. People who prefer
  * reduced motion see no movement.
+ *
+ * In the home page's slideshow every hero plays its opening shot each time it comes on show, not only the first one at page
+ * load: a hero that is off show waits in "wait" (the same hidden look as "prep", but with nothing pending and nothing kept
+ * ready on the graphics card), and plays when it is brought on.
  */
 export function HeroIntro({
   patternUrl,
@@ -38,10 +46,57 @@ export function HeroIntro({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const ready = useAssetsReady(ref, patternUrl ? [patternUrl] : []);
-  const state = ready || instant ? 'play' : 'prep';
+  const slide = useHeroSlide();
+  const active = slide?.active ?? true;
+
+  // Off show, the hero is put back to "wait", but only once it has faded out: until then it keeps what it had.
+  const [linger, setLinger] = useState(active);
+  useEffect(() => {
+    if (active) {
+      setLinger(true);
+      return;
+    }
+    const t = window.setTimeout(() => setLinger(false), LINGER_MS);
+    return () => window.clearTimeout(t);
+  }, [active]);
+
+  const on = active || linger;
+  const playing = on && (ready || instant);
+  const state = !on ? 'wait' : playing ? 'play' : 'prep';
+
+  // Tell the slideshow when this hero's shot starts, so its countdown runs from here.
+  const report = slide?.reportPlay;
+  const index = slide?.index ?? 0;
+  useEffect(() => {
+    if (active && playing) report?.(index);
+  }, [active, playing, report, index]);
+
+  // Once the move is over, the layers stop being kept ready for it (see `data-settled` in globals.css): a phone held as its
+  // own graphics layer for as long as the page is open is memory a small phone can ill afford.
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    if (!playing) {
+      setSettled(false);
+      return;
+    }
+    if (instant) {
+      setSettled(true);
+      return;
+    }
+    const t = window.setTimeout(() => setSettled(true), ((seconds ?? 4.4) + 1.5) * 1000);
+    return () => window.clearTimeout(t);
+  }, [playing, instant, seconds]);
 
   return (
-    <div ref={ref} data-intro={state} data-hero={template} data-spotlight-host className={className} style={seconds ? ({ '--intro-dur': `${seconds}s` } as React.CSSProperties) : undefined}>
+    <div
+      ref={ref}
+      data-intro={state}
+      data-settled={settled || undefined}
+      data-hero={template}
+      data-spotlight-host
+      className={className}
+      style={seconds ? ({ '--intro-dur': `${seconds}s` } as React.CSSProperties) : undefined}
+    >
       {children}
     </div>
   );

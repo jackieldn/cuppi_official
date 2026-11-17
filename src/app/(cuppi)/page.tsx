@@ -32,7 +32,7 @@ export default async function CuppiPage() {
       <CuppiHeader />
       <main className="flex-grow w-full flex flex-col items-center">
         {heroes.length > 1 ? (
-          <HeroCarousel tints={heroes.map((h) => h.tint)} holdSeconds={HERO_HOLD_SECONDS} firstDelaySeconds={heroes[0].introSeconds ?? 4.4}>
+          <HeroCarousel tints={heroes.map((h) => h.tint)} holdSeconds={HERO_HOLD_SECONDS}>
             {heroes.map((hero, i) => (
               <HomeHero key={i} hero={hero} fill />
             ))}

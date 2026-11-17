@@ -77,15 +77,13 @@ export function HomeHero({ hero, instant = false, fill = false }: { hero: Hero; 
   // so the same part of the screen shows at any width. Centred, it hangs in a fixed-height window. The window does not clip: the
   // block's own rounded edge trims the phone at the bottom and sides, and when it slides up (the hover slide) it passes over the
   // words above it, rather than being cut off at the top of its window. It paints over them because it comes after them.
+  // In the split templates the phone is sized from a window of its own height, not from its cell: in a slideshow the cell can be
+  // as tall as the tallest hero, and the phone must not grow with it. The window sits in the middle of the cell.
   const phone = (
-    <div
-      className={cn(
-        'intro-near relative',
-        centred ? 'h-[22rem] sm:h-[26rem] md:h-[30rem]' : 'min-h-[30rem] md:min-h-[36rem]',
-        reverse && 'md:order-1',
-      )}
-    >
-      <FramedPhones image={shots} variant={centred ? 'hero-centred' : 'hero-split'} sizes="(max-width: 768px) 60vw, 30vw" priority />
+    <div className={cn('intro-near relative flex', centred ? 'h-[22rem] sm:h-[26rem] md:h-[30rem]' : 'min-h-[28rem] md:min-h-[36rem]', reverse && 'md:order-1')}>
+      <div className={cn('relative w-full', centred ? 'h-full' : 'my-auto h-[28rem] md:h-[36rem]')}>
+        <FramedPhones image={shots} variant={centred ? 'hero-centred' : 'hero-split'} sizes="(max-width: 768px) 60vw, 30vw" priority />
+      </div>
     </div>
   );
 

@@ -15,9 +15,10 @@ type Phase = 'pending' | 'in' | 'done';
  *  - one that fails to load is shown anyway, so a broken-image icon is not hidden;
  *  - the hiding is a CSS rule that only applies when scripting is on and motion is allowed, so no-JS and
  *    reduced-motion visitors just see the picture.
- * The wipe is a CSS mask, which is dropped once it ends so it costs nothing afterwards.
+ * The wipe is a CSS mask, which is dropped once it ends so it costs nothing afterwards. While it runs, though, the mask is nine times
+ * the picture's area, so `soft` swaps it for a plain fade: for big pictures (the phone renders), which a phone's memory cannot afford a mask on.
  */
-export function FadeImage({ className, onLoad, onError, instant, ...props }: ComponentProps<typeof Image> & { instant?: boolean }) {
+export function FadeImage({ className, onLoad, onError, instant, soft, ...props }: ComponentProps<typeof Image> & { instant?: boolean; soft?: boolean }) {
   const [phase, setPhase] = useState<Phase>(instant ? 'done' : 'pending');
   const ref = useRef<HTMLImageElement | null>(null);
 
@@ -35,6 +36,7 @@ export function FadeImage({ className, onLoad, onError, instant, ...props }: Com
       ref={ref}
       className={className ? `img-fade ${className}` : 'img-fade'}
       data-fade={phase}
+      data-soft={soft || undefined}
       onAnimationEnd={(e) => {
         if (e.target === e.currentTarget) setPhase('done');
       }}

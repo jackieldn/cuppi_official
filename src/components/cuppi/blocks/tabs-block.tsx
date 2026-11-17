@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Reveal } from '@/components/ui/reveal';
@@ -12,15 +12,18 @@ import { stripDisclaimers } from '@/lib/disclaimers';
 
 type Tabs = Extract<FeatureBlock, { type: 'tabs' }>;
 
+// What a picture is asked to be fetched at: the phone is a few hundred pixels wide, however wide the screen.
+const PICTURE_SIZES = '(max-width: 767px) 250px, 400px';
+
 /**
  * A colour card with a list of short topics beside a picture. One topic is open at a time; opening
  * another swaps the picture. Every picture is already in place (they cross-fade), so the card never
  * changes size. On a phone there is no side picture: each topic carries its own, under its words, so it is plain which
  * topic it belongs to, and it opens and closes with the topic.
  *
- * Only the open topic's picture (and, while it fades out, the one before it) is on the page. A phone render is big (a
- * 3D-warped screenshot and a frame, each fading in with a mask), and a page with several of these cards used to hold
- * every topic's picture at once, which was enough to run a phone out of memory when scrolled quickly.
+ * Only the open topic's picture (and, while it fades out, the one before it) is on the page, and only while the card is
+ * within a screen's height of the screen. A phone render is big (a 3D-warped screenshot and a frame), and a page with several
+ * of these cards used to hold every picture at once, which was enough to run a phone out of memory.
  */
 export function TabsBlock({ block }: { block: Tabs }) {
   const [active, setActive] = useState(0);
@@ -32,6 +35,17 @@ export function TabsBlock({ block }: { block: Tabs }) {
   const textRight = block.side === 'right';
   /** True on a phone (under the `md` breakpoint), where the pictures sit inside the topics. Desktop until the page is running. */
   const [inline, setInline] = useState(false);
+  /** False once the card is more than a screen away: its pictures are taken off the page until it is near again. True until known. */
+  const [near, setNear] = useState(true);
+  const card = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = card.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([entry]) => setNear(entry.isIntersecting), { rootMargin: '100% 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     const query = window.matchMedia('(max-width: 767px)');
@@ -62,7 +76,7 @@ export function TabsBlock({ block }: { block: Tabs }) {
             {block.intro && <p className="mt-3 max-w-2xl text-lg leading-relaxed text-cuppi-ink-soft"><MarkedText text={block.intro} /></p>}
           </div>
         )}
-        <div className={cn('grid overflow-hidden rounded-[2rem] md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]', tint.surface, tint.text)}>
+        <div ref={card} className={cn('grid overflow-hidden rounded-[2rem] md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]', tint.surface, tint.text)}>
           <div className={cn('flex flex-col justify-center px-6 py-6 sm:px-12 md:py-14', textRight && 'md:order-2')}>
             {block.items.map((item, i) => {
               const isOpen = i === open;
@@ -92,9 +106,9 @@ export function TabsBlock({ block }: { block: Tabs }) {
                       <p className={cn('whitespace-pre-line pb-6 text-lg leading-relaxed', tint.muted)}><MarkedText text={item.body} /></p>
                       {/* On a phone the topic's picture sits here, in a softly shaded panel so it is clearly part of this topic. It is only
                           on the page while the topic is open (and while it closes). `overflow-hidden` because a phone can hang above its box. */}
-                      {inline && (i === open || i === leaving) && (
+                      {near && inline && (i === open || i === leaving) && (
                         <div className="relative mb-6 h-[22rem] overflow-hidden rounded-2xl" style={{ background: 'color-mix(in srgb, currentColor 7%, transparent)' }}>
-                          <Phone image={item.image} sizes="92vw" sink={3} />
+                          <Phone image={item.image} sizes={PICTURE_SIZES} sink={3} />
                         </div>
                       )}
                     </div>
@@ -107,9 +121,9 @@ export function TabsBlock({ block }: { block: Tabs }) {
               is taller than its box and can hang above it. */}
           <div className={cn('relative hidden min-h-[32rem] overflow-hidden md:block', textRight && 'md:order-1')}>
             {block.items.map((item, i) =>
-              !inline && (i === open || i === leaving) ? (
+              near && !inline && (i === open || i === leaving) ? (
                 <div key={i} aria-hidden={i !== open} className={cn('absolute inset-0 transition-opacity duration-500 motion-reduce:transition-none', i === open ? 'opacity-100' : 'pointer-events-none opacity-0')}>
-                  <Phone image={item.image} sizes="(max-width: 768px) 92vw, 52vw" sink={3} />
+                  <Phone image={item.image} sizes={PICTURE_SIZES} sink={3} />
                 </div>
               ) : null,
             )}

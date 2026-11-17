@@ -76,6 +76,7 @@ export function PhoneMockup({
         >
           {/* Almost screen-shaped: fill the whole screen (a sliver off the sides) rather than leave a strip of `bg` along the bottom. */}
           <FadeImage
+            soft
             src={src}
             alt={alt}
             width={imageWidth}
@@ -87,6 +88,7 @@ export function PhoneMockup({
         </div>
         {/* The frame, on top: its bezel and Dynamic Island cover the screen's edges. */}
         <FadeImage
+          soft
           src={m.src}
           alt=""
           width={m.width}
