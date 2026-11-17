@@ -23,6 +23,8 @@ export const SECTION_TEMPLATES: { type: SectionType; name: string; blurb: string
   { type: 'callout', name: 'Big sentence', blurb: 'One warm sentence on a colour band. The page’s deep breath.' },
   { type: 'points', name: 'Reasons', blurb: 'Short promises in a grid, no pictures.' },
   { type: 'plans', name: 'Free and Pro', blurb: 'The feature’s app icon, a title and a few words, over a table of what Free and Pro each get.' },
+  { type: 'articles', name: 'Articles', blurb: 'Pick articles from The Cosy Corner. A row of cards, each with its picture, date and a few lines, linking to the article.' },
+  { type: 'faqs', name: 'FAQs', blurb: 'Pick the questions that matter for this feature. Answered right on the page, with a link on to the full FAQ.' },
 ];
 
 export const sectionName = (type: SectionType): string => SECTION_TEMPLATES.find((t) => t.type === type)?.name ?? type;
@@ -46,6 +48,9 @@ export const SECTION_LIMITS = {
   note: 300,
   notes: 8,
   label: 160,
+  /** Articles in one Articles section, and questions in one FAQs section. */
+  articles: 6,
+  faqs: 8,
 } as const;
 
 const clean = (value: string): string => value.trim();
@@ -84,6 +89,11 @@ export function newSection(type: SectionType, id: string = randomId()): FeatureB
       return { id, type, title: '', layout: 'full', side: 'left', tint: 'honey', video: { url: '', aspect: '16:9' } };
     case 'plans':
       return { id, type, title: '', rows: [{ label: '', free: '', pro: '' }], tint: 'honey' };
+    // These two start with a heading, so a new one only needs its picks.
+    case 'articles':
+      return { id, type, title: 'From The Cosy Corner', ids: [], tint: 'honey' };
+    case 'faqs':
+      return { id, type, title: 'Good to know', ids: [], tint: 'sky' };
   }
 }
 
@@ -159,6 +169,22 @@ function readVideo(v: unknown): FeatureVideo | null {
 }
 
 const list = (v: unknown): unknown[] => (Array.isArray(v) ? v.slice(0, SECTION_LIMITS.items) : []);
+
+// A Sanity document id: letters, digits, hyphens, underscores and dots. A draft's "drafts." prefix is a dot, so it
+// passes, but the site only ever reads published documents and a draft id finds nothing.
+const CONTENT_ID = /^[A-Za-z0-9._-]{1,100}$/;
+
+/** A stored list of Sanity ids -> the usable ones, once each, in order, up to `max`. Also guards the lookup's input. */
+export function readContentIds(v: unknown, max: number): string[] {
+  const ids: string[] = [];
+  if (!Array.isArray(v)) return ids;
+  for (const raw of v) {
+    const id = typeof raw === 'string' ? raw.trim() : '';
+    if (CONTENT_ID.test(id) && !ids.includes(id)) ids.push(id);
+    if (ids.length >= max) break;
+  }
+  return ids;
+}
 
 function readBlock(raw: unknown, id: string): FeatureBlock | null {
   const r = obj(raw);
@@ -239,6 +265,13 @@ function readBlock(raw: unknown, id: string): FeatureBlock | null {
       if (!title || rows.length === 0) return null;
       return { id, type: 'plans', title, ...(intro ? { intro } : {}), rows, tint };
     }
+    case 'articles':
+    case 'faqs': {
+      // Whether the ids still point at something is only known when the page is built; here they just have to be usable.
+      const ids = readContentIds(r.ids, r.type === 'articles' ? SECTION_LIMITS.articles : SECTION_LIMITS.faqs);
+      if (!title || ids.length === 0) return null;
+      return { id, type: r.type, title, ...(intro ? { intro } : {}), ids, tint };
+    }
     default:
       return null;
   }
@@ -292,6 +325,9 @@ function sectionWords(b: FeatureBlock): { words: string[]; noTags: string[] } {
       return { words: [b.title ?? '', b.body ?? ''], noTags: [b.eyebrow ?? ''] };
     case 'plans':
       return { words: [b.title, b.intro ?? '', ...b.rows.flatMap((r) => [r.label, r.free, r.pro])], noTags: [] };
+    case 'articles':
+    case 'faqs':
+      return { words: [b.title, b.intro ?? ''], noTags: [] };
   }
 }
 
@@ -352,6 +388,14 @@ export function validateSections(blocks: FeatureBlock[], knownDisclaimers?: read
           if (!row.free.trim()) at(`line ${i + 1} needs something under Free (Yes, No, or words).`);
           if (!row.pro.trim()) at(`line ${i + 1} needs something under Pro (Yes, No, or words).`);
         });
+        break;
+      case 'articles':
+        if (!b.title.trim()) at('add a heading.');
+        if (b.ids.length === 0) at('choose at least one article.');
+        break;
+      case 'faqs':
+        if (!b.title.trim()) at('add a heading.');
+        if (b.ids.length === 0) at('choose at least one question.');
         break;
     }
   });
@@ -415,5 +459,9 @@ export function sectionSummary(b: FeatureBlock): string {
       return b.title || (b.video.aspect === '9:16' ? 'Phone-shaped video' : 'Widescreen video');
     case 'plans':
       return b.title || `${b.rows.length} ${b.rows.length === 1 ? 'line' : 'lines'}`;
+    case 'articles':
+      return b.title || `${b.ids.length} ${b.ids.length === 1 ? 'article' : 'articles'}`;
+    case 'faqs':
+      return b.title || `${b.ids.length} ${b.ids.length === 1 ? 'question' : 'questions'}`;
   }
 }

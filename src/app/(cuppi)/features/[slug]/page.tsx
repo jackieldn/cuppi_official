@@ -6,6 +6,7 @@ import { BlockRenderer } from '@/components/cuppi/blocks/block-renderer';
 import { DownloadStrip } from '@/components/cuppi/blocks/download-strip';
 import { FeatureHero } from '@/components/cuppi/blocks/feature-hero';
 import { KeepExploring } from '@/components/cuppi/blocks/keep-exploring';
+import { getFeatureContent } from '@/lib/feature-content';
 import { getFeature, getPageFeatures } from '@/lib/features';
 import { stripDisclaimers } from '@/lib/disclaimers';
 
@@ -31,6 +32,8 @@ export default async function FeaturePage({ params }: { params: Promise<Params> 
   const { slug } = await params;
   const [feature, all] = await Promise.all([getFeature(slug), getPageFeatures()]);
   if (!feature) notFound();
+  // The articles and FAQs its sections point at. Never throws: a section that cannot be filled just draws nothing.
+  const content = await getFeatureContent(feature.blocks);
 
   // The next two features in order, wrapping round, so every page leads somewhere.
   const i = all.findIndex((f) => f.slug === feature.slug);
@@ -41,7 +44,7 @@ export default async function FeaturePage({ params }: { params: Promise<Params> 
       <CuppiHeader />
       <main className="flex-grow">
         <FeatureHero feature={feature} />
-        <BlockRenderer blocks={feature.blocks} feature={feature} />
+        <BlockRenderer blocks={feature.blocks} feature={feature} content={content} />
         <KeepExploring features={next} />
         <DownloadStrip />
       </main>
