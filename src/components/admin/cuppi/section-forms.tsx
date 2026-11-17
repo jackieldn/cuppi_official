@@ -7,6 +7,7 @@ import { Segmented } from '@/components/admin/apps/segmented';
 import { SECTION_LIMITS as L } from '@/lib/feature-sections';
 import { videoKind } from '@/lib/safe-urls';
 import type { FeatureBlock } from '@/lib/features-types';
+import { ContentPicker } from './content-picker';
 import {
   BANNER_FITS,
   Field,
@@ -43,6 +44,10 @@ export function SectionForm({ block, onChange }: { block: FeatureBlock; onChange
       return <VideoForm block={block} onChange={onChange} />;
     case 'plans':
       return <PlansForm block={block} onChange={onChange} />;
+    case 'articles':
+      return <ArticlesForm block={block} onChange={onChange} />;
+    case 'faqs':
+      return <FaqsForm block={block} onChange={onChange} />;
   }
 }
 
@@ -229,6 +234,40 @@ function PlansForm({ block, onChange }: Props<'plans'>) {
           </>
         )}
       />
+    </>
+  );
+}
+
+function ArticlesForm({ block, onChange }: Props<'articles'>) {
+  return (
+    <>
+      <Field label="Heading">
+        <Input value={block.title} maxLength={L.title} onChange={(e) => onChange({ title: e.target.value })} />
+      </Field>
+      <Field label="Words under it" optional>
+        <Textarea rows={2} value={block.intro ?? ''} maxLength={L.intro} onChange={(e) => onChange({ intro: e.target.value })} />
+      </Field>
+      <TintField value={block.tint} onChange={(tint) => onChange({ tint })} label="Band colour" />
+      <Field label="Articles" hint="From The Cosy Corner. They show in this order. The picture, date and first lines come from the article itself, so editing it in Sanity updates this page too.">
+        <ContentPicker kind="articles" ids={block.ids} max={L.articles} onChange={(ids) => onChange({ ids })} />
+      </Field>
+    </>
+  );
+}
+
+function FaqsForm({ block, onChange }: Props<'faqs'>) {
+  return (
+    <>
+      <Field label="Heading">
+        <Input value={block.title} maxLength={L.title} onChange={(e) => onChange({ title: e.target.value })} />
+      </Field>
+      <Field label="Words under it" optional>
+        <Textarea rows={2} value={block.intro ?? ''} maxLength={L.intro} onChange={(e) => onChange({ intro: e.target.value })} />
+      </Field>
+      <TintField value={block.tint} onChange={(tint) => onChange({ tint })} label="Band colour" />
+      <Field label="Questions" hint="From the FAQ. They show in this order, each answered in full with a link to its place in the FAQ. Reword an answer in Sanity and this page follows.">
+        <ContentPicker kind="faqs" ids={block.ids} max={L.faqs} onChange={(ids) => onChange({ ids })} />
+      </Field>
     </>
   );
 }

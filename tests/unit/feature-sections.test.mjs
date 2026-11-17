@@ -8,11 +8,13 @@ import {
   mapBlockUrls,
   newSection,
   planCell,
+  readContentIds,
   resolveBlocks,
   sectionSummary,
   validateSections,
 } from '../../src/lib/feature-sections.ts';
-import { readOverride } from '../../src/lib/features-types.ts';
+import { readOverride, validateFeatures } from '../../src/lib/features-types.ts';
+import { contentIds, NO_CONTENT, pick } from '../../src/lib/feature-content-types.ts';
 import { safeVideoUrl, videoKind } from '../../src/lib/safe-urls.ts';
 
 const STORAGE = 'https://firebasestorage.googleapis.com/v0/b/studio-5700093446-89b93.firebasestorage.app/';
@@ -253,6 +255,116 @@ describe('plans (Free and Pro table)', () => {
     const c = copySection(b);
     c.rows[0].label = 'changed';
     assert.equal(b.rows[0].label, 'A');
+  });
+});
+
+describe('articles and FAQs (picked from Sanity)', () => {
+  const A = '077a60cd-d933-4051-a55e-c7c55e7a1a36';
+  const B = '086bf167-824b-4db9-8cc1-b07ba864134e';
+  const F = '006ac3ad-56dc-4328-94dd-cbf3e52f17ff';
+
+  test('both are templates, and a new one has a heading but no picks yet', () => {
+    for (const type of ['articles', 'faqs']) {
+      assert.ok(SECTION_TEMPLATES.some((t) => t.type === type), type);
+      const b = newSection(type);
+      assert.equal(b.type, type);
+      assert.ok(b.title.trim(), `${type} starts with a heading`);
+      assert.deepEqual(b.ids, []);
+    }
+    assert.match(validateSections([newSection('articles')]).join(' '), /Section 1 \(Articles\): choose at least one article/);
+    assert.match(validateSections([newSection('faqs')]).join(' '), /Section 1 \(FAQs\): choose at least one question/);
+  });
+
+  test('keeps the heading, words, colour and picks in order', () => {
+    const out = resolveBlocks([
+      { id: 'a', type: 'articles', title: ' Read more ', intro: 'Words', ids: [B, A], tint: 'sky' },
+      { id: 'f', type: 'faqs', title: 'Good to know', ids: [F], tint: 'lake' },
+    ]);
+    assert.deepEqual(out.map((b) => b.type), ['articles', 'faqs']);
+    assert.equal(out[0].title, 'Read more');
+    assert.equal(out[0].intro, 'Words');
+    assert.deepEqual(out[0].ids, [B, A]);
+    assert.equal(out[0].tint, 'sky');
+    assert.equal(out[1].intro, undefined);
+    assert.equal(out[1].tint, 'lake');
+  });
+
+  test('needs a heading and at least one usable pick, else the section is dropped', () => {
+    for (const type of ['articles', 'faqs']) {
+      assert.deepEqual(resolveBlocks([{ id: 'a', type, title: '', ids: [A], tint: 'honey' }]), [], 'no heading');
+      assert.deepEqual(resolveBlocks([{ id: 'a', type, title: 'T', ids: [], tint: 'honey' }]), [], 'no picks');
+      assert.deepEqual(resolveBlocks([{ id: 'a', type, title: 'T', ids: 'nope', tint: 'honey' }]), [], 'picks not a list');
+      assert.deepEqual(resolveBlocks([{ id: 'a', type, title: 'T', ids: [5, null, '', 'has space', '<script>'], tint: 'honey' }]), [], 'nothing usable');
+    }
+  });
+
+  test('readContentIds keeps usable ids once each, in order, up to the limit', () => {
+    assert.deepEqual(readContentIds([A, ' ' + B + ' ', A, 7, 'bad id', '', 'x'.repeat(101)], 10), [A, B]);
+    assert.deepEqual(readContentIds([A, B, F], 2), [A, B]);
+    for (const bad of [undefined, null, 'x', 5, {}]) assert.deepEqual(readContentIds(bad, 5), []);
+  });
+
+  test('limits the picks per section, and falls back to the default colour', () => {
+    const many = Array.from({ length: 30 }, (_, i) => `id-${i}`);
+    const [a, f] = resolveBlocks([
+      { id: 'a', type: 'articles', title: 'T', ids: many, tint: 'neon' },
+      { id: 'f', type: 'faqs', title: 'T', ids: many, tint: 'neon' },
+    ]);
+    assert.equal(a.ids.length, SECTION_LIMITS.articles);
+    assert.equal(f.ids.length, SECTION_LIMITS.faqs);
+    assert.equal(a.tint, 'honey');
+  });
+
+  test('is read back through readOverride, so it survives the database', () => {
+    const o = readOverride('x', { blocks: [{ id: 'a', type: 'faqs', title: 'Hi', ids: [F], tint: 'moss' }, { type: 'faqs', title: 'No picks', ids: [] }] });
+    assert.equal(o.blocks.length, 1);
+    assert.deepEqual(o.blocks[0].ids, [F]);
+  });
+
+  test('disclaimer tags are checked in the heading and the words under it', () => {
+    const b = { ...newSection('faqs'), ids: [F], title: 'Pets{i:nope}' };
+    assert.match(validateSections([b], ['health']).join(' '), /no disclaimer called "nope"/);
+    assert.deepEqual(validateSections([{ ...b, title: 'Pets{i:health}' }], ['health']), []);
+    assert.deepEqual(validateSections([{ ...newSection('articles'), ids: [A] }], []), []);
+  });
+
+  test('has a summary, a copy of its own, and no pictures to upload', () => {
+    const b = { ...newSection('articles', 'a'), ids: [A, B] };
+    assert.equal(sectionSummary(b), 'From The Cosy Corner');
+    assert.equal(sectionSummary({ ...b, title: '' }), '2 articles');
+    assert.equal(sectionSummary({ ...newSection('faqs'), title: '', ids: [F] }), '1 question');
+    const c = copySection(b);
+    c.ids.push('more');
+    assert.deepEqual(b.ids, [A, B]);
+    assert.deepEqual(blockUrls([b, newSection('faqs')]), []);
+  });
+
+  test('validateFeatures flags a section with nothing picked', () => {
+    const feature = { slug: 'x', name: 'X', tagline: '', icon: 'star', tint: 'honey', group: 'home', status: 'live', order: 1, tile: 'amber', hero: { headline: 'H', intro: '', image: { url: 'https://a/b.png', alt: '' } }, blocks: [newSection('articles', 'a'), newSection('faqs', 'f')] };
+    const problems = validateFeatures([feature]);
+    assert.ok(problems.some((p) => /articles block "a" has no articles/.test(p)));
+    assert.ok(problems.some((p) => /faqs block "f" has no questions/.test(p)));
+  });
+
+  test('contentIds gathers every id a page points at, once, for a single lookup', () => {
+    const blocks = [
+      { ...newSection('articles', 'a1'), ids: [A, B] },
+      { ...newSection('callout', 'c'), title: 'x' },
+      { ...newSection('articles', 'a2'), ids: [B] },
+      { ...newSection('faqs', 'f'), ids: [F] },
+    ];
+    assert.deepEqual(contentIds(blocks), { articles: [A, B], faqs: [F] });
+    assert.deepEqual(contentIds([]), { articles: [], faqs: [] });
+    assert.deepEqual(contentIds(undefined), { articles: [], faqs: [] });
+  });
+
+  test('pick returns what exists in the section order, and skips what was deleted', () => {
+    const byId = { a: { n: 1 }, b: { n: 2 }, c: { n: 3 } };
+    assert.deepEqual(pick(['c', 'gone', 'a'], byId), [{ n: 3 }, { n: 1 }]);
+    assert.deepEqual(pick(['x'], byId), []);
+    assert.deepEqual(pick(['a'], undefined), []);
+    assert.deepEqual(pick(['toString', '__proto__'], byId), [], 'inherited names are not content');
+    assert.deepEqual(pick(['a'], NO_CONTENT.articles), []);
   });
 });
 

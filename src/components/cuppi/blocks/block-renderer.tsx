@@ -1,15 +1,18 @@
 import type { ReactNode } from 'react';
+import type { FeatureContent } from '@/lib/feature-content-types';
 import type { Feature, FeatureBlock } from '@/lib/features-types';
+import { ArticlesBlock } from './articles-block';
 import { BannerBlock } from './banner-block';
 import { CalloutBlock } from './callout-block';
 import { CardsBlock } from './cards-block';
+import { FaqsBlock } from './faqs-block';
 import { PlansBlock } from './plans-block';
 import { PointsBlock } from './points-block';
 import { ShowcaseBlock } from './showcase-block';
 import { TabsBlock } from './tabs-block';
 import { VideoBlock } from './video-block';
 
-function renderBlock(block: FeatureBlock, feature?: Feature): ReactNode {
+function renderBlock(block: FeatureBlock, feature?: Feature, content?: FeatureContent): ReactNode {
   switch (block.type) {
     case 'showcase':
       return <ShowcaseBlock block={block} />;
@@ -27,20 +30,25 @@ function renderBlock(block: FeatureBlock, feature?: Feature): ReactNode {
       return <VideoBlock block={block} />;
     case 'plans':
       return <PlansBlock block={block} feature={feature} />;
+    case 'articles':
+      return <ArticlesBlock block={block} content={content} />;
+    case 'faqs':
+      return <FaqsBlock block={block} content={content} feature={feature} />;
   }
 }
 
 /**
  * Turns a feature's list of blocks into the page body, in order. `feature` is the page's own feature, for
- * the layouts that show its app icon. `wrap` lets the admin's preview put each section in a box it can
+ * the layouts that show its app icon. `content` is the Sanity articles and FAQs the "Articles" and "FAQs" sections point
+ * at, looked up by the page (see feature-content.ts); without it those sections draw nothing. `wrap` lets the admin's preview put each section in a box it can
  * select; the site does not use it.
  * To add a layout: write it here, add its type in features-types.ts and its template in feature-sections.ts.
  */
-export function BlockRenderer({ blocks, feature, wrap }: { blocks: FeatureBlock[]; feature?: Feature; wrap?: (block: FeatureBlock, node: ReactNode) => ReactNode }) {
+export function BlockRenderer({ blocks, feature, content, wrap }: { blocks: FeatureBlock[]; feature?: Feature; content?: FeatureContent; wrap?: (block: FeatureBlock, node: ReactNode) => ReactNode }) {
   return (
     <>
       {blocks.map((block) => {
-        const node = renderBlock(block, feature);
+        const node = renderBlock(block, feature, content);
         return wrap ? <div key={block.id}>{wrap(block, node)}</div> : <div key={block.id} className="contents">{node}</div>;
       })}
     </>

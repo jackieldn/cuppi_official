@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import Link from 'next/link';
 import { deleteField, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
-import { ArrowDown, ArrowLeft, ArrowUp, Clapperboard, Copy, GalleryHorizontal, Image as ImageIcon, ListChecks, MoreHorizontal, PanelsTopLeft, Plus, Quote, Smartphone, Table2, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, Clapperboard, Copy, GalleryHorizontal, CircleHelp, Image as ImageIcon, ListChecks, MoreHorizontal, Newspaper, PanelsTopLeft, Plus, Quote, Smartphone, Table2, Trash2 } from 'lucide-react';
 import { useDoc, useFirestore, useStorage } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +34,7 @@ import { hasPage, mergeFeatures, readOverride, type FeatureBlock, type PageFeatu
 import { cn } from '@/lib/utils';
 import { describeError } from './errors';
 import { ScaledToFit } from './scaled-to-fit';
+import { usePreviewContent } from './content-picker';
 import { SectionForm } from './section-forms';
 import { UploadsContext, type AddFile } from './section-fields';
 
@@ -50,6 +51,8 @@ const SECTION_ICONS: Record<SectionType, typeof Smartphone> = {
   callout: Quote,
   points: ListChecks,
   plans: Table2,
+  articles: Newspaper,
+  faqs: CircleHelp,
 };
 
 /**
@@ -289,6 +292,8 @@ export function FeaturePageEditor({
   }, [dirty]);
 
   const preview: PageFeature = useMemo(() => ({ ...feature, blocks }), [feature, blocks]);
+  // The articles and FAQs the draft's picks point at, looked up in Sanity, so the preview draws them like the site.
+  const content = usePreviewContent(blocks);
   const wrap = (b: FeatureBlock, node: ReactNode) => (
     <div
       id={`preview-${b.id}`}
@@ -329,7 +334,7 @@ export function FeaturePageEditor({
                   {blocks.length === 0 ? (
                     <p className="mx-auto my-16 max-w-md rounded-[2rem] border-2 border-dashed border-cuppi-line px-6 py-12 text-center text-xl text-cuppi-ink-soft">No sections yet. Add one from the right and it appears here.</p>
                   ) : (
-                    <BlockRenderer blocks={blocks} feature={preview} wrap={wrap} />
+                    <BlockRenderer blocks={blocks} feature={preview} content={content} wrap={wrap} />
                   )}
                 </div>
                 </DisclaimersProvider>
@@ -602,6 +607,39 @@ function SectionThumb({ type }: { type: SectionType }) {
               <span key={`${n}b`} className="self-center justify-self-center">{bar('10px', false)}</span>,
               <span key={`${n}c`} className="self-center justify-self-center">{bar('10px')}</span>,
             ])}
+          </div>
+        </div>
+      );
+      break;
+    case 'articles':
+      body = (
+        <div className="flex h-full flex-col gap-2">
+          {bar('40%')}
+          <div className="grid flex-1 grid-cols-3 gap-2">
+            {[0, 1, 2].map((n) => (
+              <span key={n} className="flex flex-col gap-1 rounded-md border border-foreground/25 p-1">
+                <span className={cn(pic, 'h-3/5')} />
+                {bar('80%')}
+                {bar('55%', false)}
+              </span>
+            ))}
+          </div>
+        </div>
+      );
+      break;
+    case 'faqs':
+      body = (
+        <div className="flex h-full gap-3">
+          <div className="flex w-2/5 flex-col justify-center gap-1.5">
+            {bar('80%')}
+            {bar('55%', false)}
+          </div>
+          <div className="flex flex-1 flex-col justify-center gap-1.5 rounded-md border border-foreground/25 p-2">
+            {bar('85%')}
+            <span className="h-px bg-foreground/20" />
+            {bar('70%')}
+            <span className="h-px bg-foreground/20" />
+            {bar('78%')}
           </div>
         </div>
       );

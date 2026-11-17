@@ -132,7 +132,13 @@ export type FeatureBlock =
       video: FeatureVideo;
     }
   // The feature's app icon over a title and a few words, then a Free / Pro table of what each plan gets.
-  | { id: string; type: 'plans'; title: string; intro?: string; rows: PlanRow[]; tint: FeatureTint };
+  | { id: string; type: 'plans'; title: string; intro?: string; rows: PlanRow[]; tint: FeatureTint }
+  // Hand-picked Cosy Corner articles (from Sanity), as a row of cards that link to each one. `ids` are the
+  // articles' Sanity ids, in the order shown: an id, not a slug, so a retitled article keeps its place.
+  | { id: string; type: 'articles'; title: string; intro?: string; ids: string[]; tint: FeatureTint }
+  // Hand-picked FAQs (from Sanity), answered on the page itself, with a way on to the full FAQ. `ids` are the
+  // FAQs' Sanity ids, in the order shown.
+  | { id: string; type: 'faqs'; title: string; intro?: string; ids: string[]; tint: FeatureTint };
 
 /** One line of a Free / Pro comparison. A cell is words ("10 a month"), or Yes / No, which the site draws as a tick or a dash. */
 export type PlanRow = { label: string; free: string; pro: string };
@@ -242,6 +248,8 @@ export function validateFeatures(features: Feature[]): string[] {
       if (b.type === 'banner' && !b.image?.url) problems.push(`${where}: banner block "${b.id}" has no image.`);
       if (b.type === 'video' && !b.video?.url) problems.push(`${where}: video block "${b.id}" has no video.`);
       if (b.type === 'plans' && b.rows.length === 0) problems.push(`${where}: plans block "${b.id}" has no rows.`);
+      if (b.type === 'articles' && b.ids.length === 0) problems.push(`${where}: articles block "${b.id}" has no articles.`);
+      if (b.type === 'faqs' && b.ids.length === 0) problems.push(`${where}: faqs block "${b.id}" has no questions.`);
     }
   }
   return problems;
