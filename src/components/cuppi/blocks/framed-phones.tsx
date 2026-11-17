@@ -9,14 +9,15 @@ const GUESS = { width: 1170, height: 2532 };
 /**
  * Where the phones hang, as percentages of their box's height, for each place they are used:
  *   card          a feature page's cards: one phone 165% tall hanging from 7%
- *   hero-split    the home hero beside its words: one phone 175% tall from 5%
+ *   hero-split    the home hero beside its words: one phone 135% tall from 7%
  *   hero-centred  the home hero with its words above: one phone 190% tall from 4%
  * A pair is smaller than one phone so both fit the box's width: its phones are `--h` tall (a % of the box's height), which
- * changes with the screen (the classes set it), hanging from `pairTop`. `shadow` is the soft drop shadow under a phone.
+ * changes with the screen (the classes set it), hanging from `pairTop`. `shadow` is the soft drop shadow under a phone, from md up:
+ * a blurred shadow follows the phone's whole outline, which a small phone's graphics memory pays for.
  */
 const GEOMETRY = {
   card: { top: 7, height: 165, pairTop: 8, pairClasses: '[--h:100] md:[--h:112]', shadow: true },
-  'hero-split': { top: 5, height: 175, pairTop: 6, pairClasses: '[--h:90] md:[--h:100]', shadow: false },
+  'hero-split': { top: 7, height: 135, pairTop: 7, pairClasses: '[--h:76] md:[--h:84]', shadow: false },
   'hero-centred': { top: 4, height: 190, pairTop: 5, pairClasses: '[--h:100] sm:[--h:115] md:[--h:140]', shadow: false },
 } as const;
 export type FramedVariant = keyof typeof GEOMETRY;
@@ -51,7 +52,7 @@ export function FramedPhones({ image, sizes, priority, className, variant = 'car
       bg={bg}
       sizes={sizes}
       priority={priority}
-      className={cn('h-full shrink-0', g.shadow && 'drop-shadow-[0_24px_30px_rgb(var(--c-shadow)/0.18)]', extra)}
+      className={cn('h-full shrink-0', g.shadow && 'md:drop-shadow-[0_24px_30px_rgb(var(--c-shadow)/0.18)]', extra)}
       style={style}
     />
   );
