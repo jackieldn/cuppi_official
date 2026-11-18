@@ -1,6 +1,7 @@
-import { getFanStored, getFeatureOverrides } from './cuppi-site-data';
+import { getFanStored, getFeatureOverrides, getPlansStored } from './cuppi-site-data';
 import { applyFan } from './fan-settings';
 import { featuresSeed } from './features-seed';
+import { resolvePlans, type PlansSettings } from './plans-settings';
 import { GROUP_ORDER, hasPage, isPublished, mergeFeatures, validateFeatures, type Feature, type FeatureGroup, type PageFeature } from './features-types';
 
 // One place the site asks for features: the seed (features-seed.ts) with the admin's edits
@@ -37,4 +38,9 @@ export function groupFeatures(features: Feature[]): { group: FeatureGroup; items
 export async function getFanFeatures(): Promise<Feature[]> {
   const features = (await getFeatures()).filter((f) => f.group !== 'yours');
   return applyFan(features, await getFanStored());
+}
+
+/** The Plans page: the prices and the table for each feature, kept to features that are still published. */
+export async function getPlans(): Promise<PlansSettings> {
+  return resolvePlans(await getPlansStored(), await getFeatures());
 }

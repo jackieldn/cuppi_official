@@ -48,6 +48,7 @@ export const CUPPI_PATHS = [
   'terms',
   'privacy',
   'family-safety',
+  'plans',
   'pricing',
   'beta-program-policy',
   'invite',
