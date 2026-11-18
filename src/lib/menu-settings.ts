@@ -26,6 +26,7 @@ export const BUILT_IN_LINKS: MenuLink[] = [
   { key: 'features', label: 'Features', href: '/features', visible: true, panel: 'features' },
   { key: 'yours', label: 'Your Home', href: '/features', visible: true, panel: 'yours' },
   { key: 'tools', label: 'Tools', href: '/tools', visible: true, panel: 'tools' },
+  { key: 'plans', label: 'Plans', href: '/plans', visible: true },
   { key: 'blog', label: 'The Cosy Corner', href: '/blog', visible: true },
   { key: 'faq', label: 'FAQ', href: '/faq', visible: true },
   { key: 'support', label: 'Support', href: '/support', visible: true },

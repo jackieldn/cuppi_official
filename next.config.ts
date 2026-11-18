@@ -62,14 +62,15 @@ const nextConfig: NextConfig = {
   async redirects() {
     const legacy = ['cuppi', 'homeos'];
     const pages = ['faq', 'privacy', 'terms', 'beta-program-policy'];
-    return legacy.flatMap((prefix) => [
+    // The old hand-written /pricing page became the Plans page.
+    return [{ source: '/pricing', destination: '/plans', permanent: true }, ...legacy.flatMap((prefix) => [
       { source: `/${prefix}`, destination: '/', permanent: true },
       ...pages.map((page) => ({
         source: `/${prefix}/${page}`,
         destination: `/${page}`,
         permanent: true,
       })),
-    ]);
+    ])];
   },
   eslint: {
     ignoreDuringBuilds: true,

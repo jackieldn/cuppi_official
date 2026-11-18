@@ -29,6 +29,7 @@ const SOCIAL = [
 ];
 
 const HELP = [
+  { href: '/plans', label: 'Plans' },
   { href: '/faq', label: 'FAQ' },
   { href: '/support', label: 'Support' },
   { href: '/blog', label: 'The Cosy Corner' },

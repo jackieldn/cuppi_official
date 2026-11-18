@@ -186,6 +186,15 @@ export function readContentIds(v: unknown, max: number): string[] {
   return ids;
 }
 
+/** A stored list of Free / Pro lines -> the usable ones. A line needs its name; a cell left empty is read as "not included". Shared by the feature pages' tables and the Plans page. */
+export function readPlanRows(v: unknown): PlanRow[] {
+  return (Array.isArray(v) ? v.slice(0, SECTION_LIMITS.rows) : []).flatMap((row): PlanRow[] => {
+    const o = obj(row);
+    const label = text(o?.label, SECTION_LIMITS.title);
+    return o && label ? [{ label, free: text(o.free, SECTION_LIMITS.cell) ?? '', pro: text(o.pro, SECTION_LIMITS.cell) ?? '' }] : [];
+  });
+}
+
 function readBlock(raw: unknown, id: string): FeatureBlock | null {
   const r = obj(raw);
   if (!r) return null;
@@ -256,12 +265,7 @@ function readBlock(raw: unknown, id: string): FeatureBlock | null {
       };
     }
     case 'plans': {
-      const rows = (Array.isArray(r.rows) ? r.rows.slice(0, SECTION_LIMITS.rows) : []).flatMap((row): PlanRow[] => {
-        const o = obj(row);
-        const label = text(o?.label, SECTION_LIMITS.title);
-        // A line needs its name; a cell left empty is read as "not included".
-        return o && label ? [{ label, free: text(o.free, SECTION_LIMITS.cell) ?? '', pro: text(o.pro, SECTION_LIMITS.cell) ?? '' }] : [];
-      });
+      const rows = readPlanRows(r.rows);
       if (!title || rows.length === 0) return null;
       return { id, type: 'plans', title, ...(intro ? { intro } : {}), rows, tint };
     }

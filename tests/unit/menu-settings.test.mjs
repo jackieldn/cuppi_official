@@ -41,9 +41,18 @@ describe('resolveMenu', () => {
     // A menu saved before Tools existed.
     const saved = { links: ['features', 'yours', 'blog', 'faq', 'support'].map((key) => ({ key, label: key, visible: true })) };
     const m = resolveMenu(saved, STORE);
-    assert.deepEqual(m.links.map((l) => l.key), ['features', 'yours', 'tools', 'blog', 'faq', 'support']);
+    assert.deepEqual(m.links.map((l) => l.key), ['features', 'yours', 'tools', 'plans', 'blog', 'faq', 'support']);
     assert.equal(m.links[2].panel, 'tools');
     assert.equal(m.links[2].href, '/tools');
+  });
+
+  test('Plans, added after Tools, lands straight after Tools in a menu saved with Tools but not Plans', () => {
+    const saved = { links: ['features', 'yours', 'tools', 'blog', 'faq', 'support'].map((key) => ({ key, label: key, visible: true })) };
+    const m = resolveMenu(saved, STORE);
+    assert.deepEqual(m.links.map((l) => l.key), ['features', 'yours', 'tools', 'plans', 'blog', 'faq', 'support']);
+    assert.equal(m.links[3].href, '/plans');
+    assert.equal(m.links[3].label, 'Plans');
+    assert.equal(m.links[3].visible, true);
   });
 
   test('the Tools link keeps its fixed address and an admin can still rename or hide it', () => {
