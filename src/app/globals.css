@@ -919,6 +919,30 @@ html.theme-changing *::after {
 [data-intro='play'] .intro-near { transition: transform var(--intro-dur, 4.4s) var(--ease-camera), opacity calc(var(--intro-dur, 4.4s) * 0.27) ease-out; }
 [data-intro='play'] .intro-late { transition: transform 0.9s var(--ease-calm) calc(var(--intro-dur, 4.4s) * 0.59), opacity 0.9s ease-out calc(var(--intro-dur, 4.4s) * 0.59); }
 
+/* Where the admin has put the hero's phone, for each screen size (HomeHero sets the --hp-m-*, --hp-t-* and --hp-w-* variables, and the
+   class only when something was moved). The same breakpoints as the layout: mobile is under md, tablet is md up to lg, web is lg up.
+   It moves and sizes the phone's window, inside the layer the opening shot moves, so the two never fight. The size grows from the
+   top of the phone, which is the part the block shows, so a bigger phone is bigger downwards and the top edge stays put. */
+.hero-phone-place {
+  --hp-x: var(--hp-m-x); --hp-y: var(--hp-m-y); --hp-s: var(--hp-m-s);
+  transform: translate(var(--hp-x), var(--hp-y)) scale(var(--hp-s));
+  transform-origin: 50% 5%;
+}
+@media (min-width: 768px) {
+  .hero-phone-place { --hp-x: var(--hp-t-x); --hp-y: var(--hp-t-y); --hp-s: var(--hp-t-s); }
+}
+@media (min-width: 1024px) {
+  .hero-phone-place { --hp-x: var(--hp-w-x); --hp-y: var(--hp-w-y); --hp-s: var(--hp-w-s); }
+}
+
+/* A limit on how tall the home hero may be, per screen size (HomeHero sets --hc-m, --hc-t and --hc-w, each `none` or a length, and the
+   class only when some size has a limit). The same breakpoints as the layout. The block is cut off at the limit: it already clips its
+   own contents, so what goes is the phone's lower part, which the block was cropping anyway. In the slideshow every hero has the same
+   limit, and the cell is as tall as the tallest of them or the limit, whichever is smaller. */
+.hero-cap { max-height: var(--hc-m); }
+@media (min-width: 768px) { .hero-cap { max-height: var(--hc-t); } }
+@media (min-width: 1024px) { .hero-cap { max-height: var(--hc-w); } }
+
 /* The home hero slideshow's countdown line (HeroCarousel): a clock in the component fills it from left to right over the
    hold, then the next slide takes over. With reduced motion there is no fill and no automatic change: the line is simply full. */
 .hero-countdown { transform-origin: left center; }

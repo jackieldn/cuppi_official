@@ -1,7 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveHeroSettings, resolveHeroList, validateHeroList, newHeroSettings, defaultHeroSettings, validateHeroSettings, buildHero, HERO_TEMPLATES, LIMITS, MAX_HEROES } from '../../src/lib/home-hero-settings.ts';
-import { homeHero } from '../../src/lib/home-hero.ts';
+import { resolveHeroSettings, resolveHeroList, validateHeroList, newHeroSettings, defaultHeroSettings, validateHeroSettings, buildHero, HERO_TEMPLATES, LIMITS, MAX_HEROES, DEVICES, resolveHeroHeight } from '../../src/lib/home-hero-settings.ts';
+import { homeHero, heightCap } from '../../src/lib/home-hero.ts';
 
 describe('resolveHeroSettings', () => {
   test('nothing stored gives the original hero', () => {
@@ -216,5 +216,81 @@ describe('several heroes', () => {
     assert.doesNotMatch(validateHeroList([{ ...ok, headline: ' ' }])[0].problem, /^Hero/);
     assert.equal(validateHeroList([]).length, 1);
     assert.equal(validateHeroList(Array.from({ length: 6 }, () => ok)).length, 1);
+  });
+});
+
+describe('the phone placement for each screen size', () => {
+  const still = { x: 0, y: 0, scale: 100 };
+
+  test('a hero saved before it existed has the phone where its template puts it, on every size', () => {
+    assert.deepEqual(resolveHeroSettings({ headline: 'Old one' }).placement, { web: still, tablet: still, mobile: still });
+  });
+
+  test('each size is kept on its own', () => {
+    const s = resolveHeroSettings({ placement: { web: { x: 10, y: -5, scale: 120 }, mobile: { x: -20, y: 8, scale: 80 } } });
+    assert.deepEqual(s.placement.web, { x: 10, y: -5, scale: 120 });
+    assert.deepEqual(s.placement.tablet, still, 'a size with nothing saved is left alone');
+    assert.deepEqual(s.placement.mobile, { x: -20, y: 8, scale: 80 });
+  });
+
+  test('numbers are clamped and rounded, and junk becomes the template\'s place', () => {
+    const s = resolveHeroSettings({ placement: { web: { x: 900, y: -900, scale: 5 }, tablet: { x: 'left', y: null, scale: NaN }, mobile: 'big' } });
+    assert.deepEqual(s.placement.web, { x: LIMITS.offset.max, y: LIMITS.offset.min, scale: LIMITS.scale.min });
+    assert.deepEqual(s.placement.tablet, still);
+    assert.deepEqual(s.placement.mobile, still);
+    assert.equal(resolveHeroSettings({ placement: { web: { x: 4.6, y: 0, scale: 100.4 } } }).placement.web.x, 5);
+    for (const bad of [null, 'x', 5, []]) assert.deepEqual(resolveHeroSettings({ placement: bad }).placement, defaultHeroSettings().placement);
+  });
+
+  test('an unplaced hero draws as it always did, and a placed one hands its placement to the hero', () => {
+    assert.equal('placement' in buildHero(defaultHeroSettings()), false);
+    const placed = { ...defaultHeroSettings().placement, tablet: { x: 5, y: 0, scale: 110 } };
+    assert.deepEqual(buildHero({ ...defaultHeroSettings(), placement: placed }).placement, placed);
+  });
+
+  test('the sizes the builder offers sit inside the ranges the hero\'s breakpoints give them', () => {
+    const range = { web: [1024, Infinity], tablet: [768, 1023], mobile: [0, 767] };
+    for (const d of DEVICES) assert.ok(d.width >= range[d.key][0] && d.width <= range[d.key][1], d.key);
+    assert.deepEqual(DEVICES.map((d) => d.key).sort(), ['mobile', 'tablet', 'web']);
+  });
+
+  test('saving keeps the placement along with the rest of the hero', () => {
+    const h = { ...defaultHeroSettings(), placement: { ...defaultHeroSettings().placement, mobile: { x: 12, y: 3, scale: 90 } } };
+    assert.deepEqual(resolveHeroList({ heroes: [JSON.parse(JSON.stringify(h))] })[0].placement, h.placement);
+  });
+});
+
+describe('the height limit for the whole slideshow', () => {
+  const none = { fit: false, share: 100 };
+
+  test('nothing saved is no limit on any screen size', () => {
+    for (const bad of [undefined, null, 'x', 5, [], {}, { height: 'tall' }]) assert.deepEqual(resolveHeroHeight(bad), { web: none, tablet: none, mobile: none }, JSON.stringify(bad));
+  });
+
+  test('each screen size is kept on its own, with the share clamped and rounded', () => {
+    const h = resolveHeroHeight({ height: { web: { fit: true, share: 85 }, tablet: { fit: true, share: 5 }, mobile: { fit: 'yes', share: 'lots' } } });
+    assert.deepEqual(h.web, { fit: true, share: 85 });
+    assert.deepEqual(h.tablet, { fit: true, share: LIMITS.share.min });
+    assert.deepEqual(h.mobile, none, 'junk falls back');
+    assert.equal(resolveHeroHeight({ height: { web: { fit: true, share: 70.4 } } }).web.share, 70);
+    assert.equal(resolveHeroHeight({ height: { web: { fit: true, share: 900 } } }).web.share, LIMITS.share.max);
+  });
+
+  test('a hero is only given the limit when it limits something, and every hero gets the same one', () => {
+    const h = defaultHeroSettings();
+    assert.equal('heightLimit' in buildHero(h), false);
+    assert.equal('heightLimit' in buildHero(h, resolveHeroHeight(null)), false);
+    const limit = resolveHeroHeight({ height: { web: { fit: true, share: 80 } } });
+    assert.deepEqual(buildHero(h, limit).heightLimit, limit);
+    assert.deepEqual(buildHero({ ...h, template: 'centred' }, limit).heightLimit, limit);
+  });
+
+  test('the limit becomes a max-height that never goes below a safe floor, and none when off', () => {
+    assert.equal(heightCap({ fit: false, share: 60 }), 'none');
+    assert.equal(heightCap({ fit: true, share: 85 }), 'max(28rem, calc(0.85 * (100svh - 5rem)))');
+  });
+
+  test('every screen size has a screen height to be measured against', () => {
+    for (const d of DEVICES) assert.ok(d.screen > 300, d.key);
   });
 });

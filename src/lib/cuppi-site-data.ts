@@ -4,7 +4,7 @@ import { readOverride, type FeatureOverride } from './features-types';
 import { resolveMenu, type MenuSettings } from './menu-settings';
 import { APP_STORE_URL } from './invite';
 import { defaultPageStatus, resolvePageStatus, type PageStatus } from './page-status';
-import { defaultHeroSettings, resolveHeroList, type HeroSettings } from './home-hero-settings';
+import { defaultHeroHeight, defaultHeroSettings, resolveHeroHeight, resolveHeroList, type HeroHeight, type HeroSettings } from './home-hero-settings';
 import { resolveDisclaimers, type Disclaimer } from './disclaimers';
 import { resolveBanners, type Banner } from './banners';
 import { resolveHomeVideo, type HomeVideo } from './home-video';
@@ -65,6 +65,7 @@ const featureMemo: { current?: Memo<FeatureOverride[]> } = {};
 const menuMemo: { current?: Memo<MenuSettings> } = {};
 const pagesMemo: { current?: Memo<PageStatus> } = {};
 const heroMemo: { current?: Memo<HeroSettings[]> } = {};
+const heroHeightMemo: { current?: Memo<HeroHeight> } = {};
 const fanMemo: { current?: Memo<unknown> } = {};
 const disclaimerMemo: { current?: Memo<Disclaimer[]> } = {};
 const bannerMemo: { current?: Memo<Banner[]> } = {};
@@ -97,6 +98,14 @@ export function getHeroList(): Promise<HeroSettings[]> {
   return remembered(heroMemo, [defaultHeroSettings()], async () => {
     const snap = await firestore.collection('cuppi_home').doc('hero').get();
     return resolveHeroList(snap.exists ? snap.data() : null);
+  });
+}
+
+/** How tall the home heroes may be on each screen size (the slideshow's own setting, saved beside the heroes). No limit when none is saved or the database cannot be read. */
+export function getHeroHeight(): Promise<HeroHeight> {
+  return remembered(heroHeightMemo, defaultHeroHeight(), async () => {
+    const snap = await firestore.collection('cuppi_home').doc('hero').get();
+    return resolveHeroHeight(snap.exists ? snap.data() : null);
   });
 }
 

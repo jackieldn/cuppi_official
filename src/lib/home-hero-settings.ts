@@ -9,7 +9,7 @@
 
 import { readImage } from './feature-sections.ts';
 import type { FeatureImage, FeatureShot, FeatureTint, PairArrangement, PhoneView } from './features-types';
-import { homeHero, type HomeHero } from './home-hero.ts';
+import { homeHero, type Device, type HeightLimit, type HomeHero, type PhonePlacement } from './home-hero.ts';
 import { MAX_LABEL, safeHref } from './menu-settings.ts';
 import { PATTERNS, type PatternName } from './patterns.ts';
 import { safeImageUrl } from './safe-urls.ts';
@@ -52,7 +52,30 @@ export const LIMITS = {
   strength: { min: 0, max: 0.6 },
   /** The opening shot, in seconds. */
   intro: { min: 1, max: 10 },
+  /** How far the phone can be moved, in percent of its window's width or height, either way. */
+  offset: { min: -60, max: 60 },
+  /** How big the phone can be made, in percent of the template's size. */
+  scale: { min: 40, max: 200 },
+  /** How much of the screen's height the hero may use, in percent. Under half, the words start to be cut off. */
+  share: { min: 50, max: 100 },
 } as const;
+
+export type { Device, HeightLimit, PhonePlacement };
+
+/**
+ * The screen sizes the builder previews and places the phone for. `width` is the width the preview is drawn at: inside the size's
+ * range (see Device), so the hero's own breakpoints give the layout that screen really gets.
+ */
+export const DEVICES: { key: Device; name: string; width: number; range: string; screen: number }[] = [
+  // `screen` is the height of the screen the preview pretends to be (a browser's visible area), which a height limit is measured against.
+  { key: 'web', name: 'Web', width: 1280, range: '1024px and wider', screen: 780 },
+  { key: 'tablet', name: 'Tablet', width: 820, range: '768 to 1023px', screen: 1000 },
+  { key: 'mobile', name: 'Mobile', width: 390, range: 'under 768px', screen: 700 },
+];
+
+export const DEFAULT_PLACEMENT: PhonePlacement = { x: 0, y: 0, scale: 100 };
+const defaultPlacements = (): Record<Device, PhonePlacement> => ({ web: { ...DEFAULT_PLACEMENT }, tablet: { ...DEFAULT_PLACEMENT }, mobile: { ...DEFAULT_PLACEMENT } });
+export const isDefaultPlacement = (p: PhonePlacement) => p.x === DEFAULT_PLACEMENT.x && p.y === DEFAULT_PLACEMENT.y && p.scale === DEFAULT_PLACEMENT.scale;
 
 /**
  * The screenshot in the hero's phone, as uploaded in the admin. Like a feature page's "screenshot in a phone" it can show the top or
@@ -96,6 +119,8 @@ export type HeroSettings = {
   cursorGlow: boolean;
   phone: MockupKind;
   facing: Facing;
+  /** Where the phone sits and how big it is, set separately for each screen size. */
+  placement: Record<Device, PhonePlacement>;
   /** The screenshot shown in the phone, or null for the original one in home-hero.ts. */
   screenshot: HeroShot | null;
   /** How long the opening shot takes, in seconds. */
@@ -103,6 +128,30 @@ export type HeroSettings = {
 };
 
 const defaultPattern = (): PatternName => (PATTERN_NAMES.find((n) => PATTERNS[n] === homeHero.pattern?.url) ?? 'victorianWinter');
+
+/** No limit on any screen size: the hero is as tall as it is made. A full share, so switching the limit on starts at "fills the screen". */
+export const DEFAULT_HEIGHT_LIMIT: HeightLimit = { fit: false, share: 100 };
+export type HeroHeight = Record<Device, HeightLimit>;
+export const defaultHeroHeight = (): HeroHeight => ({ web: { ...DEFAULT_HEIGHT_LIMIT }, tablet: { ...DEFAULT_HEIGHT_LIMIT }, mobile: { ...DEFAULT_HEIGHT_LIMIT } });
+export const isFitting = (h: HeroHeight) => DEVICES.some((d) => h[d.key].fit);
+
+/**
+ * The height limit as saved in the hero document (`height`, beside the heroes: it belongs to the whole slideshow, not to a hero).
+ * A size with nothing, or junk, saved has no limit.
+ */
+export function resolveHeroHeight(stored: unknown): HeroHeight {
+  const s = stored && typeof stored === 'object' ? (stored as Record<string, unknown>) : {};
+  const r = s.height && typeof s.height === 'object' ? (s.height as Record<string, unknown>) : {};
+  const out = defaultHeroHeight();
+  for (const { key } of DEVICES) {
+    const l = r[key] && typeof r[key] === 'object' ? (r[key] as Record<string, unknown>) : {};
+    out[key] = {
+      fit: typeof l.fit === 'boolean' ? l.fit : DEFAULT_HEIGHT_LIMIT.fit,
+      share: Math.round(num(l.share, LIMITS.share.min, LIMITS.share.max, DEFAULT_HEIGHT_LIMIT.share)),
+    };
+  }
+  return out;
+}
 
 /** What the hero was before it was editable. Used until the admin saves anything, and whenever the database cannot be read. */
 export function defaultHeroSettings(): HeroSettings {
@@ -120,6 +169,7 @@ export function defaultHeroSettings(): HeroSettings {
     cursorGlow: (p?.spot ?? 0) > 0,
     phone: homeHero.mockup,
     facing: homeHero.flip ? 'left' : 'right',
+    placement: defaultPlacements(),
     screenshot: null,
     introSeconds: 4.4,
   };
@@ -157,6 +207,21 @@ function readShot(v: unknown): HeroShot | null {
   };
 }
 
+/** A stored placement for each screen size -> a safe one. A size with nothing (or junk) saved keeps the template's own place. */
+function readPlacements(v: unknown): Record<Device, PhonePlacement> {
+  const r = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+  const out = defaultPlacements();
+  for (const { key } of DEVICES) {
+    const p = r[key] && typeof r[key] === 'object' ? (r[key] as Record<string, unknown>) : {};
+    out[key] = {
+      x: Math.round(num(p.x, LIMITS.offset.min, LIMITS.offset.max, DEFAULT_PLACEMENT.x)),
+      y: Math.round(num(p.y, LIMITS.offset.min, LIMITS.offset.max, DEFAULT_PLACEMENT.y)),
+      scale: Math.round(num(p.scale, LIMITS.scale.min, LIMITS.scale.max, DEFAULT_PLACEMENT.scale)),
+    };
+  }
+  return out;
+}
+
 /** Stored document -> complete, safe settings. Every field falls back on its own, so one bad field costs only itself. */
 export function resolveHeroSettings(stored: unknown): HeroSettings {
   const d = defaultHeroSettings();
@@ -180,6 +245,7 @@ export function resolveHeroSettings(stored: unknown): HeroSettings {
     cursorGlow: typeof s.cursorGlow === 'boolean' ? s.cursorGlow : d.cursorGlow,
     phone: oneOf(s.phone, ['tilt', 'front'] as const, d.phone),
     facing: oneOf(s.facing, ['left', 'right'] as const, d.facing),
+    placement: readPlacements(s.placement),
     screenshot: readShot(s.screenshot),
     introSeconds: Math.round(num(s.introSeconds, LIMITS.intro.min, LIMITS.intro.max, d.introSeconds) * 10) / 10,
   };
@@ -217,8 +283,8 @@ export function validateHeroList(list: HeroSettings[]): { index: number; problem
   return list.flatMap((h, index) => validateHeroSettings(h).map((p) => ({ index, problem: list.length > 1 ? `Hero ${index + 1}: ${p}` : p })));
 }
 
-/** Settings -> what the hero component draws. */
-export function buildHero(h: HeroSettings): HomeHero & { template: HeroTemplate } {
+/** Settings (and the slideshow's height limit, if any) -> what the hero component draws. */
+export function buildHero(h: HeroSettings, height?: HeroHeight): HomeHero & { template: HeroTemplate } {
   const template = HERO_TEMPLATES.find((t) => t.key === h.template) ?? HERO_TEMPLATES[0];
   return {
     ...homeHero,
@@ -242,6 +308,10 @@ export function buildHero(h: HeroSettings): HomeHero & { template: HeroTemplate 
     screenshot: h.screenshot ?? homeHero.screenshot,
     mockup: h.phone,
     flip: h.phone === 'tilt' && h.facing === 'left',
+    // Only when something was moved, so a hero that was never placed is drawn exactly as it always was.
+    ...(Object.values(h.placement).some((p) => !isDefaultPlacement(p)) ? { placement: h.placement } : {}),
+    // The slideshow's height limit, the same for every hero; only when it limits something.
+    ...(height && isFitting(height) ? { heightLimit: height } : {}),
     introSeconds: h.introSeconds,
   };
 }

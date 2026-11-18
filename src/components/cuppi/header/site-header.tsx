@@ -63,21 +63,32 @@ export function SiteHeader({ groups, tools, links: configured, download }: { gro
       : (links.find((l) => !l.panel && !isExternal(l.href) && (pathname === l.href || pathname.startsWith(`${l.href}/`)))?.key ??
       (pathname === '/features' ? (links.find((l) => l.panel === 'features') ?? links.find((l) => l.href === '/features'))?.key ?? null : null));
 
-  // The highlight rests on the current page's link and glides to whichever one is hovered.
+  // The highlight rests on the current page's link and glides to whichever one is hovered. While a menu is open it rests on that
+  // menu's button instead: the panel hangs below the row of links, not inside it, so the pointer travelling down into the panel
+  // leaves the row, and the highlight must not fall back to the current page until the menu has closed.
+  const openKey = open ? (links.find((l) => l.panel === open)?.key ?? null) : null;
+  const resting = openKey ?? activeKey;
+  /** The link the pointer is over in the row, so a menu closing under the pointer leaves the highlight where the pointer is. */
+  const hoverKey = useRef<string | null>(null);
   const moveTo = useCallback((key: string | null) => {
     const el = key ? itemRefs.current[key] : null;
     setPill(el ? { x: el.offsetLeft, w: el.offsetWidth } : null);
   }, []);
+  const hover = (key: string) => {
+    hoverKey.current = key;
+    moveTo(key);
+  };
   useLayoutEffect(() => {
-    moveTo(activeKey);
+    const rest = () => hoverKey.current ?? resting;
+    moveTo(rest());
     // Link widths change when the web font arrives and when the window resizes, so
     // measure again whenever the track changes size or fonts finish loading.
     const track = trackRef.current;
-    const observer = track && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => moveTo(activeKey)) : null;
+    const observer = track && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => moveTo(rest())) : null;
     if (track) observer?.observe(track);
-    document.fonts?.ready.then(() => moveTo(activeKey));
+    document.fonts?.ready.then(() => moveTo(rest()));
     return () => observer?.disconnect();
-  }, [activeKey, moveTo]);
+  }, [resting, moveTo]);
 
   const closeAll = useCallback(() => {
     pinned.current = false;
@@ -129,7 +140,10 @@ export function SiteHeader({ groups, tools, links: configured, download }: { gro
           <CuppiLogoLink id="header" priority iconWidth={38} iconHeight={40} className="flex shrink-0 items-center gap-2.5 pr-2" textClassName="text-lg tracking-tight sm:text-xl" />
 
           {/* Desktop links */}
-          <div ref={trackRef} className="relative hidden items-center lg:flex" onMouseLeave={() => moveTo(activeKey)}>
+          <div ref={trackRef} className="relative hidden items-center lg:flex" onMouseLeave={() => {
+            hoverKey.current = null;
+            moveTo(resting);
+          }}>
             <span
               aria-hidden
               className={cn(
@@ -149,7 +163,7 @@ export function SiteHeader({ groups, tools, links: configured, download }: { gro
                     }}
                     aria-expanded={open === menu}
                     aria-controls={`menu-${menu}`}
-                    onMouseEnter={() => moveTo(l.key)}
+                    onMouseEnter={() => hover(l.key)}
                     onFocus={() => moveTo(l.key)}
                     onClick={() => {
                       if (open === menu && pinned.current) {
@@ -179,7 +193,7 @@ export function SiteHeader({ groups, tools, links: configured, download }: { gro
                   }}
                   onMouseEnter={() => {
                     setOpen(null);
-                    moveTo(l.key);
+                    hover(l.key);
                   }}
                   onFocus={() => moveTo(l.key)}
                   aria-current={activeKey === l.key ? 'page' : undefined}

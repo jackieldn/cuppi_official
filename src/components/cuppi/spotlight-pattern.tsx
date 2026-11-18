@@ -22,6 +22,7 @@ export function SpotlightPattern({
   edge = PATTERN_DEFAULTS.edge,
   spot = 0.5,
   radius = 190,
+  blend = true,
 }: {
   pattern: PatternName | string;
   focus: string;
@@ -32,6 +33,12 @@ export function SpotlightPattern({
   /** The opacity the pattern rises to under the cursor. */
   spot?: number;
   radius?: number;
+  /**
+   * Mix with the surface (the theme's --pattern-blend) here. Turn it off when a parent does the mixing instead: a blend only sees what is
+   * inside the nearest stacking context, so a pattern inside a layer that gets promoted or transformed (the hero's intro) blends with
+   * nothing while it is, and with the surface once it is not, and its strength visibly jumps.
+   */
+  blend?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const { opacity, mask } = patternLayers({ shape, focus, centre, edge, spot, radius });
@@ -114,7 +121,7 @@ export function SpotlightPattern({
         backgroundRepeat: 'repeat',
         // The patterns are white shapes: on a dark surface the same opacity reads far stronger, so dark turns it down.
         opacity: `calc(${opacity} * var(--pattern-strength, 1))`,
-        mixBlendMode: 'var(--pattern-blend, normal)' as React.CSSProperties['mixBlendMode'],
+        ...(blend ? { mixBlendMode: 'var(--pattern-blend, normal)' as React.CSSProperties['mixBlendMode'] } : {}),
         WebkitMaskImage: mask,
         maskImage: mask,
         // Start with the light off and out of sight until the pointer arrives.
