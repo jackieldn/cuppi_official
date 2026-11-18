@@ -845,11 +845,12 @@ html.theme-changing *::after {
   transform: translate(calc(var(--size) * var(--u) / -2), calc(var(--y0) * var(--u))) scale(0.4);
   transition: none;
 }
-/* No JavaScript, or it never got going: open after 6 seconds regardless. */
+/* No JavaScript, or it never got going (AppFan sets data-running once it has): open after 6 seconds regardless. Once it is running, the icons
+   wait for the visitor to scroll them into view, however long that takes. */
 @keyframes fan-failsafe {
   to { opacity: 1; transform: translate(calc((var(--x) - var(--size) / 2) * var(--u)), calc(var(--y) * var(--u))); }
 }
-[data-fan='closed'] .fan-icon { animation: fan-failsafe 0.01s 6s forwards; }
+[data-fan='closed']:not([data-running]) .fan-icon { animation: fan-failsafe 0.01s 6s forwards; }
 @media (prefers-reduced-motion: reduce) {
   [data-fan] .fan-icon { opacity: 1 !important; transform: translate(calc((var(--x) - var(--size) / 2) * var(--u)), calc(var(--y) * var(--u))) !important; transition: none !important; animation: none !important; }
 }

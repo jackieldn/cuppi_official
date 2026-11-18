@@ -22,7 +22,7 @@ type Tile = Pick<Feature, 'slug' | 'name' | 'iconUrl' | 'icon' | 'tile'>;
  * for one at the top of a page, once everything it needs has downloaded (`when="loaded"`;
  * `waitFor` lists extra pictures to wait for, such as the hero's pattern).
  *
- * It plays once. If JavaScript never starts, CSS shows the icons after 6 seconds, and
+ * It plays once. If JavaScript never starts (`data-running` is never set), CSS shows the icons after 6 seconds, and
  * people who prefer reduced motion see them already in place.
  */
 export function AppFan({
@@ -36,6 +36,9 @@ export function AppFan({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [scrolledIn, setScrolledIn] = useState(false);
+  /** True once the page's JavaScript is running, which switches the stylesheet's 6-second failsafe off (it is only for when this never runs). */
+  const [running, setRunning] = useState(false);
+  useEffect(() => setRunning(true), []);
   const loaded = useAssetsReady(ref, waitFor);
   const open = when === 'loaded' ? loaded : scrolledIn;
 
@@ -62,7 +65,7 @@ export function AppFan({
 
   return (
     <div className="fan mx-auto w-full max-w-[60rem]" aria-hidden>
-      <div ref={ref} className="fan-stage" data-fan={open ? 'open' : 'closed'}>
+      <div ref={ref} className="fan-stage" data-fan={open ? 'open' : 'closed'} data-running={running || undefined}>
         <div className="fan-cuppi">
           <CuppiTile className="h-full w-full" priority />
         </div>

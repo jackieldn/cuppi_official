@@ -109,11 +109,17 @@ export function applyHomography(hs: number[], x: number, y: number): Point {
   return [(hs[0] * x + hs[1] * y + hs[2]) / d, (hs[3] * x + hs[4] * y + hs[5]) / d];
 }
 
+/** The quad with every point scaled by `f` (to describe the same shape at another size). */
+export function scaleQuad(q: Quad, f: number): Quad {
+  const m = ([x, y]: Point): Point => [x * f, y * f];
+  return { tl: m(q.tl), tr: m(q.tr), br: m(q.br), bl: m(q.bl) };
+}
+
 /** The same transform as a CSS matrix3d() value (use with transform-origin: 0 0). */
 export function quadToMatrix3d(w: number, h: number, quad: Quad): string {
   const [h11, h12, h13, h21, h22, h23, h31, h32] = solveHomography(w, h, quad);
   const v = [h11, h21, 0, h31, h12, h22, 0, h32, 0, 0, 1, 0, h13, h23, 0, 1];
-  return `matrix3d(${v.map((n) => +n.toFixed(8)).join(',')})`;
+  return `matrix3d(${v.map((n) => +n.toFixed(10)).join(',')})`;
 }
 
 /** Where the screen starts and ends down the phone's own height, as fractions (0 to 1) of the phone. */
