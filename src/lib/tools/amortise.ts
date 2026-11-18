@@ -44,6 +44,8 @@ export type Schedule = {
   months: number;
   /** The scheduled monthly payment at the start (what the lender asks for, before any overpayment). */
   payment: number;
+  /** The scheduled payment once the rate changes (see `rateChange`), when it does within the term. */
+  paymentAfter: number | null;
   totalInterest: number;
   /** Everything paid: interest, the debt, and any lump sum. */
   totalPaid: number;
@@ -59,6 +61,8 @@ export type ScheduleInput = {
   monthlyOverpayment?: number;
   /** A one-off payment made after `afterMonth` payments (0 means straight away). */
   lumpSum?: { amount: number; afterMonth: number };
+  /** The rate moves to `monthlyRate` after `afterMonth` payments (a fixed deal ending). The payment is worked out again then, for the term that is left. */
+  rateChange?: { afterMonth: number; monthlyRate: number };
 };
 
 /**
@@ -67,12 +71,16 @@ export type ScheduleInput = {
  * "keep the payment, shorten the term" choice.)
  */
 export function buildSchedule(input: ScheduleInput): Schedule {
-  const r = input.monthlyRate;
+  const r0 = input.monthlyRate;
+  const change = input.rateChange && input.rateChange.afterMonth > 0 && Math.round(input.rateChange.afterMonth) < Math.round(input.termMonths) ? { at: Math.round(input.rateChange.afterMonth), rate: input.rateChange.monthlyRate } : null;
   const principal = Math.max(0, input.principal);
   const termMonths = Math.max(0, Math.round(input.termMonths));
   const extra = Math.max(0, input.monthlyOverpayment ?? 0);
   const lump = input.lumpSum && input.lumpSum.amount > 0 ? { amount: input.lumpSum.amount, at: Math.max(0, Math.floor(input.lumpSum.afterMonth)) } : null;
-  const payment = paymentFor(principal, r, termMonths);
+  const payment = paymentFor(principal, r0, termMonths);
+  let r = r0;
+  let scheduledPayment = payment;
+  let paymentAfter: number | null = null;
 
   const rows: ScheduleRow[] = [];
   let balance = principal;
@@ -87,9 +95,14 @@ export function buildSchedule(input: ScheduleInput): Schedule {
   }
 
   for (let month = 1; month <= termMonths && balance > PAID_OFF; month++) {
+    if (change && month === change.at + 1) {
+      r = change.rate;
+      scheduledPayment = paymentFor(balance, r, termMonths - change.at);
+      paymentAfter = scheduledPayment;
+    }
     const interest = balance * r;
     const owing = balance + interest;
-    const scheduled = Math.min(payment, owing);
+    const scheduled = Math.min(scheduledPayment, owing);
     const monthlyExtra = Math.min(extra, owing - scheduled);
     balance = owing - scheduled - monthlyExtra;
 
@@ -105,7 +118,7 @@ export function buildSchedule(input: ScheduleInput): Schedule {
     rows.push({ month, interest, payment: scheduled, principal: scheduled - interest, overpayment: monthlyExtra + lumpPaid, balance });
   }
 
-  return { rows, months: rows.length, payment, totalInterest, totalPaid, upfrontLump };
+  return { rows, months: rows.length, payment, paymentAfter, totalInterest, totalPaid, upfrontLump };
 }
 
 export type YearSummary = {

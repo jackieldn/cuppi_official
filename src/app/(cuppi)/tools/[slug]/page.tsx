@@ -57,11 +57,11 @@ export default async function ToolPage({ params }: { params: Promise<Params> }) 
   const feature = (await getPageFeatures()).find((f) => f.slug === content.cuppi.feature);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="flex min-h-screen flex-col overflow-x-clip bg-background text-foreground">
       <CuppiHeader />
       <JsonLd data={buildToolJsonLd(tool, content, SITE_ORIGINS.cuppi)} />
       <main className="flex-grow">
-        <PageHero tint={tool.tint} back={{ href: '/tools', label: 'All tools' }} tile={<ToolTile tool={tool} className="h-14 w-14 shrink-0 sm:h-20 sm:w-20" />} title={content.heading} intro={content.intro}>
+        <PageHero tint={tool.tint} back={{ href: '/tools', label: 'All tools' }} stackTile tile={<ToolTile tool={tool} className="h-16 w-16 shrink-0 sm:h-20 sm:w-20" />} title={content.heading} intro={content.intro}>
           <p className="inline-flex items-center gap-2 rounded-full bg-cuppi-paper/90 px-4 py-2 text-sm font-medium text-cuppi-ink">
             <Lock className="h-4 w-4" aria-hidden /> Runs on your device. Nothing you type is sent or saved.
           </p>

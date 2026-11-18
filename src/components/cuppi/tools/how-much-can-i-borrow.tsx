@@ -2,10 +2,10 @@
 
 import { gbp, share } from '@/lib/tools/format';
 import { BORROW_DEFAULTS, evaluateBorrow } from '@/lib/tools/evaluate';
-import { INCOME_MULTIPLES } from '@/lib/tools/rates';
+import { INCOME_MULTIPLE_SCALE } from '@/lib/tools/rates';
 import type { BorrowResult } from '@/lib/tools/borrowing';
 import { ComparisonSection, MetricBars, type CompareRow } from './comparison';
-import { NumberField, Segmented } from './fields';
+import { NumberField, SliderField } from './fields';
 import { CalculatorFrame, DataTable, HeadlineResult, Note, ResultCard, ToolActions, WaitingResult } from './parts';
 import { ScenarioBar, ScenarioTag } from './scenario-bar';
 import { useScenarios } from './use-scenarios';
@@ -15,6 +15,8 @@ export function HowMuchCanIBorrow() {
   const v = sc.values;
   const { reads, problems, result: r, multiple } = evaluateBorrow(v);
 
+  // The usual range of multiples, plus the one chosen on the scale if it is outside it.
+  const table = r ? [...r.scenarios, ...(r.scenarios.some((s) => s.multiple === multiple) ? [] : [r])].sort((a, b) => a.multiple - b.multiple) : [];
   const evals = sc.all.map((s) => evaluateBorrow(s));
   const columns = evals.flatMap((e, i) => (e.result ? [{ index: i, name: sc.names[i], result: e.result, multiple: e.multiple }] : []));
   const notShown = evals.flatMap((e, i) => (e.result ? [] : [sc.names[i]]));
@@ -44,7 +46,16 @@ export function HowMuchCanIBorrow() {
             <NumberField label="Second income" prefix="£" money value={v.incomeB} onChange={(x) => sc.set('incomeB', x)} error={reads.incomeB.error} hint="A partner’s yearly pay, or 0." />
           </div>
           <NumberField label="Deposit" prefix="£" money value={v.deposit} onChange={(x) => sc.set('deposit', x)} error={reads.deposit.error} hint="What you have saved towards the home." />
-          <Segmented label="Times income" value={String(multiple)} onChange={(x) => sc.set('multiple', x)} options={INCOME_MULTIPLES.map((m) => ({ value: String(m), label: `${m}×` }))} />
+          <SliderField
+            label="Times income"
+            value={multiple}
+            onChange={(x) => sc.set('multiple', x)}
+            min={INCOME_MULTIPLE_SCALE.min}
+            max={INCOME_MULTIPLE_SCALE.max}
+            step={INCOME_MULTIPLE_SCALE.step}
+            format={(n) => `${n}×`}
+            hint="How many times your income a lender would lend. Most stay between 4× and 5.5×."
+          />
           <div className="grid gap-5 sm:grid-cols-2">
             <NumberField label="Interest rate" suffix="%" value={v.rate} onChange={(x) => sc.set('rate', x)} error={reads.rate.error} hint="For the monthly payment." />
             <NumberField label="Term" suffix="years" value={v.years} onChange={(x) => sc.set('years', x)} error={reads.years.error} />
@@ -75,11 +86,16 @@ export function HowMuchCanIBorrow() {
                 With your {gbp(reads.debts.value)} of monthly debts, your payments would be {share(r.paymentAndDebtsShare)} of your pay before tax. Lenders look closely at this, so the real amount offered may be lower.
               </Note>
             )}
+            {multiple > r.scenarios.at(-1)!.multiple && (
+              <Note tone="warn">
+                {multiple}× income is well above what lenders usually offer. Only a limited share of loans can go past 4.5× income, so this is mostly for high earners and a few lenders. Treat the figure as a ceiling, not a likely offer.
+              </Note>
+            )}
             <ResultCard title="At different multiples">
               <DataTable
                 head={['Times income', 'You borrow', 'Home up to', 'A month']}
-                highlight={r.scenarios.findIndex((s) => s.multiple === multiple)}
-                rows={r.scenarios.map((s) => [`${s.multiple}×`, gbp(s.borrowing), gbp(s.maxPrice), gbp(s.monthlyPayment)])}
+                highlight={table.findIndex((s) => s.multiple === multiple)}
+                rows={table.map((s) => [`${s.multiple}×`, gbp(s.borrowing), gbp(s.maxPrice), gbp(s.monthlyPayment)])}
               />
             </ResultCard>
             <Note>This is a rule of thumb, not an offer. A lender will also check your spending, debts and credit record, and whether you could afford the payments if rates rose.</Note>

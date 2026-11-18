@@ -1,20 +1,29 @@
 'use client';
 
+import { useId, useState } from 'react';
 import { balanceSeries } from '@/lib/tools/amortise';
 import { evaluateLoan, LOAN_DEFAULTS, type LoanAnswer } from '@/lib/tools/evaluate';
 import { gbp, monthsToText, percent } from '@/lib/tools/format';
 import { Roll } from './animated-number';
 import { BAR, ComparisonCharts, ComparisonSection, cheapestSentence, type CompareRow } from './comparison';
 import { CheckField, NumberField, Segmented } from './fields';
-import { CalculatorFrame, HeadlineResult, Note, ResultCard, ToolActions, WaitingResult } from './parts';
+import { AdvancedSection, CalculatorFrame, DataTable, HeadlineResult, Note, ResultCard, ToolActions, ViewToggle, WaitingResult } from './parts';
 import { RepaymentCharts } from './repayment-charts';
 import { ScenarioBar, ScenarioTag, scenarioColour } from './scenario-bar';
 import { ScheduleTable } from './schedule-table';
 import { useScenarios } from './use-scenarios';
 
+type View = 'overview' | 'whatif' | 'years';
+
+const EARLY_TAG: Record<string, string> = { monthly: 'Extra each month on', lump: 'Lump sum on', settle: 'Settling early on' };
+
 export function LoanRepaymentCalculator() {
   const sc = useScenarios(LOAN_DEFAULTS, { label: 'Loan' });
   const v = sc.values;
+  const [view, setView] = useState<View>('overview');
+  const viewId = useId();
+  // Paying it off early is tucked away; a loan that already does (a shared link, say) opens it.
+  const usesEarly = sc.all.some((s) => s.early !== 'none');
   const { reads, problems, result: a, early, inYears } = evaluateLoan(v);
 
   const evals = sc.all.map((s) => evaluateLoan(s));
@@ -46,30 +55,32 @@ export function LoanRepaymentCalculator() {
           </div>
           <NumberField label="Arrangement fee" prefix="£" money value={v.fee} onChange={(x) => sc.set('fee', x)} error={reads.fee.error} hint="Leave at 0 for none." />
           {Number(v.fee.replace(/,/g, '')) > 0 && <CheckField label="Add the fee to the loan" hint="Borrowed with the rest, so it costs interest too." checked={v.feeAdded === 'yes'} onChange={(c) => sc.set('feeAdded', c ? 'yes' : 'no')} />}
-          <Segmented
-            label="Paying it off early?"
-            value={early}
-            onChange={(x) => sc.set('early', x)}
-            options={[
-              { value: 'none', label: 'No' },
-              { value: 'monthly', label: 'Extra each month' },
-              { value: 'lump', label: 'Lump sum' },
-              { value: 'settle', label: 'Settle in full' },
-            ]}
-          />
-          {early === 'monthly' && <NumberField label="Extra each month" prefix="£" money value={v.extra} onChange={(x) => sc.set('extra', x)} error={reads.extra.error} hint="On top of your normal payment." />}
-          {early === 'lump' && (
-            <div className="grid gap-5 sm:grid-cols-2">
-              <NumberField label="Lump sum" prefix="£" money value={v.lump} onChange={(x) => sc.set('lump', x)} error={reads.lump.error} />
-              <NumberField label="Paid after" suffix="payments" value={v.lumpAfter} onChange={(x) => sc.set('lumpAfter', x)} error={reads.lumpAfter.error} hint="0 is straight away." />
-            </div>
-          )}
-          {early === 'settle' && (
-            <div className="grid gap-5 sm:grid-cols-2">
-              <NumberField label="Settle after" suffix="payments" value={v.settleAfter} onChange={(x) => sc.set('settleAfter', x)} error={reads.settleAfter.error} hint="How many payments you will have made." />
-              <NumberField label="Early settlement fee" suffix="months’ interest" value={v.settleFee} onChange={(x) => sc.set('settleFee', x)} error={reads.settleFee.error} hint="Often a month or two of interest. Check your agreement." />
-            </div>
-          )}
+          <AdvancedSection inUse={usesEarly} summary={EARLY_TAG[early]}>
+            <Segmented
+              label="Paying it off early?"
+              value={early}
+              onChange={(x) => sc.set('early', x)}
+              options={[
+                { value: 'none', label: 'No' },
+                { value: 'monthly', label: 'Extra each month' },
+                { value: 'lump', label: 'Lump sum' },
+                { value: 'settle', label: 'Settle in full' },
+              ]}
+            />
+            {early === 'monthly' && <NumberField label="Extra each month" prefix="£" money value={v.extra} onChange={(x) => sc.set('extra', x)} error={reads.extra.error} hint="On top of your normal payment." />}
+            {early === 'lump' && (
+              <div className="grid gap-5 sm:grid-cols-2">
+                <NumberField label="Lump sum" prefix="£" money value={v.lump} onChange={(x) => sc.set('lump', x)} error={reads.lump.error} />
+                <NumberField label="Paid after" suffix="payments" value={v.lumpAfter} onChange={(x) => sc.set('lumpAfter', x)} error={reads.lumpAfter.error} hint="0 is straight away." />
+              </div>
+            )}
+            {early === 'settle' && (
+              <div className="grid gap-5 sm:grid-cols-2">
+                <NumberField label="Settle after" suffix="payments" value={v.settleAfter} onChange={(x) => sc.set('settleAfter', x)} error={reads.settleAfter.error} hint="How many payments you will have made." />
+                <NumberField label="Early settlement fee" suffix="months’ interest" value={v.settleFee} onChange={(x) => sc.set('settleFee', x)} error={reads.settleFee.error} hint="Often a month or two of interest. Check your agreement." />
+              </div>
+            )}
+          </AdvancedSection>
           <ToolActions changed={sc.changed} onReset={sc.reset} />
         </>
       }
@@ -78,58 +89,86 @@ export function LoanRepaymentCalculator() {
           <WaitingResult problems={problems} />
         ) : (
           <>
-            {sc.count > 1 && <ScenarioTag index={sc.active} name={sc.names[sc.active]} />}
-            <HeadlineResult
-              label="Monthly payment"
-              value={gbp(a.payment, { pence: true })}
-              note={`Paid off in ${monthsToText(a.result.baseline.months)}.`}
-              stats={[
-                { label: 'Total interest', value: gbp(a.result.baseline.totalInterest) },
-                { label: 'Total paid back', value: gbp(a.result.baseline.totalPaid + (v.feeAdded === 'yes' ? 0 : a.arrangementFee)) },
-                { label: 'Borrowing', value: gbp(a.principal) },
-                { label: 'Rate per month', value: percent(a.result.monthlyRate * 100) },
-                ...(a.arrangementFee > 0 ? [{ label: 'Arrangement fee', value: gbp(a.arrangementFee) }] : []),
+            <ViewToggle
+              panelId={viewId}
+              value={view}
+              onChange={setView}
+              views={[
+                { value: 'overview', label: 'Overview' },
+                { value: 'whatif', label: 'What if' },
+                { value: 'years', label: 'Year by year' },
               ]}
             />
-            {e && (
-              <ResultCard title={e.kind === 'settle' ? 'If you settle early' : 'If you pay it off early'}>
-                <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-                  {[
-                    { label: e.kind === 'settle' ? 'Loan ends after' : 'Paid off in', value: monthsToText(e.months) },
-                    { label: 'Sooner by', value: monthsToText(e.monthsSaved) },
-                    { label: 'Interest saved', value: gbp(e.interestSaved) },
-                    ...(e.kind === 'settle' ? [{ label: 'Early settlement fee', value: gbp(e.fee, { pence: true }) }, { label: 'To clear it on the day', value: gbp(e.settlementFigure ?? 0, { pence: true }) }] : []),
-                    { label: e.kind === 'settle' ? 'Saved after the fee' : 'Total paid back', value: gbp(e.kind === 'settle' ? e.netSaving : e.totalPaid) },
-                  ].map((s) => (
-                    <div key={s.label}>
-                      <dt className="text-xs font-semibold text-cuppi-ink-soft">{s.label}</dt>
-                      <dd className="mt-0.5 text-lg font-semibold tabular-nums">
-                        <Roll>{s.value}</Roll>
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-                {e.kind === 'settle' && e.netSaving <= 0 && (
-                  <div className="mt-4">
-                    <Note tone="warn">After the fee, settling early would not save you anything. Try a different month, or ask your lender for a settlement figure.</Note>
-                  </div>
-                )}
-              </ResultCard>
-            )}
-            <ResultCard title="Your loan over time">
-              <RepaymentCharts
-                series={[
-                  ...(e && e.kind !== 'settle' ? [{ label: 'With early repayment', points: balanceSeries(a.result.schedule, a.principal), colour: scenarioColour(sc.active) }] : []),
-                  { label: e && e.kind !== 'settle' ? 'As it is' : 'Still owed', points: balanceSeries(a.result.baseline, a.principal), colour: e && e.kind !== 'settle' ? ('lake' as const) : scenarioColour(sc.active) },
-                ]}
-                schedule={a.result.schedule}
-                description={`A chart of the loan balance falling from ${gbp(a.principal)} to nothing over ${monthsToText(a.result.baseline.months)}.`}
-              />
-            </ResultCard>
-            <ResultCard title={e && e.kind !== 'settle' ? 'Year by year, with early repayment' : 'Year by year'}>
-              <ScheduleTable schedule={a.result.schedule} fileName="loan-repayments" />
-            </ResultCard>
-            <Note>This works from the APR, and includes no fees other than the arrangement and settlement fees. The figures on your own agreement are the ones that count.</Note>
+            <div role="tabpanel" id={`${viewId}-panel`} aria-labelledby={`${viewId}-${view}`} className="space-y-5">
+              {sc.count > 1 && <ScenarioTag index={sc.active} name={sc.names[sc.active]} />}
+              {view === 'overview' && (
+                <>
+                  <HeadlineResult
+                    label="Monthly payment"
+                    value={gbp(a.payment, { pence: true })}
+                    note={`Paid off in ${monthsToText(a.result.baseline.months)}.`}
+                    stats={[
+                      { label: 'Total interest', value: gbp(a.result.baseline.totalInterest) },
+                      { label: 'Total paid back', value: gbp(a.result.baseline.totalPaid + (v.feeAdded === 'yes' ? 0 : a.arrangementFee)) },
+                      { label: 'Borrowing', value: gbp(a.principal) },
+                      { label: 'Rate per month', value: percent(a.result.monthlyRate * 100) },
+                      ...(a.arrangementFee > 0 ? [{ label: 'Arrangement fee', value: gbp(a.arrangementFee) }] : []),
+                    ]}
+                  />
+                  {e && (
+                    <ResultCard title={e.kind === 'settle' ? 'If you settle early' : 'If you pay it off early'}>
+                      <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
+                        {[
+                          { label: e.kind === 'settle' ? 'Loan ends after' : 'Paid off in', value: monthsToText(e.months) },
+                          { label: 'Sooner by', value: monthsToText(e.monthsSaved) },
+                          { label: 'Interest saved', value: gbp(e.interestSaved) },
+                          ...(e.kind === 'settle' ? [{ label: 'Early settlement fee', value: gbp(e.fee, { pence: true }) }, { label: 'To clear it on the day', value: gbp(e.settlementFigure ?? 0, { pence: true }) }] : []),
+                          { label: e.kind === 'settle' ? 'Saved after the fee' : 'Total paid back', value: gbp(e.kind === 'settle' ? e.netSaving : e.totalPaid) },
+                        ].map((s) => (
+                          <div key={s.label}>
+                            <dt className="text-xs font-semibold text-cuppi-ink-soft">{s.label}</dt>
+                            <dd className="mt-0.5 text-lg font-semibold tabular-nums">
+                              <Roll>{s.value}</Roll>
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                      {e.kind === 'settle' && e.netSaving <= 0 && (
+                        <div className="mt-4">
+                          <Note tone="warn">After the fee, settling early would not save you anything. Try a different month, or ask your lender for a settlement figure.</Note>
+                        </div>
+                      )}
+                    </ResultCard>
+                  )}
+                  <ResultCard title="Your loan over time">
+                    <RepaymentCharts
+                      series={[
+                        ...(e && e.kind !== 'settle' ? [{ label: 'With early repayment', points: balanceSeries(a.result.schedule, a.principal), colour: scenarioColour(sc.active) }] : []),
+                        { label: e && e.kind !== 'settle' ? 'As it is' : 'Still owed', points: balanceSeries(a.result.baseline, a.principal), colour: e && e.kind !== 'settle' ? ('lake' as const) : scenarioColour(sc.active) },
+                      ]}
+                      schedule={a.result.schedule}
+                      description={`A chart of the loan balance falling from ${gbp(a.principal)} to nothing over ${monthsToText(a.result.baseline.months)}.`}
+                    />
+                  </ResultCard>
+                  <Note>This works from the APR, and includes no fees other than the arrangement and settlement fees. The figures on your own agreement are the ones that count.</Note>
+                </>
+              )}
+              {view === 'whatif' && (
+                <ResultCard title="If the rate were different">
+                  <DataTable
+                    head={['Rate (APR)', 'Monthly payment', 'Interest in all']}
+                    highlight={a.rateTable.findIndex((t) => Math.abs(t.apr - reads.apr.value) < 1e-9)}
+                    rows={a.rateTable.map((t) => [percent(t.apr), gbp(t.payment, { pence: true }), gbp(t.interest)])}
+                  />
+                  <p className="mt-3 text-xs text-cuppi-ink-soft">Without any early repayment, so you can compare rates like for like.</p>
+                </ResultCard>
+              )}
+              {view === 'years' && (
+                  <ResultCard title={e && e.kind !== 'settle' ? 'Year by year, with early repayment' : 'Year by year'}>
+                    <ScheduleTable schedule={a.result.schedule} fileName="loan-repayments" />
+                  </ResultCard>
+              )}
+            </div>
           </>
         )
       }

@@ -130,6 +130,8 @@ export const PROPERTY_TAX: Record<Region, PropertyTaxRules> = {
 
 /** How many income multiples lenders commonly use, lowest to highest. A guide, not a rule: each lender sets its own. */
 export const INCOME_MULTIPLES = [4, 4.5, 5, 5.5] as const;
+/** The scale people can drag across for "times income": some lenders go well past the usual range for high earners. */
+export const INCOME_MULTIPLE_SCALE = { min: 4, max: 7, step: 0.5 } as const;
 
 /** The earliest `reviewed` date of all the rate sets, for the "rates checked" line on the pages and in the admin. */
 export function oldestReview(): string {

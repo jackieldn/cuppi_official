@@ -1,20 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { balanceSeries } from '@/lib/tools/amortise';
 import { evaluateOverpayment, OVERPAYMENT_DEFAULTS, type OverpaymentResult } from '@/lib/tools/evaluate';
 import { gbp, monthYearAfter, monthsToText } from '@/lib/tools/format';
 import { BAR, ComparisonCharts, ComparisonSection, type CompareRow } from './comparison';
 import { NumberField } from './fields';
-import { CalculatorFrame, DataTable, HeadlineResult, Note, ResultCard, ToolActions, WaitingResult } from './parts';
+import { AdvancedSection, CalculatorFrame, DataTable, HeadlineResult, Note, ResultCard, ToolActions, ViewToggle, WaitingResult } from './parts';
 import { RepaymentCharts } from './repayment-charts';
 import { ScenarioBar, ScenarioTag, scenarioColour } from './scenario-bar';
 import { ScheduleTable } from './schedule-table';
 import { useScenarios } from './use-scenarios';
 
+type View = 'overview' | 'whatif' | 'years';
+
 export function MortgageOverpaymentCalculator() {
   const sc = useScenarios(OVERPAYMENT_DEFAULTS, { label: 'Plan' });
   const v = sc.values;
+  const [view, setView] = useState<View>('overview');
+  const viewId = useId();
+  // The one-off lump sum and the yearly allowance are tucked away; a plan that already sets either (a shared link, say) opens them.
+  const usesAdvanced = sc.all.some((s) => s.lump !== OVERPAYMENT_DEFAULTS.lump || s.allowance !== OVERPAYMENT_DEFAULTS.allowance);
   // "Mortgage-free by" needs today's date, which the server cannot know for the visitor, so it appears after the page loads.
   const [today, setToday] = useState<Date | null>(null);
   useEffect(() => setToday(new Date()), []);
@@ -50,11 +56,13 @@ export function MortgageOverpaymentCalculator() {
             <NumberField label="And months" suffix="months" value={v.months} onChange={(x) => sc.set('months', x)} error={reads.months.error} />
           </div>
           <NumberField label="Extra each month" prefix="£" money value={v.extra} onChange={(x) => sc.set('extra', x)} error={reads.extra.error} hint="On top of your normal payment." />
-          <div className="grid gap-5 sm:grid-cols-2">
-            <NumberField label="One-off lump sum" prefix="£" money value={v.lump} onChange={(x) => sc.set('lump', x)} error={reads.lump.error} hint="Leave at 0 for none." />
-            <NumberField label="Paid after" suffix="months" value={v.lumpAfter} onChange={(x) => sc.set('lumpAfter', x)} error={reads.lump.value > 0 ? reads.lumpAfter.error : null} hint="0 is straight away." />
-          </div>
-          <NumberField label="Yearly overpayment allowance" suffix="%" value={v.allowance} onChange={(x) => sc.set('allowance', x)} error={reads.allowance.error} hint="Many deals let you overpay about 10% of the balance a year without a charge. Check yours." />
+          <AdvancedSection inUse={usesAdvanced} summary={reads.lump.value > 0 ? 'Lump sum on' : undefined}>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <NumberField label="One-off lump sum" prefix="£" money value={v.lump} onChange={(x) => sc.set('lump', x)} error={reads.lump.error} hint="Leave at 0 for none." />
+              <NumberField label="Paid after" suffix="months" value={v.lumpAfter} onChange={(x) => sc.set('lumpAfter', x)} error={reads.lump.value > 0 ? reads.lumpAfter.error : null} hint="0 is straight away." />
+            </div>
+            <NumberField label="Yearly overpayment allowance" suffix="%" value={v.allowance} onChange={(x) => sc.set('allowance', x)} error={reads.allowance.error} hint="Many deals let you overpay about 10% of the balance a year without a charge. Check yours." />
+          </AdvancedSection>
           <ToolActions changed={sc.changed} onReset={sc.reset} />
         </>
       }
@@ -63,48 +71,69 @@ export function MortgageOverpaymentCalculator() {
           <WaitingResult problems={problems} />
         ) : (
           <>
-            {sc.count > 1 && <ScenarioTag index={sc.active} name={sc.names[sc.active]} />}
-            <HeadlineResult
-              label="Interest you could save"
-              value={gbp(result.interestSaved)}
-              note={result.nothing ? 'Add a monthly overpayment or a lump sum to see what it saves.' : `Mortgage-free ${monthsToText(result.monthsSaved)} sooner${today ? `, by ${monthYearAfter(today, result.withOver.months)}` : ''}.`}
-              stats={[
-                { label: 'Time left now', value: monthsToText(result.baseline.months) },
-                { label: 'Time left if you overpay', value: monthsToText(result.withOver.months) },
-                { label: 'Interest now', value: gbp(result.baseline.totalInterest) },
-                { label: 'Interest if you overpay', value: gbp(result.withOver.totalInterest) },
-                { label: 'Your normal payment', value: gbp(result.baseline.payment, { pence: true }) },
-                { label: 'Overpaid in the first year', value: gbp(result.firstYear) },
+            <ViewToggle
+              panelId={viewId}
+              value={view}
+              onChange={setView}
+              views={[
+                { value: 'overview', label: 'Overview' },
+                { value: 'whatif', label: 'What if' },
+                { value: 'years', label: 'Year by year' },
               ]}
             />
-            {result.firstYear > result.limit + 0.005 ? (
-              <Note tone="warn">
-                In the first year you would overpay {gbp(result.firstYear)}, which is more than {v.allowance}% of what you owe ({gbp(result.limit)}). Overpaying more than your allowance can mean an early repayment charge, so check your mortgage terms or ask your lender first.
-              </Note>
-            ) : (
-              result.firstYear > 0 && <Note>{gbp(result.firstYear)} in the first year is within a {v.allowance}% allowance ({gbp(result.limit)}). Your own deal’s allowance may be different.</Note>
-            )}
-            <ResultCard title="Your mortgage over time">
-              <RepaymentCharts
-                series={[
-                  { label: 'With overpayments', points: balanceSeries(result.withOver, reads.balance.value), colour: scenarioColour(sc.active) },
-                  { label: 'As it is', points: balanceSeries(result.baseline, reads.balance.value), colour: 'lake' },
-                ]}
-                schedule={result.withOver}
-                description={`A chart comparing the mortgage balance with and without overpayments: paid off in ${monthsToText(result.withOver.months)} with them, and ${monthsToText(result.baseline.months)} without.`}
-              />
-            </ResultCard>
-            <ResultCard title="What different amounts a month would do">
-              <DataTable
-                head={['Extra a month', 'Paid off in', 'Sooner by', 'Interest saved']}
-                highlight={result.compareIndex}
-                rows={result.compare.map((c) => [gbp(c.extra), monthsToText(c.months), c.saved > 0 ? monthsToText(c.saved) : '–', c.interestSaved > 0.5 ? gbp(c.interestSaved) : '–'])}
-              />
-              <p className="mt-3 text-xs text-cuppi-ink-soft">Monthly overpayments only; the lump sum is not included in this table.</p>
-            </ResultCard>
-            <ResultCard title="Year by year, with your overpayments">
-              <ScheduleTable schedule={result.withOver} fileName="mortgage-overpayments" />
-            </ResultCard>
+            <div role="tabpanel" id={`${viewId}-panel`} aria-labelledby={`${viewId}-${view}`} className="space-y-5">
+              {sc.count > 1 && <ScenarioTag index={sc.active} name={sc.names[sc.active]} />}
+              {view === 'overview' && (
+                <>
+                  <HeadlineResult
+                    label="Interest you could save"
+                    value={gbp(result.interestSaved)}
+                    note={result.nothing ? 'Add a monthly overpayment or a lump sum to see what it saves.' : `Mortgage-free ${monthsToText(result.monthsSaved)} sooner${today ? `, by ${monthYearAfter(today, result.withOver.months)}` : ''}.`}
+                    stats={[
+                      { label: 'Time left now', value: monthsToText(result.baseline.months) },
+                      { label: 'Time left if you overpay', value: monthsToText(result.withOver.months) },
+                      { label: 'Interest now', value: gbp(result.baseline.totalInterest) },
+                      { label: 'Interest if you overpay', value: gbp(result.withOver.totalInterest) },
+                      { label: 'Your normal payment', value: gbp(result.baseline.payment, { pence: true }) },
+                      { label: 'Overpaid in the first year', value: gbp(result.firstYear) },
+                    ]}
+                  />
+                  {result.firstYear > result.limit + 0.005 ? (
+                    <Note tone="warn">
+                      In the first year you would overpay {gbp(result.firstYear)}, which is more than {v.allowance}% of what you owe ({gbp(result.limit)}). Overpaying more than your allowance can mean an early repayment charge, so check your mortgage terms or ask your lender first.
+                    </Note>
+                  ) : (
+                    result.firstYear > 0 && <Note>{gbp(result.firstYear)} in the first year is within a {v.allowance}% allowance ({gbp(result.limit)}). Your own deal’s allowance may be different.</Note>
+                  )}
+                  <ResultCard title="Your mortgage over time">
+                    <RepaymentCharts
+                      first="owed"
+                      series={[
+                        { label: 'With overpayments', points: balanceSeries(result.withOver, reads.balance.value), colour: scenarioColour(sc.active) },
+                        { label: 'As it is', points: balanceSeries(result.baseline, reads.balance.value), colour: 'lake' },
+                      ]}
+                      schedule={result.withOver}
+                      description={`A chart comparing the mortgage balance with and without overpayments: paid off in ${monthsToText(result.withOver.months)} with them, and ${monthsToText(result.baseline.months)} without.`}
+                    />
+                  </ResultCard>
+                </>
+              )}
+              {view === 'whatif' && (
+                <ResultCard title="What different amounts a month would do">
+                  <DataTable
+                    head={['Extra a month', 'Paid off in', 'Sooner by', 'Interest saved']}
+                    highlight={result.compareIndex}
+                    rows={result.compare.map((c) => [gbp(c.extra), monthsToText(c.months), c.saved > 0 ? monthsToText(c.saved) : '–', c.interestSaved > 0.5 ? gbp(c.interestSaved) : '–'])}
+                  />
+                  <p className="mt-3 text-xs text-cuppi-ink-soft">Monthly overpayments only; the lump sum is not included in this table.</p>
+                </ResultCard>
+              )}
+              {view === 'years' && (
+                <ResultCard title="Year by year, with your overpayments">
+                  <ScheduleTable schedule={result.withOver} fileName="mortgage-overpayments" />
+                </ResultCard>
+              )}
+            </div>
           </>
         )
       }
