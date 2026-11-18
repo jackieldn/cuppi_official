@@ -8,7 +8,7 @@
 import { buildSchedule, interestOnlyPayment, monthlyRateFromNominal, paymentFor, type Schedule } from './amortise.ts';
 import { estimateBorrowing, type BorrowResult } from './borrowing.ts';
 import { analyseLoan, type EarlyOutcome, type EarlyRepayment, type LoanResult } from './loan.ts';
-import { INCOME_MULTIPLES, PROPERTY_TAX, type Region } from './rates.ts';
+import { INCOME_MULTIPLE_SCALE, PROPERTY_TAX, type Region } from './rates.ts';
 import { calculateStampDuty, type BuyerType, type StampDutyResult } from './stamp-duty.ts';
 import { problemsOf, readNumber, type Read } from './validate.ts';
 
@@ -16,7 +16,7 @@ const orZero = (text: string) => (text.trim() === '' ? '0' : text);
 
 // ---------------------------------------------------------------- mortgage
 
-export const MORTGAGE_DEFAULTS = { mode: 'amount', amount: '250,000', price: '300,000', deposit: '50,000', rate: '4.5', years: '25', type: 'repayment', fee: '0', feeAdded: 'no' };
+export const MORTGAGE_DEFAULTS = { mode: 'amount', amount: '250,000', price: '300,000', deposit: '50,000', rate: '4.5', years: '25', type: 'repayment', fee: '0', feeAdded: 'no', fixed: 'none', rateAfter: '7' };
 export type MortgageFields = Record<keyof typeof MORTGAGE_DEFAULTS, string>;
 
 export type MortgageResult = {
@@ -40,6 +40,17 @@ export type MortgageResult = {
   ltv: number | null;
   /** Null for interest-only. */
   schedule: Schedule | null;
+  /** How many months the first rate lasts, when it is a fixed deal that ends within the term (otherwise 0). */
+  fixMonths: number;
+  /** The rate (a yearly percentage) once the fix ends, and the monthly payment at it. Null when there is no fix to end. */
+  rateAfter: number | null;
+  paymentAfter: number | null;
+  /** What is still owed when the fix ends (null when there is no fix to end). */
+  owedAtFix: number | null;
+  /** What the table of rates is about: the rate itself, or the rate the mortgage moves to when the fix ends. */
+  rateTableFor: 'rate' | 'after-fix';
+  /** The rate in the table that is the one being used. */
+  rateTableAt: number;
   rateTable: { rate: number; payment: number }[];
   /** Over the first `periodMonths` months, for comparing deals: the interest, interest plus fee, and what is still owed. */
   period: { months: number; interest: number; cost: number; balance: number } | null;
@@ -55,9 +66,14 @@ export function evaluateMortgage(v: MortgageFields, periodMonths = 0) {
     rate: readNumber(v.rate, { label: 'the interest rate', min: 0, max: 25 }),
     years: readNumber(v.years, { label: 'the term in years', min: 1, max: 40 }),
     fee: readNumber(orZero(v.fee), { label: 'the fee', min: 0, max: 1_000_000 }),
+    rateAfter: readNumber(v.rateAfter, { label: 'the rate after the fixed period', min: 0, max: 25 }),
   };
+  const fixYears = v.fixed === '2' ? 2 : v.fixed === '5' ? 5 : 0;
+  // The rate after the fix only matters when there is a fix, and it ends before the mortgage does.
+  const fixMonthsAsked = fixYears * 12;
+  const needsAfter = fixYears > 0 && Number.isFinite(reads.years.value) && fixMonthsAsked < Math.round(reads.years.value * 12);
   const depositTooBig = byPrice && Number.isFinite(reads.price.value) && Number.isFinite(reads.deposit.value) && reads.deposit.value >= reads.price.value;
-  const problems = problemsOf(byPrice ? reads.price : reads.amount, byPrice ? reads.deposit : null, reads.rate, reads.years, reads.fee, depositTooBig ? { value: NaN, error: 'The deposit needs to be less than the price.' } : null);
+  const problems = problemsOf(byPrice ? reads.price : reads.amount, byPrice ? reads.deposit : null, reads.rate, reads.years, reads.fee, needsAfter ? reads.rateAfter : null, depositTooBig ? { value: NaN, error: 'The deposit needs to be less than the price.' } : null);
   const loan = byPrice ? reads.price.value - reads.deposit.value : reads.amount.value;
   if (problems.length || !(loan > 0)) return { reads, problems, depositTooBig, result: null as MortgageResult | null };
 
@@ -67,15 +83,26 @@ export function evaluateMortgage(v: MortgageFields, periodMonths = 0) {
   const principal = loan + (feeAdded ? fee : 0);
   const months = Math.round(reads.years.value * 12);
   const r = monthlyRateFromNominal(reads.rate.value);
-  const schedule = interestOnly ? null : buildSchedule({ principal, monthlyRate: r, termMonths: months });
+  const fixMonths = needsAfter ? fixMonthsAsked : 0;
+  const rAfter = monthlyRateFromNominal(reads.rateAfter.value);
+  const schedule = interestOnly ? null : buildSchedule({ principal, monthlyRate: r, termMonths: months, rateChange: fixMonths > 0 ? { afterMonth: fixMonths, monthlyRate: rAfter } : undefined });
   const payment = interestOnly ? interestOnlyPayment(principal, r) : schedule!.payment;
-  const totalInterest = interestOnly ? payment * months : schedule!.totalInterest;
-  const rates = [...new Set([Math.max(0, reads.rate.value - 1), reads.rate.value, reads.rate.value + 1, reads.rate.value + 2].map((x) => +x.toFixed(4)))].sort((a, b) => a - b);
+  const paymentAfter = fixMonths === 0 ? null : interestOnly ? interestOnlyPayment(principal, rAfter) : schedule!.paymentAfter;
+  const totalInterest = interestOnly ? payment * (fixMonths || months) + (paymentAfter ?? 0) * (fixMonths ? months - fixMonths : 0) : schedule!.totalInterest;
+  // The table of rates: for a fixed deal, what matters is the rate it moves to, applied to what is still owed then.
+  const tableAt = fixMonths > 0 ? reads.rateAfter.value : reads.rate.value;
+  const owedAtFix = fixMonths > 0 && !interestOnly ? schedule!.rows[fixMonths - 1]?.balance ?? 0 : principal;
+  const rates = [...new Set([Math.max(0, tableAt - 1), tableAt, tableAt + 1, tableAt + 2].map((x) => +x.toFixed(4)))].sort((a, b) => a - b);
+  const tablePayment = (x: number) => {
+    const m = monthlyRateFromNominal(x);
+    if (interestOnly) return interestOnlyPayment(principal, m);
+    return fixMonths > 0 ? paymentFor(owedAtFix, m, months - fixMonths) : paymentFor(principal, m, months);
+  };
 
   let period: MortgageResult['period'] = null;
   if (periodMonths > 0) {
     const h = Math.min(periodMonths, interestOnly ? months : schedule!.months);
-    const interest = interestOnly ? payment * h : schedule!.rows.slice(0, h).reduce((s, x) => s + x.interest, 0);
+    const interest = interestOnly ? payment * (fixMonths ? Math.min(h, fixMonths) : h) + (paymentAfter ?? 0) * (fixMonths ? Math.max(0, h - fixMonths) : 0) : schedule!.rows.slice(0, h).reduce((s, x) => s + x.interest, 0);
     const balance = interestOnly ? principal : h >= schedule!.months ? 0 : schedule!.rows[h - 1].balance;
     period = { months: h, interest, cost: interest + fee, balance };
   }
@@ -97,7 +124,13 @@ export function evaluateMortgage(v: MortgageFields, periodMonths = 0) {
       stillOwedAtEnd: interestOnly ? principal : 0,
       ltv: byPrice && reads.price.value > 0 ? (loan / reads.price.value) * 100 : null,
       schedule,
-      rateTable: rates.map((x) => ({ rate: x, payment: interestOnly ? interestOnlyPayment(principal, monthlyRateFromNominal(x)) : paymentFor(principal, monthlyRateFromNominal(x), months) })),
+      fixMonths,
+      rateAfter: fixMonths > 0 ? reads.rateAfter.value : null,
+      paymentAfter,
+      owedAtFix: fixMonths > 0 ? owedAtFix : null,
+      rateTableFor: fixMonths > 0 ? 'after-fix' : 'rate',
+      rateTableAt: tableAt,
+      rateTable: rates.map((x) => ({ rate: x, payment: tablePayment(x) })),
       period,
     } as MortgageResult | null,
   };
@@ -225,7 +258,10 @@ export function evaluateBorrow(v: BorrowFields) {
     years: readNumber(v.years, { label: 'the term in years', min: 1, max: 40 }),
     debts: readNumber(v.debts, { label: 'the monthly debts', min: 0, max: 1_000_000 }),
   };
-  const multiple = INCOME_MULTIPLES.find((m) => String(m) === v.multiple) ?? 4.5;
+  // Whatever was typed or linked is moved to the nearest step on the scale (4× to 7× in halves).
+  const asked = v.multiple.trim() === '' ? NaN : Number(v.multiple);
+  const { min, max, step } = INCOME_MULTIPLE_SCALE;
+  const multiple = Number.isFinite(asked) ? Math.min(max, Math.max(min, Math.round(asked / step) * step)) : 4.5;
   const problems = problemsOf(reads.incomeA, reads.incomeB, reads.deposit, reads.rate, reads.years, reads.debts);
   if (problems.length) return { reads, problems, multiple, result: null as BorrowResult | null };
   return {
@@ -238,7 +274,7 @@ export function evaluateBorrow(v: BorrowFields) {
 
 // ------------------------------------------------------------ loan
 
-export const LOAN_DEFAULTS = { amount: '10,000', apr: '9.9', term: '5', unit: 'years', fee: '0', feeAdded: 'no', early: 'monthly', extra: '50', lump: '2,000', lumpAfter: '12', settleAfter: '24', settleFee: '1' };
+export const LOAN_DEFAULTS = { amount: '10,000', apr: '9.9', term: '5', unit: 'years', fee: '0', feeAdded: 'no', early: 'none', extra: '50', lump: '2,000', lumpAfter: '12', settleAfter: '24', settleFee: '1' };
 export type LoanFields = Record<keyof typeof LOAN_DEFAULTS, string>;
 export type EarlyKind = 'none' | 'monthly' | 'lump' | 'settle';
 
@@ -258,6 +294,8 @@ export type LoanAnswer = {
   totalPaid: number;
   /** The scheduled monthly payment. */
   payment: number;
+  /** The monthly payment and interest at nearby rates, with no early repayment, for the "what if the rate were different" table. */
+  rateTable: { apr: number; payment: number; interest: number }[];
 };
 
 export function evaluateLoan(v: LoanFields) {
@@ -286,6 +324,11 @@ export function evaluateLoan(v: LoanFields) {
   const e = result.early;
   const months = e ? e.months : result.baseline.months;
   const totalInterest = e ? e.totalInterest : result.baseline.totalInterest;
+  const aprs = [...new Set([Math.max(0, reads.apr.value - 2), Math.max(0, reads.apr.value - 1), reads.apr.value, reads.apr.value + 1, reads.apr.value + 2].map((x) => +x.toFixed(4)))].sort((a, b) => a - b);
+  const rateTable = aprs.map((apr) => {
+    const b = analyseLoan({ amount: principal, aprPct: apr, termMonths, early: { kind: 'none' } }).baseline;
+    return { apr, payment: b.payment, interest: b.totalInterest };
+  });
   const settleFee = e?.kind === 'settle' ? e.fee : 0;
   const paid = e?.kind === 'settle' ? e.totalPaid : (e ? e.totalPaid : result.baseline.totalPaid);
   return {
@@ -293,7 +336,7 @@ export function evaluateLoan(v: LoanFields) {
     problems,
     early,
     inYears,
-    result: { result, early: e, amount: reads.amount.value, principal, arrangementFee, months, totalInterest, totalCost: totalInterest + settleFee + arrangementFee, totalPaid: paid + (v.feeAdded === 'yes' ? 0 : arrangementFee), payment: result.payment } as LoanAnswer | null,
+    result: { result, early: e, amount: reads.amount.value, principal, arrangementFee, months, totalInterest, totalCost: totalInterest + settleFee + arrangementFee, totalPaid: paid + (v.feeAdded === 'yes' ? 0 : arrangementFee), payment: result.payment, rateTable } as LoanAnswer | null,
   };
 }
 

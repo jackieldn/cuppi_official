@@ -26,6 +26,7 @@ export function PageHero({
   align = 'left',
   top,
   pattern,
+  stackTile,
   children,
 }: {
   tint: FeatureTint;
@@ -37,6 +38,8 @@ export function PageHero({
   /** Shown above the title, centred layout only. */
   top?: React.ReactNode;
   pattern?: { name: PatternName; focus: string; shape?: 'circle' | 'ellipse' };
+  /** On a phone, put the tile above the title instead of beside it. */
+  stackTile?: boolean;
   children?: React.ReactNode;
 }) {
   const t = TINTS[tint];
@@ -62,7 +65,7 @@ export function PageHero({
         )}
         <div className={cn('relative', back && 'pt-8', centred && 'flex flex-col items-center')}>
           {top && <div className="mb-8 w-full sm:mb-10">{top}</div>}
-          <div className={cn('cuppi-fade-up flex items-center gap-5', centred && 'justify-center')} style={delay(80)}>
+          <div className={cn('cuppi-fade-up flex gap-5', stackTile ? 'flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5' : 'items-center', centred && 'justify-center', centred && stackTile && 'items-center')} style={delay(80)}>
             {tile}
             <h1 className="font-headline text-4xl font-normal leading-[1.05] tracking-tight sm:text-6xl">{title}</h1>
           </div>

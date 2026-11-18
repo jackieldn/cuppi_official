@@ -272,7 +272,7 @@ export function ChartTabs<V extends string>({ tabs, value, onChange, panelId }: 
           onClick={() => onChange(t.value)}
           className={cn(
             'min-h-10 flex-1 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
-            value === t.value ? 'bg-cuppi-card text-cuppi-ink shadow-[0_1px_3px_rgb(var(--c-shadow)/0.18)]' : 'text-cuppi-ink-soft hover:text-cuppi-ink',
+            value === t.value ? 'bg-cuppi-card text-cuppi-ink' : 'text-cuppi-ink-soft hover:text-cuppi-ink',
           )}
         >
           {t.label}
@@ -287,16 +287,17 @@ export function ChartTabs<V extends string>({ tabs, value, onChange, panelId }: 
  * go (how much of the money is interest and how much clears the debt, in total and year by year). Both glide to their
  * new shape when the numbers change.
  */
-export function RepaymentCharts({ series, schedule, description }: { series: ChartSeries[]; schedule: Schedule; description: string }) {
-  const [view, setView] = useState<'owed' | 'split'>('owed');
+export function RepaymentCharts({ series, schedule, description, first = 'split' }: { series: ChartSeries[]; schedule: Schedule; description: string; /** Which view shows first, and comes first in the tabs. */ first?: 'owed' | 'split' }) {
+  const [view, setView] = useState<'owed' | 'split'>(first);
   const id = useId();
+  const tabs = [
+    { value: 'split', label: 'Where your payments go' },
+    { value: 'owed', label: 'What you owe' },
+  ] as const;
   return (
     <div>
       <ChartTabs
-        tabs={[
-          { value: 'owed', label: 'What you owe' },
-          { value: 'split', label: 'Where your payments go' },
-        ]}
+        tabs={first === 'split' ? tabs : [tabs[1], tabs[0]]}
         value={view}
         onChange={setView}
         panelId={id}

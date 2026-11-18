@@ -34,7 +34,8 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
     how: [
       'On a repayment mortgage you pay a level amount each month. At first most of it is interest; as the debt falls, more of it goes towards the debt itself, until you owe nothing at the end of the term. Each month the interest is worked out on what you still owe, at your yearly rate divided by twelve.',
       'On an interest-only mortgage you pay only the interest, so the payment is lower, but you still owe everything you borrowed at the end. You would need a separate plan to pay that off.',
-      'The table of rates shows your payment if your rate were a little lower or higher, which is handy when a fixed deal is about to end.',
+      'The Stress-test view shows your payment if your rate were a little lower or higher, which is handy when a fixed deal is about to end.',
+      'Open Advanced to choose a 2-year or 5-year fixed deal and the rate you expect it to move to afterwards. The calculator then shows the payment when the fix ends and a more realistic cost over the whole term.',
       'Comparing deals? Press “Compare with another deal” above the boxes. Each new deal starts as a copy of the one you are on, so change only what differs, such as the rate or the fee. You can compare up to five side by side, with the cost over the first few years of each deal.',
     ],
     limits: [
@@ -72,7 +73,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
     how: [
       'Interest is charged each month on what you still owe. Anything extra you pay goes straight towards the debt, so next month’s interest is a little smaller, and the saving builds on itself over the years.',
       'This calculator keeps your normal monthly payment the same and uses the overpayments to finish the mortgage sooner. (Some lenders let you lower the payment instead; that saves less interest overall.)',
-      'The allowance box checks your first year of overpayments against the share of your balance that you can usually overpay without a charge. Many fixed and discounted deals allow about 10% a year; yours may differ, so check your terms.',
+      'Open Advanced to add a one-off lump sum and to change the yearly allowance. The allowance box checks your first year of overpayments against the share of your balance that you can usually overpay without a charge. Many fixed and discounted deals allow about 10% a year; yours may differ, so check your terms.',
       'To weigh up different plans, press “Compare with another plan” above the boxes and give each plan its own overpayment. You can compare up to five side by side.',
     ],
     limits: [
@@ -147,7 +148,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
     how: [
       'Most lenders start with a multiple of your yearly income before tax. Four to four and a half times is common, and some go higher in certain cases. With two people, the incomes are added together.',
       'They then check that you could really afford the payments, looking at your other spending, debts and credit record, and whether you could still manage if rates rose. So your real figure can be lower or higher than this estimate.',
-      'This calculator multiplies your income, adds your deposit to show the most you could pay for a home, and works out the monthly payment at the rate and term you choose. The table shows the usual range of multiples side by side.',
+      'This calculator multiplies your income, adds your deposit to show the most you could pay for a home, and works out the monthly payment at the rate and term you choose. Drag the “Times income” scale between 4× and 7× in half steps; the table shows the usual range of multiples side by side, plus the one you picked.',
       'To compare situations, press “Compare with another scenario” above the boxes: a bigger deposit, a second income, or a different rate. You can compare up to five side by side.',
     ],
     limits: [
@@ -182,7 +183,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
     how: [
       'A loan is paid back in equal monthly payments. The interest each month is worked out on what you still owe, so most of the early payments go on interest and more goes on the debt as time passes.',
       'Loans are advertised with an APR, the yearly cost of borrowing as a single rate. This calculator turns your APR into the matching monthly rate.',
-      'Paying early cuts the interest because you owe less for less time. You can try extra each month, a lump sum, or settling in full, which usually has a fee. The fee is counted before it shows what you would save.',
+      'Paying early cuts the interest because you owe less for less time. Open Advanced to try extra each month, a lump sum, or settling in full, which usually has a fee. The fee is counted before it shows what you would save.',
       'To compare loans, or a loan with and without paying early, press “Compare with another loan” above the boxes. Each starts as a copy of the one you are on. You can compare up to five side by side, with the arrangement fee counted in the cost.',
     ],
     limits: [

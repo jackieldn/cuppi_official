@@ -74,6 +74,45 @@ describe('mortgage', () => {
     assert.equal(r.period.months, 24);
     assert.equal(r.period.balance, 0);
   });
+  test('a fixed deal moves to the later rate when the fix ends', () => {
+    const { result: r } = evaluateMortgage({ ...MORTGAGE_DEFAULTS, fixed: '2', rate: '4', rateAfter: '7' });
+    const first = paymentFor(250_000, monthlyRateFromNominal(4), 300);
+    close(r.payment, first);
+    assert.equal(r.fixMonths, 24);
+    close(r.paymentAfter, paymentFor(r.owedAtFix, monthlyRateFromNominal(7), 276), 1e-6);
+    assert.ok(r.paymentAfter > r.payment);
+    close(r.schedule.rows[23].payment, first, 1e-9);
+    close(r.schedule.rows[24].payment, r.paymentAfter, 1e-9);
+    close(r.schedule.rows[299].balance, 0, 0.01);
+    const plain = evaluateMortgage({ ...MORTGAGE_DEFAULTS, rate: '4' }).result;
+    assert.ok(r.totalInterest > plain.totalInterest);
+  });
+  test('a fixed deal at the same rate after the fix is the plain mortgage', () => {
+    const fixed = evaluateMortgage({ ...MORTGAGE_DEFAULTS, fixed: '5', rateAfter: '4.5' }).result;
+    const plain = evaluateMortgage(MORTGAGE_DEFAULTS).result;
+    close(fixed.totalInterest, plain.totalInterest, 1e-6);
+    close(fixed.paymentAfter, plain.payment, 1e-6);
+  });
+  test('a fixed deal as interest-only, and over a comparison period', () => {
+    const io = evaluateMortgage({ ...MORTGAGE_DEFAULTS, type: 'interest-only', fixed: '2', rate: '4', rateAfter: '6' }, 36).result;
+    close(io.payment, 250_000 * 0.04 / 12, 1e-6);
+    close(io.paymentAfter, 250_000 * 0.06 / 12, 1e-6);
+    close(io.period.interest, io.payment * 24 + io.paymentAfter * 12, 1e-6);
+    close(io.totalInterest, io.payment * 24 + io.paymentAfter * 276, 1e-6);
+    const rp = evaluateMortgage({ ...MORTGAGE_DEFAULTS, fixed: '2', rate: '4', rateAfter: '6' }, 36).result;
+    close(rp.period.interest, rp.schedule.rows.slice(0, 36).reduce((s, x) => s + x.interest, 0), 1e-6);
+  });
+  test('the stress-test for a fixed deal is about the rate it moves to', () => {
+    const { result: r } = evaluateMortgage({ ...MORTGAGE_DEFAULTS, fixed: '2', rateAfter: '7' });
+    assert.equal(r.rateTableFor, 'after-fix');
+    assert.deepEqual(r.rateTable.map((x) => x.rate), [6, 7, 8, 9]);
+    close(r.rateTable[1].payment, r.paymentAfter, 1e-6);
+  });
+  test('the rate after the fix is only needed when the fix ends before the mortgage does', () => {
+    assert.ok(evaluateMortgage({ ...MORTGAGE_DEFAULTS, fixed: '5', rateAfter: '' }).problems.length > 0);
+    assert.ok(evaluateMortgage({ ...MORTGAGE_DEFAULTS, fixed: '5', years: '4', rateAfter: '' }).result);
+    assert.ok(evaluateMortgage({ ...MORTGAGE_DEFAULTS, fixed: 'none', rateAfter: '' }).result);
+  });
   test('the rate table has the current rate in it', () => {
     const { result: r } = evaluateMortgage(MORTGAGE_DEFAULTS);
     assert.deepEqual(r.rateTable.map((x) => x.rate), [3.5, 4.5, 5.5, 6.5]);
@@ -111,6 +150,17 @@ describe('stamp duty, borrowing and loans', () => {
     assert.equal(e.region, 'england');
     assert.equal(e.buyer, 'standard');
   });
+  test('borrowing: the multiple is moved to the nearest half on the 4 to 7 scale', () => {
+    const at = (m) => evaluateBorrow({ ...BORROW_DEFAULTS, multiple: m }).multiple;
+    assert.equal(at('7'), 7);
+    assert.equal(at('6.5'), 6.5);
+    assert.equal(at('9'), 7);
+    assert.equal(at('2'), 4);
+    assert.equal(at('5.3'), 5.5);
+    assert.equal(at(''), 4.5);
+    assert.equal(at('abc'), 4.5);
+    assert.equal(evaluateBorrow({ ...BORROW_DEFAULTS, incomeA: '50,000', multiple: '7' }).result.borrowing, 350_000);
+  });
   test('borrowing: joint income times the multiple', () => {
     const { result: r, multiple } = evaluateBorrow({ ...BORROW_DEFAULTS, incomeB: '30,000', multiple: '5' });
     assert.equal(multiple, 5);
@@ -118,7 +168,7 @@ describe('stamp duty, borrowing and loans', () => {
   });
   test('a loan with an early repayment counts it in its months and cost', () => {
     const plain = evaluateLoan({ ...LOAN_DEFAULTS, early: 'none' }).result;
-    const over = evaluateLoan(LOAN_DEFAULTS).result;
+    const over = evaluateLoan({ ...LOAN_DEFAULTS, early: 'monthly' }).result;
     assert.equal(plain.months, 60);
     assert.ok(over.months < 60);
     assert.ok(over.totalCost < plain.totalCost);
@@ -133,6 +183,13 @@ describe('stamp duty, borrowing and loans', () => {
     assert.equal(added.principal, 10_250);
     assert.ok(added.totalCost > paid.totalCost);
     close(added.totalPaid, 10_250 + added.totalInterest, 0.01);
+  });
+  test('a loan starts with no early repayment, and its rate table has the rate in it', () => {
+    const r = evaluateLoan(LOAN_DEFAULTS).result;
+    assert.equal(r.early, null);
+    assert.deepEqual(r.rateTable.map((x) => x.apr), [7.9, 8.9, 9.9, 10.9, 11.9]);
+    close(r.rateTable[2].payment, r.payment, 1e-9);
+    assert.ok(r.rateTable[4].interest > r.rateTable[0].interest);
   });
   test('settling early: months are the settling month, and the fee is in the cost', () => {
     const r = evaluateLoan({ ...LOAN_DEFAULTS, early: 'settle' }).result;
