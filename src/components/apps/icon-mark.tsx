@@ -21,9 +21,15 @@ export function pageWash(colour: string): string {
   return `radial-gradient(75% 80% at 30% 0%, color-mix(in srgb, ${c} 42%, transparent) 0%, transparent 100%)`;
 }
 
-/** The colour as a glow beneath the icon. */
-export function iconGlow(colour: string, spread = 70): CSSProperties {
-  return { boxShadow: `0 28px ${spread}px -14px color-mix(in srgb, ${colourOf(colour)} 85%, transparent)` };
+/**
+ * The colour as a glow beneath the icon. An app icon is a solid rounded square, so a box shadow
+ * follows it; a website's logo is whatever shape its picture is (often with see-through
+ * corners), so its glow follows the picture's own outline instead.
+ */
+export function iconGlow(colour: string, spread = 70, kind: AppKind = 'app'): CSSProperties {
+  const glow = `color-mix(in srgb, ${colourOf(colour)} 85%, transparent)`;
+  if (kind === 'website') return { filter: `drop-shadow(0 ${Math.round(spread / 3)}px ${Math.round(spread / 3)}px ${glow})` };
+  return { boxShadow: `0 28px ${spread}px -14px ${glow}` };
 }
 
 interface IconMarkProps {
@@ -49,10 +55,10 @@ export function IconMark({ kind, icon, alt = '', className, sizes, priority, sty
       </div>
     );
   }
-  // A logo can be any shape; it is shown whole, never cropped.
+  // A logo can be any shape; it is shown whole as uploaded: no rounding, no outline, no cropping.
   return (
     <div
-      className={cn('relative w-auto overflow-hidden rounded-xl ring-1 ring-white/15', className)}
+      className={cn('relative w-auto', className)}
       style={{ aspectRatio: aspectOf(icon), ...style }}
     >
       <Image src={icon.url} alt={alt} fill sizes={sizes} priority={priority} className="object-contain" />

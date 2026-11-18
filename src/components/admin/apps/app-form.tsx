@@ -473,7 +473,7 @@ export function AppForm({ app, defaultKind = 'app', takenSlugs, onFinished }: Ap
                     icon={icon}
                     sizes="96px"
                     className={isApp ? 'h-20 w-20' : 'h-14 max-w-[60%]'}
-                    style={iconGlow(isHexColour(iconColor) ? iconColor : '', 40)}
+                    style={iconGlow(isHexColour(iconColor) ? iconColor : '', 40, kind)}
                   />
                 ) : (
                   <span className="text-xs text-white/50">Preview of the card</span>
