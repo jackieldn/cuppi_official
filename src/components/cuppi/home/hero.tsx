@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { splitEmphasis, type HomeHero as HomeHeroData } from '@/lib/home-hero';
+import { heightCap, splitEmphasis, type HomeHero as HomeHeroData } from '@/lib/home-hero';
 import type { HeroTemplate } from '@/lib/home-hero-settings';
 import { FramedPhones } from '../blocks/framed-phones';
 import { patternUrl } from '../pattern-overlay';
@@ -11,6 +11,22 @@ import { TINTS } from '../blocks/tints';
 import { MarkedText } from '../marked-text';
 
 type Hero = HomeHeroData & { template?: HeroTemplate };
+
+/** The slideshow's height limit for each screen size, as the CSS variables `.hero-cap` (globals.css) picks from. */
+function heightVars(limit: NonNullable<HomeHeroData['heightLimit']>): React.CSSProperties {
+  return { '--hc-m': heightCap(limit.mobile), '--hc-t': heightCap(limit.tablet), '--hc-w': heightCap(limit.web) } as React.CSSProperties;
+}
+
+/** The admin's placement of the phone for each screen size, as the CSS variables `.hero-phone-place` (globals.css) picks from. */
+function placementVars(p: NonNullable<HomeHeroData['placement']>): React.CSSProperties {
+  const vars: Record<string, string> = {};
+  for (const [device, letter] of [['mobile', 'm'], ['tablet', 't'], ['web', 'w']] as const) {
+    vars[`--hp-${letter}-x`] = `${p[device].x}%`;
+    vars[`--hp-${letter}-y`] = `${p[device].y}%`;
+    vars[`--hp-${letter}-s`] = String(p[device].scale / 100);
+  }
+  return vars as React.CSSProperties;
+}
 
 /**
  * The home page's opening block: what's new, in a big colour block, with the app on show.
@@ -81,7 +97,10 @@ export function HomeHero({ hero, instant = false, fill = false }: { hero: Hero; 
   // as tall as the tallest hero, and the phone must not grow with it. The window sits in the middle of the cell.
   const phone = (
     <div className={cn('intro-near relative flex', centred ? 'h-[22rem] sm:h-[26rem] md:h-[30rem]' : 'min-h-[28rem] md:min-h-[36rem]', reverse && 'md:order-1')}>
-      <div className={cn('relative w-full', centred ? 'h-full' : 'my-auto h-[28rem] md:h-[36rem]')}>
+      <div
+        className={cn('relative w-full', centred ? 'h-full' : 'my-auto h-[28rem] md:h-[36rem]', hero.placement && 'hero-phone-place')}
+        style={hero.placement ? placementVars(hero.placement) : undefined}
+      >
         <FramedPhones image={shots} variant={centred ? 'hero-centred' : 'hero-split'} sizes="(max-width: 768px) 60vw, 30vw" priority />
       </div>
     </div>
@@ -94,12 +113,19 @@ export function HomeHero({ hero, instant = false, fill = false }: { hero: Hero; 
         seconds={hero.introSeconds}
         instant={instant}
         patternUrl={hero.pattern ? patternUrl(hero.pattern.url) : undefined}
-        className={cn('relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem]', fill && 'h-full', tint.surface, tint.text)}
+        // With a height limit the block is cut off at that height (its own rounded edge, so the corners stay round), which crops the
+        // phone's lower part and never the words: see `.hero-cap` in globals.css.
+        className={cn('relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem]', fill && 'h-full', hero.heightLimit && 'hero-cap', tint.surface, tint.text)}
+        style={hero.heightLimit ? heightVars(hero.heightLimit) : undefined}
       >
-        {/* Far layer: the pattern. The intro scales this wrapper, so the pattern inside keeps its own fade and cursor light. */}
+        {/* Far layer: the pattern. The intro scales this wrapper, so the pattern inside keeps its own fade and cursor light.
+            The blend with the surface (dark mode's overlay) is set on the wrapper, not the pattern: the wrapper is a graphics layer
+            while the intro plays and an ordinary element afterwards, and a pattern blended from inside it would mix with nothing
+            in the first case and with the surface in the second, so it would visibly weaken when the intro settled. */}
         {hero.pattern && (
-          <div className="intro-far pointer-events-none absolute inset-0">
+          <div className="intro-far pointer-events-none absolute inset-0" style={{ mixBlendMode: 'var(--pattern-blend, normal)' as React.CSSProperties['mixBlendMode'] }}>
             <SpotlightPattern
+              blend={false}
               pattern={hero.pattern.url}
               focus={hero.pattern.focus}
               size={hero.pattern.size}

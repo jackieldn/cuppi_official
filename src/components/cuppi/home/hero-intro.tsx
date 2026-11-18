@@ -31,6 +31,7 @@ export function HeroIntro({
   seconds,
   instant = false,
   className,
+  style,
   children,
 }: {
   /** The pattern is a CSS background, so nothing waits for it unless we do it here. */
@@ -42,6 +43,8 @@ export function HeroIntro({
   /** Skip the opening shot: for the admin's preview, which is redrawn on every edit. */
   instant?: boolean;
   className?: string;
+  /** More inline style for the frame (the height limit's variables). */
+  style?: React.CSSProperties;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -95,7 +98,7 @@ export function HeroIntro({
       data-hero={template}
       data-spotlight-host
       className={className}
-      style={seconds ? ({ '--intro-dur': `${seconds}s` } as React.CSSProperties) : undefined}
+      style={seconds || style ? ({ ...(seconds ? { '--intro-dur': `${seconds}s` } : {}), ...style } as React.CSSProperties) : undefined}
     >
       {children}
     </div>

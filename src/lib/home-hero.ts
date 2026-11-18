@@ -10,6 +10,32 @@ import type { MockupKind } from './phone-mockups';
 
 export type HeroLink = { label: string; href: string; external?: boolean };
 
+/** The three screen sizes the hero's phone can be placed for. Mobile is below 768px wide, tablet from 768 to 1023, web from 1024. */
+export type Device = 'web' | 'tablet' | 'mobile';
+
+/**
+ * Where the phone sits and how big it is, relative to where the template puts it: `x` and `y` move it by that many percent of its own
+ * window's width and height (positive is right and down), and `scale` is its size in percent (100 is as the template draws it).
+ */
+export type PhonePlacement = { x: number; y: number; scale: number };
+
+/**
+ * A limit on how tall the hero can be on one screen size: with `fit` on, never taller than `share` percent of what is left of the
+ * screen's height once the menu is allowed for (100 is "the menu and the hero just fill the screen"). A hero already shorter than
+ * that is left alone. Off, the hero is as tall as its content (and, in a slideshow, its tallest slide) makes it.
+ */
+export type HeightLimit = { fit: boolean; share: number };
+
+/** The room the menu takes above the hero, in rem, and the shortest a limited hero will ever be, so the words are never cut off. */
+const MENU_ROOM_REM = 5;
+const SHORTEST_REM = 28;
+
+/** A limit as the CSS value for `max-height` (HomeHero sets it, globals.css applies it for the screen size). */
+export function heightCap(limit: HeightLimit): string {
+  if (!limit.fit) return 'none';
+  return `max(${SHORTEST_REM}rem, calc(${limit.share / 100} * (100svh - ${MENU_ROOM_REM}rem)))`;
+}
+
 export type HomeHero = {
   headline: string;
   body: string;
@@ -46,6 +72,10 @@ export type HomeHero = {
   };
   /** 'tilt' (turned 45 degrees) or 'front' (straight on). */
   mockup: MockupKind;
+  /** The phone's own position and size on each screen size. Unset, the phone is where its template puts it on all of them. */
+  placement?: Record<Device, PhonePlacement>;
+  /** How tall the block may be on each screen size. Set for every hero alike (it is the slideshow's, not one slide's). Unset, no limit. */
+  heightLimit?: Record<Device, HeightLimit>;
   /** Mirror the phone so its screen faces the other way. */
   flip?: boolean;
   tint: FeatureTint;

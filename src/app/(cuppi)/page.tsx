@@ -7,7 +7,7 @@ import { LatestVideo } from '@/components/cuppi/home/latest-video';
 import { AppFan } from '@/components/cuppi/home/app-fan';
 import { getFanFeatures } from '@/lib/features';
 import { HERO_HOLD_SECONDS, buildHero } from '@/lib/home-hero-settings';
-import { getHeroList } from '@/lib/cuppi-site-data';
+import { getHeroHeight, getHeroList } from '@/lib/cuppi-site-data';
 import { refreshMetadata, refreshPage } from '@/components/cuppi/section-gate';
 
 // "What's new" re-checks the latest Cosy Corner posts every minute. The heroes (one to five, a
@@ -25,7 +25,8 @@ export default async function CuppiPage() {
 
   // The icons that slide out of Cuppi: chosen and ordered in the admin (Cuppi > Icon banner).
   const features = await getFanFeatures();
-  const heroes = (await getHeroList()).map(buildHero);
+  const [heroList, heroHeight] = await Promise.all([getHeroList(), getHeroHeight()]);
+  const heroes = heroList.map((h) => buildHero(h, heroHeight));
 
   return (
     <div className="bg-background text-foreground flex flex-col min-h-screen">
