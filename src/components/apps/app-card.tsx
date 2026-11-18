@@ -1,9 +1,10 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { Globe, Smartphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SHINE_STYLE, TILT_TRANSFORM, useCursorTilt } from '@/lib/use-cursor-tilt';
+import { TILT_TRANSFORM, useCursorTilt } from '@/lib/use-cursor-tilt';
 import { KIND_LABEL, yearOf, type App } from '@/lib/showcase';
 import { IconMark, iconGlow, stageBackground } from './icon-mark';
 import { StatusBadge } from './status-badge';
@@ -11,6 +12,16 @@ import { StatusBadge } from './status-badge';
 // How far the icon floats in front of the card (px): at rest, and extra while hovered.
 const ICON_Z = 28;
 const ICON_Z_HOVER = 36;
+
+// The card's shine: a soft light that tracks the cursor and fades in while hovered. It is plain
+// (no mix-blend-mode): inside this card's 3D, a blended layer whose opacity is animating is
+// composited on its own and drawn unblended, a harsh white wash until the fade ends, when it
+// snaps to the blended look. A gentle white at low strength gives the same glow with no snap.
+const CARD_SHINE: CSSProperties = {
+  background: 'radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.2), rgba(255,255,255,0) 60%)',
+  opacity: 'var(--lift, 0)',
+  transition: 'opacity 300ms ease-out',
+};
 
 /**
  * One entry on the Apps & Websites page. The card is two layers in real 3D: the face (a
@@ -48,7 +59,7 @@ export function AppCard({ app }: { app: App }) {
           >
             {/* Shine: a soft highlight that tracks the cursor, strongest while hovered. It is on
                 the face, behind the icon, so it lights the background only. */}
-            <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={SHINE_STYLE} />
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_SHINE} />
             {app.icon ? (
               // Where the icon's shadow falls on the face. It stays put while the icon floats, so
               // the two slide apart as the card turns.
@@ -93,7 +104,7 @@ export function AppCard({ app }: { app: App }) {
               sizes="144px"
               // A logo needs a definite height (its box takes its width from the picture's shape).
               className={isApp ? 'h-28 w-28 sm:h-32 sm:w-32' : 'h-16 max-w-[55%]'}
-              style={iconGlow(app.iconColor, 50)}
+              style={iconGlow(app.iconColor, 50, app.kind)}
             />
           </div>
         )}

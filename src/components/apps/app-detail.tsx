@@ -89,12 +89,28 @@ export function AppDetail({ app }: { app: App }) {
                         priority
                         sizes="240px"
                         className={isApp ? "h-52 w-52 sm:h-60 sm:w-60" : "h-32 max-w-full sm:h-40"}
-                        style={iconGlow(app.iconColor, 110)}
+                        style={iconGlow(app.iconColor, 110, app.kind)}
                       />
                       <div
                         aria-hidden="true"
-                        className={cn("pointer-events-none absolute inset-0", isApp ? "rounded-[22.5%]" : "rounded-xl")}
-                        style={SHINE_STYLE}
+                        className={cn("pointer-events-none absolute inset-0", isApp && "rounded-[22.5%]")}
+                        // A logo has no shape of its own to clip to, so the shine is cut to the
+                        // picture's outline.
+                        style={
+                          isApp
+                            ? SHINE_STYLE
+                            : {
+                                ...SHINE_STYLE,
+                                maskImage: `url("${app.icon.url}")`,
+                                maskSize: "contain",
+                                maskRepeat: "no-repeat",
+                                maskPosition: "center",
+                                WebkitMaskImage: `url("${app.icon.url}")`,
+                                WebkitMaskSize: "contain",
+                                WebkitMaskRepeat: "no-repeat",
+                                WebkitMaskPosition: "center",
+                              }
+                        }
                       />
                     </div>
                   </div>
