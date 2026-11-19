@@ -216,7 +216,7 @@
 
     --c-shadow: 0 0 0;
     --selection-alpha: 0.45;     /* a tint needs more strength to show on a dark surface */
-    --pattern-strength: 0.25;    /* white shapes glare on a dark surface */
+    --pattern-strength: 0.5;     /* white shapes glare on a dark surface, so about half of light mode */
     --pattern-blend: overlay;    /* and tint themselves with the surface they sit on */
     color-scheme: dark;
 

@@ -32,7 +32,8 @@ export function PageHero({
   tint: FeatureTint;
   back?: { href: string; label: string };
   tile?: React.ReactNode;
-  title: string;
+  /** Plain text, or markup when the title needs lines of its own (the compare page). */
+  title: React.ReactNode;
   intro?: string;
   align?: 'left' | 'center';
   /** Shown above the title, centred layout only. */

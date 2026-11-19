@@ -91,7 +91,7 @@ export function CompareMatrix({ numbers }: { numbers: Map<string, number> }) {
             </tr>
             {group.rows.map((row) => (
               <tr key={row.id} className="border-t border-cuppi-line">
-                <th scope="row" className="px-3 py-3.5 align-top sm:px-6">
+                <th scope="row" className="px-3 py-3.5 align-middle sm:px-6">
                   <span className="block text-sm font-medium leading-snug sm:text-base">{row.label}</span>
                   {row.detail && <span className="mt-0.5 block text-xs font-normal leading-snug text-cuppi-ink-soft sm:text-sm">{row.detail}</span>}
                 </th>

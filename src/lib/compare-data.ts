@@ -92,7 +92,7 @@ export const FACT_GROUPS: FactGroup[] = [
       {
         id: 'chores',
         label: 'Chores',
-        detail: 'Assign them, share the load, start from a ready-made pack.',
+        detail: 'Create to-do lists and assign tasks.',
         cells: { cuppi: yes(), hartley: yes('Called Activity'), familywall: yes('Called Lists') },
         sources: { hartley: ['team-test'], familywall: ['fw-store', 'team-test'] },
       },
@@ -134,7 +134,7 @@ export const FACT_GROUPS: FactGroup[] = [
         id: 'budget',
         label: 'Budget',
         detail: 'Renews itself each month, with who-pays-what splits and a payday countdown.',
-        cells: { cuppi: yes('Free'), hartley: words('Reminders to find better deals'), familywall: yes('Premium only') },
+        cells: { cuppi: yes(), hartley: words('Reminders to find better deals'), familywall: yes('Premium only') },
         sources: { hartley: ['team-test', 'hartley-how'], familywall: ['fw-store', 'fw-premium'] },
       },
       {
@@ -174,7 +174,6 @@ export const FACT_GROUPS: FactGroup[] = [
       {
         id: 'promotion',
         label: 'Paid promotion in the app',
-        detail: 'None. No ads, and nothing recommended because someone paid for it.',
         cells: { cuppi: words('None', true), hartley: words('Trader and switching suggestions, paid by commission'), familywall: words('Ads on the free plan') },
         sources: { hartley: ['hartley-site', 'hartley-terms'], familywall: ['fw-premium', 'fw-terms'] },
       },
@@ -187,7 +186,6 @@ export const FACT_GROUPS: FactGroup[] = [
       {
         id: 'ios',
         label: 'Built for iPhone',
-        detail: 'Designed for the latest iPhone, in Liquid Glass.',
         cells: { cuppi: words('iOS 26 and later'), hartley: words('iOS 16.4 and later'), familywall: words('iOS 17 and later') },
         sources: { hartley: ['hartley-store'], familywall: ['fw-store'] },
       },

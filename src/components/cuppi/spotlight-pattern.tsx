@@ -20,7 +20,7 @@ export function SpotlightPattern({
   size = PATTERN_DEFAULTS.size,
   centre = PATTERN_DEFAULTS.centre,
   edge = PATTERN_DEFAULTS.edge,
-  spot = 0.5,
+  spot = 1,
   radius = 190,
   blend = true,
 }: {

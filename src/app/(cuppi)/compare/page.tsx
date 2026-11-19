@@ -27,7 +27,11 @@ export default async function ComparePage() {
         <PageHero
           tint="honey"
           align="center"
-          title="Cuppi vs Hartley and FamilyWall"
+          title={
+            <>
+              Cuppi Home <span className="my-1 block font-body text-2xl font-medium tracking-normal text-cuppi-ink-soft sm:my-2 sm:text-3xl">vs</span> Hartley <span className="text-2xl sm:text-3xl">and</span> FamilyWall
+            </>
+          }
           intro="Three home apps, one job: make household life easier. Here is how Cuppi’s features compare."
           pattern={{ name: 'springGarden', focus: '50% 50%', shape: 'ellipse' }}
           top={

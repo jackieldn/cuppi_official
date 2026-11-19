@@ -43,7 +43,7 @@ export default async function FaqPage() {
         {/* One question, one search box, and room to breathe. */}
         <section className="px-3 pt-3 sm:px-6">
           <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-cuppi-sky-soft px-6 py-16 text-center sm:py-24">
-            <SpotlightPattern pattern="summerTea" focus="50% 55%" shape="ellipse" spot={0.5} />
+            <SpotlightPattern pattern="summerTea" focus="50% 55%" shape="ellipse" spot={1} />
             <div className="relative">
             <h1 className="cuppi-fade-up font-headline text-5xl font-normal leading-[1.05] tracking-tight sm:text-7xl">
               How can we <em className="text-cuppi-brand">help?</em>
