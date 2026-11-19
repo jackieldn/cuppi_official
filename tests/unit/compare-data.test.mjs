@@ -77,8 +77,8 @@ describe('price', () => {
     assert.equal(parsePounds(''), undefined);
   });
 
-  test('the rivals’ yearly figures match their labels', () => {
-    for (const p of Object.values(RIVAL_PRICES)) assert.equal(parsePounds(p.label), p.yearly);
+  test('the rivals’ monthly figures match their labels', () => {
+    for (const p of Object.values(RIVAL_PRICES)) assert.equal(parsePounds(p.label), p.monthly);
   });
 });
 

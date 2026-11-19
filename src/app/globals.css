@@ -1033,7 +1033,7 @@ html.theme-changing *::after {
 
 /*
   The slow travelling glow round a highlighted card (the Cuppi Home panel on /compare). Wrap the card in an element with this
-  class and no background of its own: a 2px ring of honey and orange runs round it, with a soft blurred copy behind for the
+  class and no background of its own: a 2px ring of white runs round it, with a soft blurred copy behind for the
   glow. The ring is a conic gradient whose start angle turns (a registered angle property, so the browser can animate it).
   Where that isn't supported the ring just stands still; with reduced motion it stands still too.
 */
@@ -1060,9 +1060,9 @@ html.theme-changing *::after {
     from var(--glow-angle),
     transparent 0%,
     transparent 55%,
-    rgb(var(--c-honey) / 0.55) 72%,
-    rgb(var(--c-honey)) 88%,
-    rgb(var(--c-brand-bright)) 96%,
+    rgb(255 255 255 / 0.5) 72%,
+    rgb(255 255 255 / 0.95) 90%,
+    rgb(255 255 255) 97%,
     transparent 100%
   );
   animation: cuppi-glow-travel 9s linear infinite;

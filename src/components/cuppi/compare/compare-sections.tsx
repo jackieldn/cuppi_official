@@ -18,6 +18,7 @@ import {
 } from '@/lib/compare-data';
 import { TINTS } from '../blocks/tints';
 import { SourceRefs } from './source-refs';
+import { TiltCard } from './tilt-card';
 
 const ICONS: Record<Reason['icon'], typeof Home> = { home: Home, shield: ShieldCheck, phone: Smartphone, map: MapPin };
 
@@ -30,13 +31,13 @@ export function WhyCuppi() {
         const Icon = ICONS[r.icon];
         return (
           <Reveal key={r.id} stagger={80}>
-            <div className={cn('h-full rounded-[2rem] p-6', t.surface, t.text)}>
+            <TiltCard className={cn('rounded-[2rem] p-6', t.surface, t.text)}>
               <span className={cn('grid h-11 w-11 place-items-center rounded-2xl', t.chip)}>
                 <Icon className="h-5 w-5" aria-hidden />
               </span>
               <h3 className="mt-4 font-headline text-2xl font-normal leading-tight">{r.title}</h3>
               <p className={cn('mt-1.5 leading-snug', t.muted)}>{r.text}</p>
-            </div>
+            </TiltCard>
           </Reveal>
         );
       })}
@@ -56,11 +57,14 @@ function Chips({ items }: { items: string[] }) {
   );
 }
 
+/** The bold label above each group of data types on a card, so a card of small text has clear boundaries. */
+const LABEL = 'text-[0.95rem] font-bold leading-snug tracking-tight';
+
 function Plain({ label, items, onLight }: { label: string; items: string[]; onLight?: boolean }) {
   if (items.length === 0) return null;
   return (
-    <div className="mt-4">
-      <h4 className={cn('text-sm font-semibold', onLight ? 'text-cuppi-ink-soft' : 'text-cuppi-cream/75')}>{label}</h4>
+    <div className="mt-5">
+      <h4 className={cn(LABEL, onLight ? 'text-cuppi-espresso' : 'text-cuppi-cream')}>{label}</h4>
       <p className="mt-1 text-sm leading-snug">{items.join(', ')}</p>
     </div>
   );
@@ -83,26 +87,31 @@ export function DataSection({ numbers }: { numbers: Map<string, number> }) {
             <Reveal key={app} stagger={80}>
               {/* Cuppi Home's card sits in a wrapper with no background, which carries the slow travelling glow round its edge. */}
               <div className={cn('h-full rounded-[1.75rem]', app === 'cuppi' && 'cuppi-glow')}>
-              <div className={cn('h-full rounded-[1.75rem] p-5 sm:p-6', app === 'cuppi' ? 'bg-cuppi-cream text-cuppi-ink' : 'bg-cuppi-cream/10')}>
+              <div className={cn('flex h-full flex-col rounded-[1.75rem] p-5 sm:p-6', app === 'cuppi' ? 'bg-cuppi-cream text-cuppi-espresso' : 'bg-cuppi-cream/10')}>
                 <h3 className="font-headline text-2xl font-normal">
                   {APP_NAMES[app]}
                   {app !== 'cuppi' && <SourceRefs ids={p.sources} numbers={numbers} onDark />}
                 </h3>
-                <h4 className={cn('mt-4 text-sm font-semibold', app === 'cuppi' ? 'text-cuppi-ink-soft' : 'text-cuppi-cream/75')}>Used to track you</h4>
+                <h4 className={cn('mt-5', LABEL, app === 'cuppi' ? 'text-cuppi-espresso' : 'text-cuppi-cream')}>Used to track you</h4>
                 {p.tracking.length === 0 ? (
-                  <p className="mt-2 inline-block rounded-full bg-cuppi-moss-deep px-3 py-1 text-sm font-semibold text-cuppi-cream">Nothing</p>
+                  <p className="mt-2 self-start rounded-full bg-cuppi-moss-deep px-3 py-1 text-sm font-semibold text-cuppi-cream">Nothing</p>
                 ) : (
                   <Chips items={p.tracking} />
                 )}
                 {p.identifiers.length > 0 && (
                   <>
-                    <h4 className="mt-4 text-sm font-semibold text-cuppi-cream/75">Advertising identifiers named in its policy</h4>
+                    <h4 className={cn('mt-5', LABEL, 'text-cuppi-cream')}>Advertising identifiers named in its policy</h4>
                     <p className="mt-1 text-sm leading-snug">{p.identifiers.join('. ')}</p>
                   </>
                 )}
                 <Plain label="Linked to you" items={p.linked} onLight={app === 'cuppi'} />
                 <Plain label="Not linked to you" items={p.notLinked} onLight={app === 'cuppi'} />
-                {p.note && <p className={cn('mt-4 border-t pt-3 text-sm leading-snug', app === 'cuppi' ? 'border-cuppi-line text-cuppi-ink-soft' : 'border-cuppi-cream/20 text-cuppi-cream/80')}>{p.note}</p>}
+                {/* The explainer under the divider is pushed to the foot of the card, so the three line up whatever is above them. */}
+                {p.note && (
+                  <div className="mt-auto pt-4">
+                    <p className={cn('border-t pt-3 text-sm leading-snug', app === 'cuppi' ? 'border-cuppi-espresso/15 text-cuppi-espresso/70' : 'border-cuppi-cream/20 text-cuppi-cream/80')}>{p.note}</p>
+                  </div>
+                )}
               </div>
               </div>
             </Reveal>
@@ -119,11 +128,11 @@ function Bar({ label, price, width, className, note, refs }: { label: string; pr
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
         <span className="font-headline text-xl font-normal sm:text-2xl">{label}</span>
         <span className="font-headline text-xl font-normal sm:text-2xl">
-          {price} <span className="text-sm text-cuppi-ink-soft">a year</span>
+          {price} <span className="text-sm text-cuppi-ink-soft">a month</span>
         </span>
       </div>
       {width !== undefined && (
-        <div className="mt-1.5 h-3 rounded-full bg-cuppi-paper-deep" role="img" aria-label={`${label}: ${price} a year`}>
+        <div className="mt-1.5 h-3 rounded-full bg-cuppi-paper-deep" role="img" aria-label={`${label}: ${price} a month`}>
           <div className={cn('h-full rounded-full', className)} style={{ width: `${Math.max(width, 1.5)}%` }} />
         </div>
       )}
@@ -135,25 +144,25 @@ function Bar({ label, price, width, className, note, refs }: { label: string; pr
   );
 }
 
-/** What it costs a year, as bars, and how each app pays its way. Cuppi's figures are the Plans page's own. */
+/** What it costs a month, as bars, and how each app pays its way. Cuppi's figures are the Plans page's own. */
 export function PriceSection({ prices, numbers }: { prices: PlansPrices; numbers: Map<string, number> }) {
-  const cuppi = parsePounds(prices.annual);
-  const max = Math.max(cuppi ?? 0, RIVAL_PRICES.familywall.yearly, RIVAL_PRICES.hartley.yearly) || 1;
+  const cuppi = parsePounds(prices.monthly);
+  const max = Math.max(cuppi ?? 0, RIVAL_PRICES.familywall.monthly, RIVAL_PRICES.hartley.monthly) || 1;
   const pct = (n: number | undefined) => (n === undefined ? undefined : (n / max) * 100);
   return (
     <div className="rounded-[2rem] border border-cuppi-line bg-cuppi-card p-5 sm:p-8">
       <div className="space-y-6">
         <Bar
           label="Cuppi Pro"
-          price={prices.annual}
+          price={prices.monthly}
           width={pct(cuppi)}
           className="bg-cuppi-honey"
-          note={`${prices.monthly} a month${prices.annualNote ? `, ${prices.annualNote.toLowerCase()} on the yearly plan` : ''}. ${CUPPI_TRIAL} A free plan, with no ads, is always there.`}
+          note={`Generous free tier, optional upgrade${prices.annualNote ? `, ${prices.annualNote.toLowerCase()} on the yearly plan` : ''}. ${CUPPI_TRIAL}`}
         />
         <Bar
           label="FamilyWall Premium"
           price={RIVAL_PRICES.familywall.label}
-          width={pct(RIVAL_PRICES.familywall.yearly)}
+          width={pct(RIVAL_PRICES.familywall.monthly)}
           className="bg-cuppi-moss"
           note={RIVAL_PRICES.familywall.funding}
           refs={<SourceRefs ids={RIVAL_PRICES.familywall.sources} numbers={numbers} />}
@@ -161,7 +170,7 @@ export function PriceSection({ prices, numbers }: { prices: PlansPrices; numbers
         <Bar
           label="Hartley"
           price={RIVAL_PRICES.hartley.label}
-          width={pct(RIVAL_PRICES.hartley.yearly)}
+          width={pct(RIVAL_PRICES.hartley.monthly)}
           className="bg-cuppi-sky"
           note={RIVAL_PRICES.hartley.funding}
           refs={<SourceRefs ids={RIVAL_PRICES.hartley.sources} numbers={numbers} />}

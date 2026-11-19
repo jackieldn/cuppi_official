@@ -47,7 +47,7 @@ export function CompareView({ prices }: { prices: PlansPrices }) {
       </div>
 
       <section id="price" aria-labelledby="price-title" className="scroll-mt-28 pt-14">
-        <Heading id="price-title" title="What it costs" intro="A year of each, and how each one pays its way." />
+        <Heading id="price-title" title="What it costs" intro="A month of each, and how each one pays its way." />
         <Reveal>
           <PriceSection prices={prices} numbers={numbers} />
         </Reveal>

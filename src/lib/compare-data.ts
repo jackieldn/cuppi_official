@@ -93,14 +93,14 @@ export const FACT_GROUPS: FactGroup[] = [
         id: 'chores',
         label: 'Chores',
         detail: 'Assign them, share the load, start from a ready-made pack.',
-        cells: { cuppi: yes(), hartley: yes('Called Activity'), familywall: yes() },
-        sources: { hartley: ['team-test'], familywall: ['fw-store'] },
+        cells: { cuppi: yes(), hartley: yes('Called Activity'), familywall: yes('Called Lists') },
+        sources: { hartley: ['team-test'], familywall: ['fw-store', 'team-test'] },
       },
       {
         id: 'celebrations',
         label: 'Celebrations',
         detail: 'Birthdays, anniversaries, bank holidays and In Memoriam.',
-        cells: { cuppi: yes(), hartley: no(), familywall: yes('Called Special days') },
+        cells: { cuppi: yes(), hartley: no(), familywall: yes('Called Special days, Premium only') },
         sources: { hartley: ['team-test'], familywall: ['team-test'] },
       },
       {
@@ -261,14 +261,14 @@ export const DATA_PANELS: Record<AppId, DataPanel> = {
 // Price
 // ---------------------------------------------------------------------------
 
-/** What each rival costs a year, in pounds, and how it pays its way. Cuppi's price comes from the Plans settings. */
-export const RIVAL_PRICES: Record<'hartley' | 'familywall', { yearly: number; label: string; funding: string; sources: string[] }> = {
-  hartley: { yearly: 0, label: '£0', funding: 'Free. Earns commission on trader and provider suggestions.', sources: ['hartley-site', 'hartley-terms'] },
-  familywall: { yearly: 39.99, label: '£39.99', funding: 'Free with ads, or Premium at £39.99 a year (£5.99 a month).', sources: ['fw-store', 'fw-premium'] },
+/** What each rival costs a month, in pounds, and how it pays its way. Cuppi's price comes from the Plans settings. */
+export const RIVAL_PRICES: Record<'hartley' | 'familywall', { monthly: number; label: string; funding: string; sources: string[] }> = {
+  hartley: { monthly: 0, label: '£0', funding: 'Free. Earns commission on trader and provider suggestions.', sources: ['hartley-site', 'hartley-terms'] },
+  familywall: { monthly: 5.99, label: '£5.99', funding: 'Limited free with ads, or Premium at £5.99 a month.', sources: ['fw-store', 'fw-premium'] },
 };
 
 /** What the free trial gives, as Cuppi offers it. */
-export const CUPPI_TRIAL = '1 month free, 2 months with an invite code.';
+export const CUPPI_TRIAL = '1 month free trial for new users, 2 months free with an invite code.';
 
 /** "£59.90" -> 59.9. Anything it cannot read gives undefined, and the page leaves that bar out. */
 export function parsePounds(text: string): number | undefined {
