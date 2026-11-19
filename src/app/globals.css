@@ -1030,3 +1030,49 @@ html.theme-changing *::after {
   .cuppi-digit-in { animation: none; }
   .cuppi-digit-out { display: none; }
 }
+
+/*
+  The slow travelling glow round a highlighted card (the Cuppi Home panel on /compare). Wrap the card in an element with this
+  class and no background of its own: a 2px ring of honey and orange runs round it, with a soft blurred copy behind for the
+  glow. The ring is a conic gradient whose start angle turns (a registered angle property, so the browser can animate it).
+  Where that isn't supported the ring just stands still; with reduced motion it stands still too.
+*/
+@property --glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes cuppi-glow-travel {
+  to { --glow-angle: 360deg; }
+}
+.cuppi-glow {
+  position: relative;
+  isolation: isolate;
+}
+.cuppi-glow::before,
+.cuppi-glow::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--glow-angle),
+    transparent 0%,
+    transparent 55%,
+    rgb(var(--c-honey) / 0.55) 72%,
+    rgb(var(--c-honey)) 88%,
+    rgb(var(--c-brand-bright)) 96%,
+    transparent 100%
+  );
+  animation: cuppi-glow-travel 9s linear infinite;
+}
+.cuppi-glow::after {
+  inset: -6px;
+  filter: blur(16px);
+  opacity: 0.75;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cuppi-glow::before,
+  .cuppi-glow::after { animation: none; }
+}
