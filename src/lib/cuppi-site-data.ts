@@ -24,6 +24,7 @@ import { resolveTools, type ResolvedTool } from './tools/settings';
 //   cuppi_home/tools       the Tools: which are live, in the menu, their tile colour and icon, and the order (tools/settings.ts)
 //   cuppi_home/fan         the icon banner: which features slide out of Cuppi's icon, and in what order (fan-settings.ts)
 //   cuppi_home/plans       the Plans page: the prices and a Free / Pro table per feature (plans-settings.ts)
+//   cuppi_home/compare     the comparison page and its snapshots: facts, sources, screenshots (compare-settings.ts)
 //
 // The site must never be down because this is: every read has a short timeout, any failure
 // gives "nothing changed" (the seed and the default menu), and the answer, good or bad, is
@@ -74,6 +75,7 @@ const homeVideoMemo: { current?: Memo<HomeVideo> } = {};
 const coloursMemo: { current?: Memo<ColourSettings> } = {};
 const toolsMemo: { current?: Memo<ResolvedTool[]> } = {};
 const plansMemo: { current?: Memo<unknown> } = {};
+const compareMemo: { current?: Memo<unknown> } = {};
 
 export function getFeatureOverrides(): Promise<FeatureOverride[]> {
   return remembered(featureMemo, [], async () => {
@@ -163,6 +165,14 @@ export function getTools(): Promise<ResolvedTool[]> {
 export function getPlansStored(): Promise<unknown> {
   return remembered<unknown>(plansMemo, null, async () => {
     const snap = await firestore.collection('cuppi_home').doc('plans').get();
+    return snap.exists ? snap.data() : null;
+  });
+}
+
+/** The comparison page's stored document, as it is (null when nothing is saved). Read it through resolveCompare. */
+export function getCompareStored(): Promise<unknown> {
+  return remembered<unknown>(compareMemo, null, async () => {
+    const snap = await firestore.collection('cuppi_home').doc('compare').get();
     return snap.exists ? snap.data() : null;
   });
 }

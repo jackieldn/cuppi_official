@@ -95,7 +95,7 @@ export const homeHero: HomeHero = {
     bg: '#D8EAF9',
   },
   // 5% around the phone, easing out to 30% at the corners.
-  pattern: { url: '/patterns/victorianWinter.min.svg', size: 420, centre: 0.05, edge: 0.3, focus: '72% 45%', spot: 0.5, radius: 190 },
+  pattern: { url: '/patterns/victorianWinter.min.svg', size: 420, centre: 0.05, edge: 0.3, focus: '72% 45%', spot: 1, radius: 190 },
   mockup: 'tilt',
   flip: true,
   tint: 'honey',

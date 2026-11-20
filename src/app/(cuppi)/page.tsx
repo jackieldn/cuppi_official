@@ -5,6 +5,8 @@ import { HeroCarousel } from '@/components/cuppi/home/hero-carousel';
 import { WhatsNew } from '@/components/cuppi/whats-new';
 import { LatestVideo } from '@/components/cuppi/home/latest-video';
 import { AppFan } from '@/components/cuppi/home/app-fan';
+import { ComparePromo } from '@/components/cuppi/plans/compare-promo';
+import { Reveal } from '@/components/ui/reveal';
 import { getFanFeatures } from '@/lib/features';
 import { HERO_HOLD_SECONDS, buildHero } from '@/lib/home-hero-settings';
 import { getHeroHeight, getHeroList } from '@/lib/cuppi-site-data';
@@ -58,7 +60,10 @@ export default async function CuppiPage() {
           </p>
         </section>
 
-        <div className="py-16" />
+        {/* An invitation to the comparison page, as on the Plans page. */}
+        <Reveal className="mx-auto w-full max-w-4xl px-3 pb-20 pt-12 sm:px-6">
+          <ComparePromo />
+        </Reveal>
       </main>
       <CuppiFooter />
     </div>

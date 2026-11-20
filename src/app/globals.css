@@ -216,7 +216,7 @@
 
     --c-shadow: 0 0 0;
     --selection-alpha: 0.45;     /* a tint needs more strength to show on a dark surface */
-    --pattern-strength: 0.25;    /* white shapes glare on a dark surface */
+    --pattern-strength: 0.5;     /* white shapes glare on a dark surface, so about half of light mode */
     --pattern-blend: overlay;    /* and tint themselves with the surface they sit on */
     color-scheme: dark;
 
@@ -1029,4 +1029,127 @@ html.theme-changing *::after {
 @media (prefers-reduced-motion: reduce) {
   .cuppi-digit-in { animation: none; }
   .cuppi-digit-out { display: none; }
+}
+
+/*
+  The slow travelling glow round a highlighted card (the Cuppi Home panel on /compare). Wrap the card in an element with this
+  class and no background of its own: a 2px ring of white runs round it, with a soft blurred copy behind for the
+  glow. The ring is a conic gradient whose start angle turns (a registered angle property, so the browser can animate it).
+  Where that isn't supported the ring just stands still; with reduced motion it stands still too.
+*/
+@property --glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes cuppi-glow-travel {
+  to { --glow-angle: 360deg; }
+}
+.cuppi-glow {
+  position: relative;
+  isolation: isolate;
+}
+.cuppi-glow::before,
+.cuppi-glow::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--glow-angle),
+    transparent 0%,
+    transparent 55%,
+    rgb(255 255 255 / 0.5) 72%,
+    rgb(255 255 255 / 0.95) 90%,
+    rgb(255 255 255) 97%,
+    transparent 100%
+  );
+  animation: cuppi-glow-travel 9s linear infinite;
+}
+.cuppi-glow::after {
+  inset: -6px;
+  filter: blur(16px);
+  opacity: 0.75;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cuppi-glow::before,
+  .cuppi-glow::after { animation: none; }
+}
+
+/*
+  The "A look inside" cards on /compare (compare-shots.tsx). Each card is a stack of full-size layers whose shape is a clip-path of the
+  card's rectangle (--x, --y, --w, --h, set inline from the stage's width and height), and its phones and caption are moved by transform.
+  Nothing is laid out as it opens, so nothing is pixel-snapped part-way: edges glide instead of shaking as the movement slows.
+  Where the browser can round a length (round()), the rectangle is snapped to whole pixels at rest so a hairline is crisp.
+*/
+.cmp-card {
+  --rx: var(--x);
+  --ry: var(--y);
+  --rw: var(--w);
+  --rh: var(--h);
+  --cmp-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+@supports (width: round(1px, 1px)) {
+  .cmp-card {
+    --rx: round(var(--x), 1px);
+    --ry: round(var(--y), 1px);
+    --rw: round(var(--w), 1px);
+    --rh: round(var(--h), 1px);
+  }
+}
+.cmp-layer {
+  position: absolute;
+  inset: 0;
+  transition: clip-path var(--cmp-ms, 600ms) var(--cmp-ease);
+}
+.cmp-border,
+.cmp-shape {
+  clip-path: inset(var(--ry) calc(100cqw - var(--rx) - var(--rw)) calc(27rem - var(--ry) - var(--rh)) var(--rx) round 2rem);
+}
+.cmp-fill {
+  clip-path: inset(calc(var(--ry) + 1px) calc(100cqw - var(--rx) - var(--rw) + 1px) calc(27rem - var(--ry) - var(--rh) + 1px) calc(var(--rx) + 1px) round calc(2rem - 1px));
+}
+/* The window the phones show through starts at the card's own top edge, just inside its hairline (and takes its rounded top corners), so a phone that has panned up is
+   cut off at the card's edge and not at a line below it, which would leave an empty strip. Its bottom stops above the caption. */
+.cmp-window {
+  clip-path: inset(calc(var(--ry) + 1px) calc(100cqw - var(--rx) - var(--rw) + 1px) calc(27rem - var(--ry) - var(--rh) + 5.25rem) calc(var(--rx) + 1px) round calc(2rem - 1px) calc(2rem - 1px) 0 0);
+}
+/* The bottom edge of that window fades into the card's colour while the card is open and the phones are cropped there: a band of
+   gradient moved into place by transform, so it glides with the card like everything else. */
+.cmp-fade-clip {
+  clip-path: inset(0 calc(100cqw - var(--rx) - var(--rw) + 1px) 0 calc(var(--rx) + 1px));
+  pointer-events: none;
+}
+.cmp-fade {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 1.75rem;
+  transform: translate3d(0, calc(var(--ry) + var(--rh) - 5.25rem - 1.75rem), 0);
+  transition: transform var(--cmp-ms, 600ms) var(--cmp-ease), opacity var(--cmp-ms, 600ms) var(--cmp-ease);
+}
+.cmp-phones {
+  width: var(--rowW);
+  transform-origin: 0 0;
+  transform: translate3d(calc(var(--rx) + (var(--rw) - var(--rowW) * var(--s)) / 2), calc(var(--ry) + var(--yoff, 1.5rem)), 0) scale(var(--s));
+  transition: transform var(--cmp-ms, 600ms) var(--cmp-ease);
+  backface-visibility: hidden;
+}
+.cmp-caption {
+  width: 14.5rem;
+  height: 3rem;
+  transform-origin: 50% 100%;
+  transform: translate3d(calc(var(--rx) + (var(--rw) - 14.5rem) / 2), calc(var(--ry) + var(--rh) - 1.25rem - 3rem), 0) scale(var(--cs, 1));
+  transition: transform var(--cmp-ms, 600ms) var(--cmp-ease);
+}
+/* While the nudge runs the cards move a little faster, so each shrink and swell is quick. */
+.cmp-stage { --cmp-ms: 600ms; }
+.cmp-stage.cmp-nudging { --cmp-ms: 310ms; }
+@media (prefers-reduced-motion: reduce) {
+  .cmp-layer,
+  .cmp-fade,
+  .cmp-phones,
+  .cmp-caption { transition: none; }
 }

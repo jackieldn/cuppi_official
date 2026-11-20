@@ -302,7 +302,7 @@ export function buildHero(h: HeroSettings, height?: HeroHeight): HomeHero & { te
             centre: h.patternCentre,
             edge: h.patternEdge,
             focus: template.focus,
-            spot: h.cursorGlow ? 0.5 : 0,
+            spot: h.cursorGlow ? 1 : 0,
             radius: 190,
           },
     screenshot: h.screenshot ?? homeHero.screenshot,

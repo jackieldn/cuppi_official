@@ -121,7 +121,7 @@ function LatestHero({ post }: { post: CosyCornerPost }) {
       className="cuppi-fade-up group relative block overflow-hidden rounded-[2.5rem] bg-cuppi-honey-soft transition-transform duration-500 [transition-timing-function:var(--ease-spring)] hover:-translate-y-1"
       style={{ '--d': '200ms' } as React.CSSProperties}
     >
-      <SpotlightPattern pattern="autumnPorch" focus="72% 50%" spot={0.5} />
+      <SpotlightPattern pattern="autumnPorch" focus="72% 50%" spot={1} />
       <div className={post.mainImage ? 'relative grid items-center md:grid-cols-[1fr_1.15fr]' : 'relative grid'}>
         <div className="order-2 flex flex-col items-start gap-5 px-7 py-9 sm:px-12 md:order-1 md:py-14">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">

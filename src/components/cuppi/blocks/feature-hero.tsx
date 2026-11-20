@@ -17,7 +17,7 @@ export function FeatureHero({ feature }: { feature: PageFeature }) {
     <section className="px-3 pt-3 sm:px-6">
       <div className={cn('relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem]', tint.surface, tint.text)}>
         {/* White shapes read much stronger on a dark colour, so dark heroes get about a third of the strength, the cursor light included. */}
-        <SpotlightPattern pattern="victorianWinter" focus="72% 50%" {...(tint.dark ? { centre: 0.015, edge: 0.1, spot: 0.17 } : { spot: 0.5 })} />
+        <SpotlightPattern pattern="victorianWinter" focus="72% 50%" {...(tint.dark ? { centre: 0.015, edge: 0.1, spot: 0.34 } : { spot: 1 })} />
         {/* In the block's top-left corner, the same distance from the top and the left (as PageHero's back pill). */}
         <Link
           href="/features"
