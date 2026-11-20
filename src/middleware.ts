@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import {
   CUPPI_PATHS,
   PORTFOLIO_PATHS,
+  SITE_ORIGINS,
   hostFromHeaders,
   originForSite,
   portfolioEnabled,
@@ -26,6 +27,10 @@ export function middleware(request: NextRequest) {
     NextResponse.redirect(`${originForSite(target, host, protocol)}${path}${search}`, 308);
 
   if (site === 'cuppi') {
+    // www.cuppi.co.uk served a second copy of the whole site. Send it to the one address.
+    if (host.toLowerCase().split(':')[0] === 'www.cuppi.co.uk') {
+      return NextResponse.redirect(`${SITE_ORIGINS.cuppi}${pathname}${search}`, 308);
+    }
     // Old portfolio links on cuppi.co.uk move to the portfolio's own domain.
     if (first === 'portfolio') return redirectTo('portfolio', '/');
     if (PORTFOLIO_PATHS.includes(first)) return redirectTo('portfolio', pathname);

@@ -9,6 +9,8 @@ import { KeepExploring } from '@/components/cuppi/blocks/keep-exploring';
 import { getFeatureContent } from '@/lib/feature-content';
 import { getFeature, getPageFeatures } from '@/lib/features';
 import { stripDisclaimers } from '@/lib/disclaimers';
+import { JsonLd } from '@/components/faq/json-ld';
+import { buildFeaturePageJsonLd } from '@/lib/page-jsonld';
 
 export const revalidate = 60;
 
@@ -41,6 +43,7 @@ export default async function FeaturePage({ params }: { params: Promise<Params> 
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <JsonLd data={buildFeaturePageJsonLd('https://cuppi.co.uk', { slug: feature.slug, name: feature.name, description: stripDisclaimers(feature.hero.intro) })} />
       <CuppiHeader />
       <main className="flex-grow">
         <FeatureHero feature={feature} />

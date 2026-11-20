@@ -7,8 +7,9 @@ import { SECURITY_CONTACT } from '@/lib/security-txt';
 // page must not disappear because a CMS document was unpublished.
 
 export const metadata: Metadata = {
-  title: 'Reporting a security problem | Cuppi',
+  title: 'Reporting a security problem',
   description: 'How to report a security vulnerability in Cuppi, and what we promise in return.',
+  alternates: { canonical: '/security' },
 };
 
 export default function SecurityPolicyPage() {

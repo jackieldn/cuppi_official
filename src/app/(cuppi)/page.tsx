@@ -11,6 +11,9 @@ import { getFanFeatures } from '@/lib/features';
 import { HERO_HOLD_SECONDS, buildHero } from '@/lib/home-hero-settings';
 import { getHeroHeight, getHeroList } from '@/lib/cuppi-site-data';
 import { refreshMetadata, refreshPage } from '@/components/cuppi/section-gate';
+import { JsonLd } from '@/components/faq/json-ld';
+import { buildHomeJsonLd } from '@/lib/page-jsonld';
+import type { Metadata } from 'next';
 
 // "What's new" re-checks the latest Cosy Corner posts every minute. The heroes (one to five, a
 // slideshow when there are several) are set in the admin (Cuppi home), with src/lib/home-hero.ts as
@@ -18,7 +21,7 @@ import { refreshMetadata, refreshPage } from '@/components/cuppi/section-gate';
 // now has its own page under /features.
 export const revalidate = 60;
 
-export const generateMetadata = () => refreshMetadata('home');
+export const generateMetadata = async (): Promise<Metadata> => ({ alternates: { canonical: '/' }, ...(await refreshMetadata('home')) });
 
 export default async function CuppiPage() {
   // The home page can be switched to "refresh in progress" in the admin (Cuppi pages).
@@ -32,8 +35,11 @@ export default async function CuppiPage() {
 
   return (
     <div className="bg-background text-foreground flex flex-col min-h-screen">
+      <JsonLd data={buildHomeJsonLd('https://cuppi.co.uk')} />
       <CuppiHeader />
       <main className="flex-grow w-full flex flex-col items-center">
+        {/* The slides below are promos that change, so the page's own heading says what Cuppi is, for screen readers and crawlers. */}
+        <h1 className="sr-only">Cuppi Home: the calm, private household app for the UK</h1>
         {heroes.length > 1 ? (
           <HeroCarousel tints={heroes.map((h) => h.tint)} holdSeconds={HERO_HOLD_SECONDS}>
             {heroes.map((hero, i) => (

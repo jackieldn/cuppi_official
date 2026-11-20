@@ -52,7 +52,7 @@ export function HomeHero({ hero, instant = false, fill = false }: { hero: Hero; 
         reverse && 'md:order-2',
       )}
     >
-      <h1
+      <h2
         className={cn(
           'font-headline font-normal leading-[1.02] tracking-tight text-balance',
           centred ? 'max-w-3xl text-5xl sm:text-6xl lg:text-7xl' : 'text-5xl sm:text-6xl lg:text-7xl',
@@ -68,7 +68,7 @@ export function HomeHero({ hero, instant = false, fill = false }: { hero: Hero; 
             <span key={i}><MarkedText text={part.text} /></span>
           ),
         )}
-      </h1>
+      </h2>
 
       {hero.body && <p className={cn('max-w-md text-xl leading-relaxed', centred && 'max-w-xl', tint.muted)}><MarkedText text={hero.body} /></p>}
 

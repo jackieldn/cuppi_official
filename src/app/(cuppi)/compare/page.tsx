@@ -7,12 +7,17 @@ import { CompareView } from '@/components/cuppi/compare/compare-view';
 import { dateLabel } from '@/lib/compare-data';
 import { getCompare } from '@/lib/compare';
 import { getPlans } from '@/lib/features';
+import { JsonLd } from '@/components/faq/json-ld';
+import { buildComparePageJsonLd } from '@/lib/page-jsonld';
 
 export const revalidate = 60;
 
+const TITLE = 'Cuppi vs Hartley and FamilyWall';
+const DESCRIPTION = 'Three home apps, one job: make household life easier. How Cuppi’s features, tracking and price compare with Hartley and FamilyWall.';
+
 export const metadata: Metadata = {
-  title: 'Cuppi vs Hartley and FamilyWall',
-  description: 'Three home apps, one job: make household life easier. How Cuppi’s features, tracking and price compare with Hartley and FamilyWall.',
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: '/compare' },
   // Kept out of search until every cell has been checked in the app and the sources are final. Remove this line to publish.
   robots: { index: false, follow: false },
@@ -23,6 +28,7 @@ export default async function ComparePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <JsonLd data={buildComparePageJsonLd('https://cuppi.co.uk', { path: '/compare', name: TITLE, description: DESCRIPTION, checkedOn: content.checkedOn })} />
       <CuppiHeader />
       <main className="flex-grow">
         <PageHero

@@ -11,6 +11,8 @@ import { CuppiFooter } from '@/components/cuppi/footer';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import { CuppiHeader } from '@/components/cuppi/header';
+import { JsonLd } from '@/components/faq/json-ld';
+import { buildBlogPostJsonLd } from '@/lib/page-jsonld';
 
 export const revalidate = 60; // Re-fetch post every 60 seconds
 
@@ -73,6 +75,8 @@ async function getPost(slug: string) {
   return post;
 }
 
+const SITE_DESCRIPTION = 'Cuppi is your calm and private household app where you save information once and get reminded gently forever.';
+
 // Function to generate metadata for SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -86,7 +90,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const metaTitle = post.seo?.metaTitle || post.title;
-  const metaDescription = post.seo?.metaDescription || post.excerpt;
+  // A post with neither a meta description nor an excerpt would have none at all: fall back to the site's own line.
+  const metaDescription = post.seo?.metaDescription || post.excerpt || SITE_DESCRIPTION;
   const shareImageUrl = post.seo?.shareImage
     ? urlFor(post.seo.shareImage).width(1200).height(630).quality(100).url()
     : post.mainImage ? urlFor(post.mainImage).width(1200).height(630).quality(100).url() : undefined;
@@ -94,6 +99,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${metaTitle} | Cuppi`,
     description: metaDescription,
+    alternates: { canonical: `/blog/${post.slug.current}` },
     openGraph: {
       title: metaTitle,
       description: metaDescription,
@@ -116,6 +122,15 @@ export default async function CosyCornerPostPage({ params }: Props) {
 
   return (
      <div className="bg-background text-foreground flex flex-col min-h-screen">
+      <JsonLd
+        data={buildBlogPostJsonLd('https://cuppi.co.uk', {
+          slug: post.slug.current,
+          title: post.seo?.metaTitle || post.title,
+          description: post.seo?.metaDescription || post.excerpt || SITE_DESCRIPTION,
+          published: post._createdAt,
+          image: post.mainImage ? urlFor(post.mainImage).width(1200).height(630).url() : undefined,
+        })}
+      />
       <CuppiHeader />
       <main className="w-full flex flex-col items-center p-4 flex-grow">
         <div className="w-full max-w-4xl mx-auto container px-4">

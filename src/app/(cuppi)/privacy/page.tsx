@@ -3,9 +3,16 @@ import { PortableText } from '@/components/portable-text';
 import { LegalDocumentLayout } from '@/components/legal/legal-document-layout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 
 // Revalidate this page every 60 seconds
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy',
+  description: 'How Cuppi collects, uses and protects your information.',
+  alternates: { canonical: '/privacy' },
+};
 
 // Define the type for our Sanity document
 type LegalDoc = {

@@ -3,8 +3,15 @@ import { PortableText } from '@/components/portable-text';
 import { LegalDocumentLayout } from '@/components/legal/legal-document-layout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 
 export const revalidate = 60; // Re-fetch post every 60 seconds
+
+export const metadata: Metadata = {
+  title: 'Family Safety and Age Suitability',
+  description: 'How Cuppi keeps children safe, and who the app is suitable for.',
+  alternates: { canonical: '/family-safety' },
+};
 
 type LegalDoc = {
   title: string;
