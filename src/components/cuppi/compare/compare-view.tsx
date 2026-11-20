@@ -27,17 +27,19 @@ export function CompareView({ content, prices }: { content: CompareContent; pric
   return (
     <div className="mx-auto w-full max-w-5xl px-3 pb-8 sm:px-6">
       <section aria-labelledby="why-title" className="pt-8">
-        <Heading id="why-title" title="Why Cuppi" intro={content.whyIntro} />
+        <Heading id="why-title" title={content.whyTitle} intro={content.whyIntro} />
         <WhyCuppi reasons={content.reasons} />
       </section>
 
-      <section aria-labelledby="look-title" className="pt-14">
-        <Heading id="look-title" title="A look inside" intro="The same few taps, in each app." />
-        <CompareShots content={content} />
-      </section>
+      {content.showLook && (
+        <section aria-labelledby="look-title" className="pt-14">
+          <Heading id="look-title" title={content.lookTitle} intro={content.lookIntro || undefined} />
+          <CompareShots content={content} />
+        </section>
+      )}
 
       <section id="features" aria-labelledby="features-title" className="scroll-mt-28 pt-14">
-        <Heading id="features-title" title="Feature by feature" intro="What Cuppi does, and what the others say they do." />
+        <Heading id="features-title" title={content.featuresTitle} intro={content.featuresIntro || undefined} />
         <Reveal>
           <CompareMatrix content={content} cite={cite} />
         </Reveal>
@@ -48,14 +50,14 @@ export function CompareView({ content, prices }: { content: CompareContent; pric
       </div>
 
       <section id="price" aria-labelledby="price-title" className="scroll-mt-28 pt-14">
-        <Heading id="price-title" title="What it costs" intro="A month of each, and how each one pays its way." />
+        <Heading id="price-title" title={content.priceTitle} intro={content.priceIntro || undefined} />
         <Reveal>
           <PriceSection content={content} prices={prices} cite={cite} />
         </Reveal>
       </section>
 
       <section id="sources" aria-labelledby="sources-title" className="scroll-mt-28 pt-14">
-        <Heading id="sources-title" title="Where this comes from" />
+        <Heading id="sources-title" title={content.sourcesTitle} />
         <Reveal className="px-2 sm:px-4">
           <SourcesList content={content} cite={cite} />
         </Reveal>

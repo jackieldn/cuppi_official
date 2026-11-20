@@ -5,17 +5,49 @@ import { AlertTriangle, ChevronDown, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { APP_IDS, APP_NAMES, COMPARE_LIMITS as L, allRows, emptySnapshot, proofGaps, type AppId, type CompareContent, type Shot, type SnapApp, type Snapshot } from '@/lib/compare-data';
 import { Field } from './section-fields';
 import { ShotsField, type UploadShot } from './compare-shots-field';
 
+/** Replaces the draft with a function of itself: for what finishes later (an upload), which must add to the draft as it is by then. */
+export type Update = (change: (c: CompareContent) => CompareContent) => void;
+
 /** The three apps' screenshots that sit in phone frames on the comparison page. */
-export function ScreenshotsTab({ content, onChange, upload }: { content: CompareContent; onChange: (c: CompareContent) => void; upload: UploadShot }) {
+export function ScreenshotsTab({ content, onChange, update, upload }: { content: CompareContent; onChange: (c: CompareContent) => void; update: Update; upload: UploadShot }) {
   const set = (app: AppId, shots: Shot[]) => onChange({ ...content, shots: { ...content.shots, [app]: shots } });
+  const add = (app: AppId, shot: Shot) => update((c) => ({ ...c, shots: { ...c.shots, [app]: [...c.shots[app], shot].slice(0, L.shots) } }));
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>The section</CardTitle>
+          <CardDescription>“A look inside” on the comparison page: its heading, the line under it, and a caption for each app. In a caption, {'{date}'} becomes the date the facts were checked.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={content.showLook} onCheckedChange={(v) => onChange({ ...content, showLook: v === true })} />
+            Show this section on the page
+          </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Heading" htmlFor="look-heading">
+              <Input id="look-heading" value={content.lookTitle} maxLength={L.short} onChange={(e) => onChange({ ...content, lookTitle: e.target.value })} />
+            </Field>
+            <Field label="A line under it" htmlFor="look-intro" optional>
+              <Input id="look-intro" value={content.lookIntro} maxLength={L.line} onChange={(e) => onChange({ ...content, lookIntro: e.target.value })} />
+            </Field>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {APP_IDS.map((app) => (
+              <Field key={app} label={`${APP_NAMES[app]} caption`} htmlFor={`look-cap-${app}`}>
+                <Input id={`look-cap-${app}`} value={content.lookCaptions[app]} maxLength={L.line} onChange={(e) => onChange({ ...content, lookCaptions: { ...content.lookCaptions, [app]: e.target.value } })} />
+              </Field>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
       <p className="text-sm text-muted-foreground">
         Up to three screenshots per app for “A look inside” on the comparison page. Cuppi's go in the current iPhone frame, the others in the older one. Pictures are shrunk and saved as WebP when you add them.
       </p>
@@ -25,7 +57,7 @@ export function ScreenshotsTab({ content, onChange, upload }: { content: Compare
             <CardTitle>{APP_NAMES[app]}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ShotsField label={APP_NAMES[app]} shots={content.shots[app]} onChange={(shots) => set(app, shots)} upload={upload} defaultAlt={`${APP_NAMES[app]} on iPhone`} />
+            <ShotsField label={APP_NAMES[app]} shots={content.shots[app]} onChange={(shots) => set(app, shots)} onAdd={(shot) => add(app, shot)} upload={upload} defaultAlt={`${APP_NAMES[app]} on iPhone`} />
           </CardContent>
         </Card>
       ))}
@@ -33,12 +65,12 @@ export function ScreenshotsTab({ content, onChange, upload }: { content: Compare
   );
 }
 
-function SnapAppFields({ app, rowLabel, value, onChange, upload }: { app: AppId; rowLabel: string; value: SnapApp; onChange: (a: SnapApp) => void; upload: UploadShot }) {
+function SnapAppFields({ app, rowLabel, value, onChange, onAdd, upload }: { app: AppId; rowLabel: string; value: SnapApp; onChange: (a: SnapApp) => void; onAdd: (shot: Shot) => void; upload: UploadShot }) {
   const patch = (change: Partial<SnapApp>) => onChange({ ...value, ...change });
   const id = `${app}-${rowLabel}`.replace(/\W+/g, '-');
   return (
     <div className="space-y-3 rounded-lg border bg-background p-3">
-      <ShotsField label={APP_NAMES[app]} shots={value.shots} onChange={(shots) => patch({ shots })} upload={upload} defaultAlt={`${APP_NAMES[app]}: ${rowLabel}`} />
+      <ShotsField label={APP_NAMES[app]} shots={value.shots} onChange={(shots) => patch({ shots })} onAdd={onAdd} upload={upload} defaultAlt={`${APP_NAMES[app]}: ${rowLabel}`} />
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="App version" htmlFor={`${id}-v`} optional>
           <Input id={`${id}-v`} value={value.version ?? ''} maxLength={L.short} placeholder="1.9.1" onChange={(e) => patch({ version: e.target.value })} />
@@ -61,7 +93,7 @@ function SnapAppFields({ app, rowLabel, value, onChange, upload }: { app: AppId;
  * The proof behind the comparison: for each row, up to three screenshots per app and how they were taken. The panel at the top
  * lists every claim that rests on "tested in the app" and has no screenshot yet.
  */
-export function SnapshotsTab({ content, onChange, upload }: { content: CompareContent; onChange: (c: CompareContent) => void; upload: UploadShot }) {
+export function SnapshotsTab({ content, onChange, update, upload }: { content: CompareContent; onChange: (c: CompareContent) => void; update: Update; upload: UploadShot }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const rows = allRows(content);
   const rowLabel = (id: string) => rows.find((r) => r.id === id)?.label || id;
@@ -144,7 +176,20 @@ export function SnapshotsTab({ content, onChange, upload }: { content: CompareCo
                     </Field>
                     <div className="grid gap-3 xl:grid-cols-3">
                       {APP_IDS.map((app) => (
-                        <SnapAppFields key={app} app={app} rowLabel={rowLabel(snap.rowId)} value={snap.apps[app]} upload={upload} onChange={(a) => patch(snap.rowId, { apps: { ...snap.apps, [app]: a } })} />
+                        <SnapAppFields
+                          key={app}
+                          app={app}
+                          rowLabel={rowLabel(snap.rowId)}
+                          value={snap.apps[app]}
+                          upload={upload}
+                          onChange={(a) => patch(snap.rowId, { apps: { ...snap.apps, [app]: a } })}
+                          onAdd={(shot) =>
+                            update((c) => ({
+                              ...c,
+                              snapshots: c.snapshots.map((s) => (s.rowId === snap.rowId ? { ...s, apps: { ...s.apps, [app]: { ...s.apps[app], shots: [...s.apps[app].shots, shot].slice(0, L.shots) } } } : s)),
+                            }))
+                          }
+                        />
                       ))}
                     </div>
                   </div>

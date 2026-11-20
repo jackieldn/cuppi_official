@@ -4,9 +4,11 @@
 // anything that is not, field by field. A bad or half-written document can therefore make the page plainer, never break it,
 // and nothing stored gives exactly the default content, so the page works before it is ever edited.
 
+import { TILE_COLOURS_LIST } from './features-types.ts';
 import {
   APP_IDS,
   COMPARE_LIMITS as L,
+  REASON_ICONS,
   RIVALS,
   allRows,
   defaultCompare,
@@ -18,6 +20,7 @@ import {
   type FactGroup,
   type FactRow,
   type Reason,
+  type ReasonIcon,
   type RivalPrice,
   type Shot,
   type SnapApp,
@@ -52,16 +55,21 @@ const srcOf = (v: unknown): string | undefined => (typeof v === 'string' && /^(h
 // Reading
 // ---------------------------------------------------------------------------
 
+/** What a screenshot's size is taken to be when it was saved without one: a typical iPhone screenshot. The picture fills its screen either way. */
+export const UNKNOWN_SHOT_SIZE = { width: 1170, height: 2532 } as const;
+
 export function readShots(raw: unknown): Shot[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .flatMap((r): Shot[] => {
       if (!isObj(r)) return [];
       const src = srcOf(r.src);
+      if (!src) return [];
+      // A picture saved with no usable size is still a picture: keep it, at the usual shape, rather than lose it.
       const width = Number(r.width);
       const height = Number(r.height);
-      if (!src || !(width > 0) || !(height > 0)) return [];
-      return [{ src, width: Math.round(width), height: Math.round(height), alt: textOrEmpty(r.alt, L.line) ?? '' }];
+      const known = width > 0 && height > 0;
+      return [{ src, width: known ? Math.round(width) : UNKNOWN_SHOT_SIZE.width, height: known ? Math.round(height) : UNKNOWN_SHOT_SIZE.height, alt: textOrEmpty(r.alt, L.line) ?? '' }];
     })
     .slice(0, L.shots);
 }
@@ -189,7 +197,15 @@ function readReasons(raw: unknown, base: Reason[]): Reason[] {
   const stored = Array.isArray(raw) ? raw.filter(isObj) : [];
   return base.map((r) => {
     const s = stored.find((x) => x.id === r.id);
-    return { ...r, title: str(s?.title, L.short) ?? r.title, text: str(s?.text, L.line) ?? r.text };
+    const iconUrl = srcOf(s?.iconUrl);
+    return {
+      ...r,
+      title: str(s?.title, L.short) ?? r.title,
+      text: str(s?.text, L.line) ?? r.text,
+      tile: TILE_COLOURS_LIST.includes(s?.tile as never) ? (s!.tile as Reason['tile']) : r.tile,
+      icon: REASON_ICONS.includes(s?.icon as ReasonIcon) ? (s!.icon as ReasonIcon) : r.icon,
+      ...(iconUrl ? { iconUrl } : {}),
+    };
   });
 }
 
@@ -200,10 +216,27 @@ export function resolveCompare(stored: unknown): CompareContent {
   const panels = isObj(stored.panels) ? stored.panels : {};
   const prices = isObj(stored.prices) ? stored.prices : {};
   const shots = isObj(stored.shots) ? stored.shots : {};
+  const look = isObj(stored.lookCaptions) ? stored.lookCaptions : {};
+  const labels = isObj(stored.privacyLabels) ? stored.privacyLabels : {};
   return {
     checkedOn: isoDate(stored.checkedOn) ?? d.checkedOn,
+    whyTitle: str(stored.whyTitle, L.short) ?? d.whyTitle,
     whyIntro: str(stored.whyIntro, L.text) ?? d.whyIntro,
     reasons: readReasons(stored.reasons, d.reasons),
+    featuresTitle: str(stored.featuresTitle, L.short) ?? d.featuresTitle,
+    featuresIntro: textOrEmpty(stored.featuresIntro, L.line) ?? d.featuresIntro,
+    priceTitle: str(stored.priceTitle, L.short) ?? d.priceTitle,
+    priceIntro: textOrEmpty(stored.priceIntro, L.line) ?? d.priceIntro,
+    sourcesTitle: str(stored.sourcesTitle, L.short) ?? d.sourcesTitle,
+    privacyTitle: str(stored.privacyTitle, L.short) ?? d.privacyTitle,
+    privacyIntro: textOrEmpty(stored.privacyIntro, L.line) ?? d.privacyIntro,
+    privacyLabels: {
+      tracking: str(labels.tracking, L.short) ?? d.privacyLabels.tracking,
+      identifiers: str(labels.identifiers, L.short) ?? d.privacyLabels.identifiers,
+      linked: str(labels.linked, L.short) ?? d.privacyLabels.linked,
+      notLinked: str(labels.notLinked, L.short) ?? d.privacyLabels.notLinked,
+      nothing: str(labels.nothing, L.short) ?? d.privacyLabels.nothing,
+    },
     groups: readGroups(stored.groups) ?? d.groups,
     notYet: textOrEmpty(stored.notYet, L.text) ?? d.notYet,
     testNote: str(stored.testNote, L.text) ?? d.testNote,
@@ -211,6 +244,14 @@ export function resolveCompare(stored: unknown): CompareContent {
     prices: { hartley: readPrice(prices.hartley, d.prices.hartley), familywall: readPrice(prices.familywall, d.prices.familywall) },
     trial: str(stored.trial, L.line) ?? d.trial,
     sources: readSources(stored.sources) ?? d.sources,
+    showLook: typeof stored.showLook === 'boolean' ? stored.showLook : d.showLook,
+    lookTitle: str(stored.lookTitle, L.short) ?? d.lookTitle,
+    lookIntro: textOrEmpty(stored.lookIntro, L.line) ?? d.lookIntro,
+    lookCaptions: {
+      cuppi: str(look.cuppi, L.line) ?? d.lookCaptions.cuppi,
+      hartley: str(look.hartley, L.line) ?? d.lookCaptions.hartley,
+      familywall: str(look.familywall, L.line) ?? d.lookCaptions.familywall,
+    },
     shots: { cuppi: readShots(shots.cuppi), hartley: readShots(shots.hartley), familywall: readShots(shots.familywall) },
     snapshotsIntro: str(stored.snapshotsIntro, L.text) ?? d.snapshotsIntro,
     snapshots: readSnapshots(stored.snapshots),
@@ -238,7 +279,15 @@ export function validateCompare(content: CompareContent): string[] {
   const rowIds = new Set(rows.map((r) => r.id));
 
   if (!isoDate(content.checkedOn)) problems.push('The "checked on" date needs to be a real date.');
+  if (!content.whyTitle.trim()) problems.push('Why Cuppi needs a heading.');
   if (!content.whyIntro.trim()) problems.push('Why Cuppi needs its few lines of introduction.');
+  if (!content.lookTitle.trim()) problems.push('“A look inside” needs a heading.');
+  if (!content.featuresTitle.trim()) problems.push('The feature matrix needs a heading.');
+  if (!content.priceTitle.trim()) problems.push('The price section needs a heading.');
+  if (!content.sourcesTitle.trim()) problems.push('The sources section needs a heading.');
+  if (!content.privacyTitle.trim()) problems.push('The privacy section needs a heading.');
+  if (Object.values(content.privacyLabels).some((l) => !l.trim())) problems.push('Every label on the privacy cards needs some words.');
+  for (const app of APP_IDS) if (!content.lookCaptions[app].trim()) problems.push(`The ${app} caption under “A look inside” is empty.`);
   for (const r of content.reasons) if (!r.title.trim() || !r.text.trim()) problems.push('Each Why Cuppi tile needs a title and some words.');
 
   if (content.groups.length === 0) problems.push('The matrix needs at least one group.');

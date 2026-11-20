@@ -23,7 +23,8 @@ export const PLANS_LIMITS = {
   intro: 300,
 } as const;
 
-export type PlansPrices = { monthly: string; annual: string; annualNote: string };
+/** The Pro prices, and a short note under each (the free months on offer): "1 month free" under the monthly price, "1+2 months free" under the yearly one. */
+export type PlansPrices = { monthly: string; monthlyNote: string; annual: string; annualNote: string };
 
 export type PlanSection = {
   /** A feature section's id is its feature's slug (so each feature appears once, and the page can link to #slug). A section of the admin's own has "custom-...". */
@@ -42,7 +43,7 @@ export type PlansSettings = { prices: PlansPrices; sections: PlanSection[] };
 /** The part of a feature the Plans page needs: enough to find its slug and the table on its page. */
 type FeatureLike = { slug: string; blocks?: FeatureBlock[] };
 
-export const defaultPrices = (): PlansPrices => ({ monthly: '£5.99', annual: '£59.90', annualNote: '2 months free' });
+export const defaultPrices = (): PlansPrices => ({ monthly: '£5.99', monthlyNote: '1 month free', annual: '£59.90', annualNote: '1+2 months free' });
 
 /** The lines of the Free / Pro table on a feature's own page (the first one, if it has several); none when it has no table. */
 export function featurePlanRows(feature: FeatureLike): PlanRow[] {
@@ -81,7 +82,8 @@ export function resolvePlans(stored: unknown, features: FeatureLike[]): PlansSet
   const prices: PlansPrices = {
     monthly: str(p.monthly, PLANS_LIMITS.price) ?? base.monthly,
     annual: str(p.annual, PLANS_LIMITS.price) ?? base.annual,
-    // The note may be cleared on purpose, so an empty one is kept as empty, not put back.
+    // The notes may be cleared on purpose, so an empty one is kept as empty, not put back.
+    monthlyNote: typeof p.monthlyNote === 'string' ? p.monthlyNote.trim().slice(0, PLANS_LIMITS.note) : base.monthlyNote,
     annualNote: typeof p.annualNote === 'string' ? p.annualNote.trim().slice(0, PLANS_LIMITS.note) : base.annualNote,
   };
 
@@ -114,7 +116,7 @@ export function resolvePlans(stored: unknown, features: FeatureLike[]): PlansSet
 /** What goes in the database: the settings without empty optional fields (Firestore refuses a field that is undefined), lines trimmed. */
 export function storedPlans(settings: PlansSettings): Record<string, unknown> {
   return {
-    prices: { monthly: settings.prices.monthly.trim(), annual: settings.prices.annual.trim(), annualNote: settings.prices.annualNote.trim() },
+    prices: { monthly: settings.prices.monthly.trim(), monthlyNote: settings.prices.monthlyNote.trim(), annual: settings.prices.annual.trim(), annualNote: settings.prices.annualNote.trim() },
     sections: settings.sections.map((s) => ({
       id: s.id,
       ...(s.feature ? { feature: s.feature } : {}),

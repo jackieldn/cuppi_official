@@ -30,7 +30,7 @@ export default async function ComparePage() {
           align="center"
           title={
             <>
-              Cuppi Home <span className="my-1 block font-body text-2xl font-medium tracking-normal text-cuppi-ink-soft sm:my-2 sm:text-3xl">vs</span> Hartley <span className="text-2xl sm:text-3xl">and</span> FamilyWall
+              Cuppi Home <span className="my-[0.2rem] block font-body text-[1.2rem] font-medium tracking-normal text-cuppi-brand sm:my-[0.4rem] sm:text-[1.5rem]">vs</span> Hartley <span className="text-2xl sm:text-3xl">and</span> FamilyWall
             </>
           }
           intro="Three home apps, one job: make household life easier. Here is how Cuppi’s features compare."

@@ -5,6 +5,7 @@ import {
   RIVALS,
   TEAM_TEST,
   allRows,
+  captionFor,
   dateLabel,
   defaultCompare,
   emptySnapshot,
@@ -155,6 +156,17 @@ describe('proof gaps', () => {
     const gaps = proofGaps(d);
     assert.ok(!gaps.some((g) => g.rowId === 'chores' && g.app === 'hartley'));
     assert.ok(gaps.some((g) => g.rowId === 'chores' && g.app === 'familywall'));
+  });
+});
+
+describe('captions', () => {
+  test('{date} becomes the day the facts were checked, in every caption', () => {
+    assert.equal(captionFor(c, 'hartley'), 'Hartley, captured 19 Nov 2026');
+    assert.equal(captionFor(c, 'cuppi'), 'Cuppi Home on iPhone');
+    const d = defaultCompare();
+    d.checkedOn = '2027-02-03';
+    d.lookCaptions.familywall = 'Seen {date}, again {date}';
+    assert.equal(captionFor(d, 'familywall'), 'Seen 3 Feb 2027, again 3 Feb 2027');
   });
 });
 

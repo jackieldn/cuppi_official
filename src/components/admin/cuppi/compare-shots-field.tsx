@@ -15,23 +15,46 @@ export type UploadShot = (file: File) => Promise<UploadedShot>;
 /** The longest side of a screenshot's width we keep. Phone screenshots are about this wide; bigger only costs download time. */
 const MAX_WIDTH = 1290;
 
+/** An SVG's intrinsic size, read by loading it as a picture. Where it declares none (only a viewBox), a 512 square. */
+function svgSize(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new window.Image();
+    const done = (size: { width: number; height: number }) => {
+      URL.revokeObjectURL(url);
+      resolve(size);
+    };
+    img.onload = () => done(img.naturalWidth > 0 && img.naturalHeight > 0 ? { width: img.naturalWidth, height: img.naturalHeight } : { width: 512, height: 512 });
+    img.onerror = () => done({ width: 512, height: 512 });
+    img.src = url;
+  });
+}
+
 /**
  * A chosen picture, made ready for the site: shrunk to a sensible width and saved as WebP (much smaller than the PNG a phone
  * produces). If the browser can't make a WebP the original goes up as it is.
  */
 export async function prepareShot(file: File): Promise<{ blob: Blob; width: number; height: number; name: string }> {
-  if (!file.type.startsWith('image/')) throw new Error('Choose a picture (PNG, JPEG or WebP).');
+  if (!file.type.startsWith('image/') && !/\.svg$/i.test(file.name)) throw new Error('Choose a picture (PNG, JPEG, WebP or SVG).');
+  // An SVG is already small and sharp at any size: it goes up as it is (a canvas would only turn it into pixels). Its size is
+  // read from the picture itself, falling back to a square when it gives none.
+  if (file.type === 'image/svg+xml' || /\.svg$/i.test(file.name)) {
+    const size = await svgSize(file);
+    return { blob: file.type === 'image/svg+xml' ? file : new Blob([file], { type: 'image/svg+xml' }), width: size.width, height: size.height, name: file.name };
+  }
   const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_WIDTH / bitmap.width);
-  const width = Math.round(bitmap.width * scale);
-  const height = Math.round(bitmap.height * scale);
+  // Read the picture's own size now: a bitmap that has been closed reports 0 by 0, and a 0 by 0 screenshot is not a screenshot.
+  const own = { width: bitmap.width, height: bitmap.height };
+  const scale = Math.min(1, MAX_WIDTH / own.width);
+  const width = Math.round(own.width * scale);
+  const height = Math.round(own.height * scale);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   canvas.getContext('2d')?.drawImage(bitmap, 0, 0, width, height);
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.9));
   bitmap.close();
-  if (!blob || blob.type !== 'image/webp') return { blob: file, width: bitmap.width, height: bitmap.height, name: file.name };
+  if (!blob || blob.type !== 'image/webp') return { blob: file, width: own.width, height: own.height, name: file.name };
   return { blob, width, height, name: file.name.replace(/\.[^.]+$/, '') + '.webp' };
 }
 
@@ -43,13 +66,20 @@ export function ShotsField({
   label,
   shots,
   onChange,
+  onAdd,
   upload,
   defaultAlt,
   max = COMPARE_LIMITS.shots,
 }: {
   label: string;
   shots: Shot[];
+  /** Edits made on the spot: a description typed, a screenshot moved or removed. */
   onChange: (shots: Shot[]) => void;
+  /**
+   * A screenshot that has finished uploading. It is handed up alone, to be added to whatever the draft is by then (not to the list as
+   * it was when the upload began), so uploads that overlap, or edits made while one is under way, can't wipe each other out.
+   */
+  onAdd: (shot: Shot) => void;
   upload: UploadShot;
   defaultAlt: string;
   max?: number;
@@ -62,7 +92,8 @@ export function ShotsField({
     setBusy(true);
     try {
       const up = await upload(file);
-      onChange([...shots, { ...up, alt: defaultAlt }].slice(0, max));
+      onAdd({ ...up, alt: defaultAlt });
+      toast({ title: 'Screenshot added', description: 'It is in your draft. Press Save comparison to publish it.' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Could not upload the screenshot', description: describeError(error) });
     } finally {

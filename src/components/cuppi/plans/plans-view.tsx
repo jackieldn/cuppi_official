@@ -6,6 +6,7 @@ import { hasPage, type Feature } from '@/lib/features-types';
 import type { PlanSection, PlansSettings } from '@/lib/plans-settings';
 import { FadeImage } from '../fade-image';
 import { PlanTable } from '../blocks/plan-table';
+import { ComparePromo } from './compare-promo';
 import { TINTS } from '../blocks/tints';
 import { AppTile, CuppiTile } from '../feature-icon';
 import { MarkedText } from '../marked-text';
@@ -59,6 +60,7 @@ function Prices({ prices }: { prices: PlansSettings['prices'] }) {
             <div>
               <p className="font-headline text-3xl font-normal sm:text-4xl">{prices.monthly}</p>
               <p className={cn('mt-1', honey.muted)}>a month</p>
+              {prices.monthlyNote && <span className={cn('mt-3 inline-block rounded-full px-3.5 py-1 text-sm font-semibold', honey.chip)}>{prices.monthlyNote}</span>}
             </div>
             <div className="border-l border-cuppi-ink/15">
               <p className="font-headline text-3xl font-normal sm:text-4xl">{prices.annual}</p>
@@ -85,6 +87,10 @@ export function PlansView({ settings, features }: { settings: PlansSettings; fea
       <div className="pt-6">
         <Prices prices={settings.prices} />
       </div>
+
+      <Reveal className="pt-6">
+        <ComparePromo />
+      </Reveal>
 
       {sections.length > 1 && (
         <Reveal>

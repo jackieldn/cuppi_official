@@ -27,8 +27,10 @@ export function TiltCard({ className, children }: { className?: string; children
         className={cn('relative h-full transition-shadow duration-300 hover:shadow-[0_20px_32px_rgb(var(--c-shadow)/0.14)]', className)}
         style={{ transform: TILT_TRANSFORM, transition: 'transform 220ms ease-out, box-shadow 300ms ease-out' }}
       >
-        {children}
+        {/* The shine is laid on the card's background and the content is lifted above it, so the shine lights the card and not what is on it
+            (the squircle icon keeps its own colours). */}
         <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[2rem]" style={SHINE_STYLE} />
+        <div className="relative">{children}</div>
       </div>
     </div>
   );

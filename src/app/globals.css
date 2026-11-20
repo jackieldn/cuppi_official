@@ -1101,7 +1101,7 @@ html.theme-changing *::after {
 .cmp-layer {
   position: absolute;
   inset: 0;
-  transition: clip-path 600ms var(--cmp-ease);
+  transition: clip-path var(--cmp-ms, 600ms) var(--cmp-ease);
 }
 .cmp-border,
 .cmp-shape {
@@ -1118,7 +1118,7 @@ html.theme-changing *::after {
 /* The bottom edge of that window fades into the card's colour while the card is open and the phones are cropped there: a band of
    gradient moved into place by transform, so it glides with the card like everything else. */
 .cmp-fade-clip {
-  clip-path: inset(0 calc(100cqw - var(--rx) - var(--rw)) 0 var(--rx));
+  clip-path: inset(0 calc(100cqw - var(--rx) - var(--rw) + 1px) 0 calc(var(--rx) + 1px));
   pointer-events: none;
 }
 .cmp-fade {
@@ -1126,15 +1126,15 @@ html.theme-changing *::after {
   left: 0;
   top: 0;
   width: 100%;
-  height: 3.5rem;
-  transform: translate3d(0, calc(var(--ry) + var(--rh) - 5.25rem - 3.5rem), 0);
-  transition: transform 600ms var(--cmp-ease), opacity 600ms var(--cmp-ease);
+  height: 1.75rem;
+  transform: translate3d(0, calc(var(--ry) + var(--rh) - 5.25rem - 1.75rem), 0);
+  transition: transform var(--cmp-ms, 600ms) var(--cmp-ease), opacity var(--cmp-ms, 600ms) var(--cmp-ease);
 }
 .cmp-phones {
   width: var(--rowW);
   transform-origin: 0 0;
-  transform: translate3d(calc(var(--rx) + (var(--rw) - var(--rowW) * var(--s)) / 2), calc(var(--ry) + 1.5rem), 0) scale(var(--s));
-  transition: transform 600ms var(--cmp-ease);
+  transform: translate3d(calc(var(--rx) + (var(--rw) - var(--rowW) * var(--s)) / 2), calc(var(--ry) + var(--yoff, 1.5rem)), 0) scale(var(--s));
+  transition: transform var(--cmp-ms, 600ms) var(--cmp-ease);
   backface-visibility: hidden;
 }
 .cmp-caption {
@@ -1142,8 +1142,11 @@ html.theme-changing *::after {
   height: 3rem;
   transform-origin: 50% 100%;
   transform: translate3d(calc(var(--rx) + (var(--rw) - 14.5rem) / 2), calc(var(--ry) + var(--rh) - 1.25rem - 3rem), 0) scale(var(--cs, 1));
-  transition: transform 600ms var(--cmp-ease);
+  transition: transform var(--cmp-ms, 600ms) var(--cmp-ease);
 }
+/* While the nudge runs the cards move a little faster, so each shrink and swell is quick. */
+.cmp-stage { --cmp-ms: 600ms; }
+.cmp-stage.cmp-nudging { --cmp-ms: 310ms; }
 @media (prefers-reduced-motion: reduce) {
   .cmp-layer,
   .cmp-fade,

@@ -1,14 +1,95 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { ImagePlus, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { APP_IDS, APP_NAMES, COMPARE_LIMITS as L, type AppId, type CompareContent, type DataPanel, type Source } from '@/lib/compare-data';
+import { ReasonTile } from '@/components/cuppi/compare/reason-tile';
+import { cn } from '@/lib/utils';
+import { APP_IDS, APP_NAMES, COMPARE_LIMITS as L, REASON_ICONS, type AppId, type CompareContent, type DataPanel, type Reason, type Source } from '@/lib/compare-data';
+import { TILE_COLOURS_LIST, type TileColour } from '@/lib/features-types';
 import { Field } from './section-fields';
 import { SourcePicker } from './compare-source-picker';
+import { useToast } from '@/hooks/use-toast';
+import { describeError } from './errors';
+import type { UploadShot } from './compare-shots-field';
+import type { Update } from './compare-snapshots-editor';
+
+/** The tile colours as swatches, the same as the feature icon editor shows. */
+const TILE_SWATCH: Record<TileColour, string> = { pink: '#EA9EDB', green: '#98B958', blue: '#A5CDFA', amber: '#F1A423' };
+
+/**
+ * One Why Cuppi tile's editor: its words, and its icon the way a feature's is edited: the glass squircle in a tile colour, wearing a
+ * picture (a transparent glyph) or, without one, a line icon you pick. The picture uploads as soon as it is chosen.
+ */
+function ReasonEditor({ reason, index, onChange, onIcon, upload }: { reason: Reason; index: number; onChange: (r: Reason) => void; onIcon: (url: string) => void; upload: UploadShot }) {
+  const { toast } = useToast();
+  const [busy, setBusy] = useState(false);
+  const pick = async (file: File | undefined) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const up = await upload(file);
+      onIcon(up.src);
+      toast({ title: 'Icon added', description: 'It is in your draft. Press Save comparison to publish it.' });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Could not upload the icon', description: describeError(error) });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="space-y-3 rounded-lg border p-3">
+      <Input aria-label={`Tile ${index + 1} title`} value={reason.title} maxLength={L.short} onChange={(e) => onChange({ ...reason, title: e.target.value })} />
+      <Textarea aria-label={`Tile ${index + 1} words`} rows={2} value={reason.text} maxLength={L.line} onChange={(e) => onChange({ ...reason, text: e.target.value })} />
+      <fieldset className="space-y-3 rounded-lg border p-3">
+        <legend className="px-1 text-xs font-medium text-muted-foreground">Icon</legend>
+        <div className="flex flex-wrap items-center gap-4">
+          <ReasonTile tile={reason.tile} icon={reason.icon} iconUrl={reason.iconUrl} className="h-16 w-16" />
+          <div className="space-y-2.5">
+            <div className="flex gap-2" role="radiogroup" aria-label={`Tile ${index + 1} colour`}>
+              {TILE_COLOURS_LIST.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  role="radio"
+                  aria-checked={reason.tile === c}
+                  aria-label={c}
+                  onClick={() => onChange({ ...reason, tile: c })}
+                  className={cn('h-7 w-7 rounded-full border-2', reason.tile === c ? 'border-foreground' : 'border-transparent')}
+                  style={{ background: TILE_SWATCH[c] }}
+                />
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs hover:bg-muted">
+                <ImagePlus className="h-3.5 w-3.5" /> {busy ? 'Uploading…' : reason.iconUrl ? 'Replace the picture' : 'Choose a picture'}
+                <input type="file" accept="image/png,image/webp,image/jpeg,image/svg+xml,.svg" className="sr-only" disabled={busy} aria-label={`Tile ${index + 1} icon picture`} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; void pick(f); }} />
+              </label>
+              {reason.iconUrl && (
+                <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onChange({ ...reason, iconUrl: undefined })}>
+                  <X className="mr-1 h-3.5 w-3.5" /> Use a line icon
+                </Button>
+              )}
+            </div>
+            {!reason.iconUrl && (
+              <select aria-label={`Tile ${index + 1} line icon`} className="h-8 rounded-md border bg-background px-2 text-xs" value={reason.icon} onChange={(e) => onChange({ ...reason, icon: e.target.value as Reason['icon'] })}>
+                {REASON_ICONS.map((i) => (
+                  <option key={i} value={i}>
+                    {i}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">A transparent glyph (PNG, WebP or SVG) sits centred on the tile. Without one, the line icon shows in white.</p>
+      </fieldset>
+    </div>
+  );
+}
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -31,7 +112,7 @@ function LinesField({ label, hint, value, onChange, rows = 4 }: { label: string;
 }
 
 /** The page's own words and its check date. */
-export function PageTab({ content, onChange }: { content: CompareContent; onChange: (c: CompareContent) => void }) {
+export function PageTab({ content, onChange, update, upload }: { content: CompareContent; onChange: (c: CompareContent) => void; update: Update; upload: UploadShot }) {
   const set = (change: Partial<CompareContent>) => onChange({ ...content, ...change });
   return (
     <div className="space-y-6">
@@ -53,20 +134,79 @@ export function PageTab({ content, onChange }: { content: CompareContent; onChan
       <Card>
         <CardHeader>
           <CardTitle>Why Cuppi</CardTitle>
-          <CardDescription>The few lines under the heading and the four tiles. Their colours and icons are fixed.</CardDescription>
+          <CardDescription>The heading, the few lines under it, and the four tiles with their icons. The card colours are fixed.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Field label="Heading" htmlFor="compare-whytitle">
+            <Input id="compare-whytitle" value={content.whyTitle} maxLength={L.short} onChange={(e) => set({ whyTitle: e.target.value })} />
+          </Field>
           <Field label="Introduction" htmlFor="compare-why">
             <Textarea id="compare-why" rows={3} value={content.whyIntro} maxLength={L.text} onChange={(e) => set({ whyIntro: e.target.value })} />
           </Field>
           <div className="grid gap-3 sm:grid-cols-2">
             {content.reasons.map((r, i) => (
-              <div key={r.id} className="space-y-2 rounded-lg border p-3">
-                <Input aria-label={`Tile ${i + 1} title`} value={r.title} maxLength={L.short} onChange={(e) => set({ reasons: content.reasons.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)) })} />
-                <Textarea aria-label={`Tile ${i + 1} words`} rows={2} value={r.text} maxLength={L.line} onChange={(e) => set({ reasons: content.reasons.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)) })} />
-              </div>
+              <ReasonEditor
+                key={r.id}
+                reason={r}
+                index={i}
+                upload={upload}
+                onChange={(next) => set({ reasons: content.reasons.map((x, j) => (j === i ? next : x)) })}
+                onIcon={(url) => update((c) => ({ ...c, reasons: c.reasons.map((x) => (x.id === r.id ? { ...x, iconUrl: url } : x)) }))}
+              />
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Section headings</CardTitle>
+          <CardDescription>The heading, and the line under it, over the feature matrix, the prices, the sources and the privacy cards. “A look inside” is on the Screenshots tab. A line can be left empty.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Feature matrix: heading" htmlFor="compare-features-title">
+              <Input id="compare-features-title" value={content.featuresTitle} maxLength={L.short} onChange={(e) => set({ featuresTitle: e.target.value })} />
+            </Field>
+            <Field label="Feature matrix: line under it" htmlFor="compare-features-intro" optional>
+              <Input id="compare-features-intro" value={content.featuresIntro} maxLength={L.line} onChange={(e) => set({ featuresIntro: e.target.value })} />
+            </Field>
+            <Field label="Prices: heading" htmlFor="compare-price-title">
+              <Input id="compare-price-title" value={content.priceTitle} maxLength={L.short} onChange={(e) => set({ priceTitle: e.target.value })} />
+            </Field>
+            <Field label="Prices: line under it" htmlFor="compare-price-intro" optional>
+              <Input id="compare-price-intro" value={content.priceIntro} maxLength={L.line} onChange={(e) => set({ priceIntro: e.target.value })} />
+            </Field>
+            <Field label="Sources: heading" htmlFor="compare-sources-title">
+              <Input id="compare-sources-title" value={content.sourcesTitle} maxLength={L.short} onChange={(e) => set({ sourcesTitle: e.target.value })} />
+            </Field>
+            <Field label="Privacy: heading" htmlFor="compare-privacy-title">
+              <Input id="compare-privacy-title" value={content.privacyTitle} maxLength={L.short} onChange={(e) => set({ privacyTitle: e.target.value })} />
+            </Field>
+            <div className="sm:col-span-2">
+              <Field label="Privacy: line under it" htmlFor="compare-privacy-intro" optional>
+                <Input id="compare-privacy-intro" value={content.privacyIntro} maxLength={L.line} onChange={(e) => set({ privacyIntro: e.target.value })} />
+              </Field>
+            </div>
+          </div>
+          <fieldset className="space-y-3 rounded-lg border p-3">
+            <legend className="px-1 text-sm font-medium">Labels on the privacy cards</legend>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {(
+                [
+                  ['tracking', 'First group'],
+                  ['identifiers', 'Advertising identifiers'],
+                  ['linked', 'Linked to you'],
+                  ['notLinked', 'Not linked to you'],
+                  ['nothing', 'When a card lists nothing'],
+                ] as const
+              ).map(([key, what]) => (
+                <Field key={key} label={what} htmlFor={`compare-plabel-${key}`}>
+                  <Input id={`compare-plabel-${key}`} value={content.privacyLabels[key]} maxLength={L.short} onChange={(e) => set({ privacyLabels: { ...content.privacyLabels, [key]: e.target.value } })} />
+                </Field>
+              ))}
+            </div>
+          </fieldset>
         </CardContent>
       </Card>
 

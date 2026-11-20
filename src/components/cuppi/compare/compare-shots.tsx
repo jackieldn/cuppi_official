@@ -6,7 +6,7 @@ import { PhoneMockup } from '@/components/cuppi/blocks/phone-mockup';
 import { MOCKUPS } from '@/lib/phone-mockups';
 import { Reveal } from '@/components/ui/reveal';
 import { cn } from '@/lib/utils';
-import { APP_IDS, APP_NAMES, COMPARE_LIMITS, dateLabel, type AppId, type CompareContent, type Shot } from '@/lib/compare-data';
+import { APP_IDS, APP_NAMES, COMPARE_LIMITS, captionFor, type AppId, type CompareContent, type Shot } from '@/lib/compare-data';
 
 /**
  * The older phone the rivals' screenshots sit in: the iPhone X frame in /public/phone-frames. The screenshot is laid flat behind
@@ -62,6 +62,14 @@ function NewPhone({ shot }: { shot?: Shot }) {
 const ZOOM = 1.5;
 const PAN_AFTER_MS = 2000;
 const PAN_EVERY_MS = 3600;
+/**
+ * The nudge: a second after Cuppi's card opens on its own, it shrinks a little, swells back, shrinks and swells again. As it gives
+ * way, the card beside it (Hartley's) swells a little in its place, which shows that the others can be pointed at too.
+ */
+const NUDGE_AFTER_MS = 1000;
+const NUDGE_STEP_MS = 330;
+/** How much each card's share changes when Cuppi's card dips: it gives up 0.22, most of it to its neighbour. */
+const DIP = [-0.22, 0.17, 0.05];
 
 /**
  * How much of the row a card takes, and how tall it stands in it: an equal share at rest; the open one takes the lion's share and
@@ -87,8 +95,14 @@ const WINDOW_OPEN = STAGE.h - STAGE.padTop - (STAGE.padBottom + STAGE.caption + 
  * Where a card is, for a given open card (or none): its left edge, width, top and height as CSS lengths. They are calc()s of the
  * stage's own width (100cqw, as the stage is a size container) and its fixed height, so they need no measuring and work on the server.
  */
-function place(index: number, active: AppId | null) {
+/** Each card's share of the row, for a given open card; while Cuppi's card dips in the nudge, it gives some of its share to the others. */
+function growsFor(active: AppId | null, dip: boolean): number[] {
   const grows = ORDER.map((a) => (active === null ? GROW.rest : a === active ? GROW.open : GROW.other));
+  return dip && active === 'cuppi' ? grows.map((g, i) => g + DIP[i]) : grows;
+}
+
+function place(index: number, active: AppId | null, dip: boolean) {
+  const grows = growsFor(active, dip);
   const sum = grows.reduce((a, b) => a + b, 0);
   const before = grows.slice(0, index).reduce((a, b) => a + b, 0) / sum;
   const state: CardState = active === null ? 'rest' : ORDER[index] === active ? 'open' : 'other';
@@ -147,6 +161,7 @@ function StageCard({
   shots,
   count,
   panned,
+  dip,
   tone,
   caption,
 }: {
@@ -156,17 +171,22 @@ function StageCard({
   shots: Shot[];
   count: number;
   panned: boolean;
+  dip: boolean;
   tone: { bg: string; fade: string; border: boolean };
   caption: string;
 }) {
-  const { state, ...vars } = place(index, active);
+  const { state, ...vars } = place(index, active, dip);
   const slots = slotsOf(shots, count);
   const frameW = app === 'cuppi' ? 'var(--pw)' : `calc(var(--pw) * ${X_WIDER})`;
   const scale = state === 'open' ? ZOOM : state === 'other' ? OTHER_SCALE : 1;
   return (
     <figure
       className="cmp-card pointer-events-none absolute inset-0"
-      style={{ ...(vars as React.CSSProperties), ['--rowW' as string]: `calc(${slots} * ${frameW} + ${slots - 1} * 0.5rem)`, ['--s' as string]: scale, ['--cs' as string]: state === 'other' ? 0.86 : 1 }}
+      style={{ ...(vars as React.CSSProperties), ['--rowW' as string]: `calc(${slots} * ${frameW} + ${slots - 1} * 0.5rem)`, ['--s' as string]: scale,
+        ['--cs' as string]: state === 'other' ? 0.86 : 1,
+        // Where the phones start below the card's top edge: the usual padding, except in a shrunk card, where they sit centred in the space above the caption.
+        ['--yoff' as string]: state === 'other' ? `calc((var(--rh) - ${STAGE.padBottom + STAGE.caption + STAGE.captionGap}rem - (var(--ph) + 1.5rem) * ${OTHER_SCALE}) / 2)` : `${STAGE.padTop}rem`,
+      }}
     >
       {tone.border && <div aria-hidden className="cmp-layer cmp-border bg-cuppi-line" />}
       <div aria-hidden className={cn('cmp-layer', tone.border ? 'cmp-fill' : 'cmp-shape', tone.bg)} />
@@ -197,19 +217,57 @@ function StageCard({
  * motion just see the cards at rest; on a phone the cards stack.
  */
 export function CompareShots({ content }: { content: CompareContent }) {
-  const when = dateLabel(content.checkedOn);
-  const [active, setActive] = useState<AppId | null>(null);
+  // `hovered` is the card the cursor is on. `featured` is the card standing open: Cuppi's, opened by the section scrolling into view,
+  // then whichever was hovered last, so it stays open when the cursor leaves. `dip` is Cuppi's card giving way a little in the nudge.
+  const [hovered, setHovered] = useState<AppId | null>(null);
+  const [featured, setFeatured] = useState<AppId | null>(null);
+  const [dip, setDip] = useState(false);
+  const [nudging, setNudging] = useState(false);
   const [panned, setPanned] = useState(false);
   const calm = useRef(false);
+  const stage = useRef<HTMLDivElement>(null);
+  const active: AppId | null = hovered ?? featured;
 
   useEffect(() => {
     calm.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !window.matchMedia('(hover: hover)').matches;
   }, []);
 
+  // The first time the section is mostly on screen, Cuppi's card opens; a second later it gives its nudge (shrink, swell, shrink, swell)
+  // and stays open. Not for touch screens or people who ask for less motion, who see the cards at rest.
+  useEffect(() => {
+    const el = stage.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !window.matchMedia('(hover: hover)').matches) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        io.disconnect();
+        setFeatured((f) => f ?? 'cuppi');
+        // Dip, swell, dip, swell: each step a moment after the last; then the nudge is over and the card stays swollen.
+        [true, false, true, false].forEach((down, step) => {
+          timers.push(
+            setTimeout(() => {
+              setNudging(true);
+              setDip(down);
+              if (step === 3) timers.push(setTimeout(() => setNudging(false), NUDGE_STEP_MS));
+            }, NUDGE_AFTER_MS + step * NUDGE_STEP_MS),
+          );
+        });
+      },
+      { threshold: 0.5 },
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      timers.forEach(clearTimeout);
+    };
+  }, []);
+
   // After the pointer has rested on a card for a couple of seconds, start the pan, and keep going back and forth until it leaves.
   useEffect(() => {
     setPanned(false);
-    if (!active) return;
+    if (!hovered) return;
     let down = false;
     let every: ReturnType<typeof setInterval> | undefined;
     const start = setTimeout(() => {
@@ -224,13 +282,13 @@ export function CompareShots({ content }: { content: CompareContent }) {
       clearTimeout(start);
       if (every) clearInterval(every);
     };
-  }, [active]);
+  }, [hovered]);
 
   const count = Math.min(Math.max(2, ...APP_IDS.map((a) => content.shots[a].length)), COMPARE_LIMITS.shots);
   const cards: { app: AppId; className: string; tone: { bg: string; fade: string; border: boolean }; caption: string }[] = [
-    { app: 'cuppi', className: 'bg-cuppi-honey-soft', tone: { bg: 'bg-cuppi-honey-soft', fade: 'to-cuppi-honey-soft', border: false }, caption: 'Cuppi Home on iPhone' },
-    { app: 'hartley', className: 'border border-cuppi-line bg-cuppi-card', tone: { bg: 'bg-cuppi-card', fade: 'to-cuppi-card', border: true }, caption: `Hartley, captured ${when}` },
-    { app: 'familywall', className: 'border border-cuppi-line bg-cuppi-card', tone: { bg: 'bg-cuppi-card', fade: 'to-cuppi-card', border: true }, caption: `FamilyWall, captured ${when}` },
+    { app: 'cuppi', className: 'bg-cuppi-honey-soft', tone: { bg: 'bg-cuppi-honey-soft', fade: 'to-cuppi-honey-soft', border: false }, caption: captionFor(content, 'cuppi') },
+    { app: 'hartley', className: 'border border-cuppi-line bg-cuppi-card', tone: { bg: 'bg-cuppi-card', fade: 'to-cuppi-card', border: true }, caption: captionFor(content, 'hartley') },
+    { app: 'familywall', className: 'border border-cuppi-line bg-cuppi-card', tone: { bg: 'bg-cuppi-card', fade: 'to-cuppi-card', border: true }, caption: captionFor(content, 'familywall') },
   ];
 
   return (
@@ -256,9 +314,9 @@ export function CompareShots({ content }: { content: CompareContent }) {
           ))}
         </div>
 
-        <div className="relative hidden md:block" style={{ height: `${STAGE.h}rem` }}>
+        <div ref={stage} className={cn('cmp-stage relative hidden md:block', nudging && 'cmp-nudging')} style={{ height: `${STAGE.h}rem` }}>
           {cards.map((c, i) => (
-            <StageCard key={c.app} app={c.app} index={i} active={active} shots={content.shots[c.app]} count={count} panned={panned} tone={c.tone} caption={c.caption} />
+            <StageCard key={c.app} app={c.app} index={i} active={active} shots={content.shots[c.app]} count={count} panned={panned} dip={dip} tone={c.tone} caption={c.caption} />
           ))}
           {/* Invisible boxes that follow the cards and tell which one the cursor is on. Their own jitter, if any, can't be seen. */}
           <div className="absolute inset-0 flex">
@@ -266,9 +324,9 @@ export function CompareShots({ content }: { content: CompareContent }) {
               <div
                 key={app}
                 className="min-w-0 basis-0"
-                style={{ flexGrow: active === null ? GROW.rest : active === app ? GROW.open : GROW.other, marginLeft: i === 0 ? 0 : `${STAGE.gap}rem`, transition: 'flex-grow 600ms cubic-bezier(0.4, 0, 0.2, 1)' }}
-                onPointerEnter={(e) => e.pointerType === 'mouse' && !calm.current && setActive(app)}
-                onPointerLeave={(e) => e.pointerType === 'mouse' && setActive(null)}
+                style={{ flexGrow: growsFor(active, dip)[i], marginLeft: i === 0 ? 0 : `${STAGE.gap}rem`, transition: 'flex-grow 500ms cubic-bezier(0.4, 0, 0.2, 1)' }}
+                onPointerEnter={(e) => { if (e.pointerType === 'mouse' && !calm.current) { setHovered(app); setFeatured(app); } }}
+                onPointerLeave={(e) => e.pointerType === 'mouse' && setHovered(null)}
               />
             ))}
           </div>

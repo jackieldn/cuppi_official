@@ -142,11 +142,12 @@ export function PlansEditor({ features, stored, onSave }: { features: Feature[];
               <Field label="Pro annual" htmlFor="plans-annual">
                 <Input id="plans-annual" value={settings.prices.annual} maxLength={PLANS_LIMITS.price} onChange={(e) => setSettings({ ...settings, prices: { ...settings.prices, annual: e.target.value } })} />
               </Field>
-              <div className="sm:col-span-2">
-                <Field label="Note on the annual card" htmlFor="plans-note" optional hint="For example “2 months free”.">
-                  <Input id="plans-note" value={settings.prices.annualNote} maxLength={PLANS_LIMITS.note} onChange={(e) => setSettings({ ...settings, prices: { ...settings.prices, annualNote: e.target.value } })} />
-                </Field>
-              </div>
+              <Field label="Note under the monthly price" htmlFor="plans-monthly-note" optional hint="For example “1 month free”.">
+                <Input id="plans-monthly-note" value={settings.prices.monthlyNote} maxLength={PLANS_LIMITS.note} onChange={(e) => setSettings({ ...settings, prices: { ...settings.prices, monthlyNote: e.target.value } })} />
+              </Field>
+              <Field label="Note under the annual price" htmlFor="plans-note" optional hint="For example “1+2 months free”.">
+                <Input id="plans-note" value={settings.prices.annualNote} maxLength={PLANS_LIMITS.note} onChange={(e) => setSettings({ ...settings, prices: { ...settings.prices, annualNote: e.target.value } })} />
+              </Field>
             </CardContent>
           </Card>
 

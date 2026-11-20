@@ -1,7 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { COMPARE_LIMITS, allRows, defaultCompare, emptySnapshot } from '../../src/lib/compare-data.ts';
-import { readShots, resolveCompare, storedCompare, validateCompare, withoutSource } from '../../src/lib/compare-settings.ts';
+import { UNKNOWN_SHOT_SIZE, readShots, resolveCompare, storedCompare, validateCompare, withoutSource } from '../../src/lib/compare-settings.ts';
 
 const shot = (n = 1) => ({ src: `/images/compare/s${n}.webp`, width: 600, height: 1300, alt: `Screen ${n}` });
 
@@ -35,13 +35,62 @@ describe('resolveCompare', () => {
     assert.equal(resolveCompare({ notYet: '' }).notYet, '');
   });
 
-  test('why tiles keep their colour and icon and take only the words', () => {
-    const r = resolveCompare({ reasons: [{ id: 'no-tracking', title: 'No ads', text: 'Ever.', tint: 'clay', icon: 'map' }] });
+  test('why tiles keep their card colour, and take words, tile colour, icon and picture when they are usable', () => {
+    const r = resolveCompare({
+      reasons: [
+        { id: 'no-tracking', title: 'No ads', text: 'Ever.', tint: 'clay', tile: 'blue', icon: 'star', iconUrl: 'https://firebasestorage.googleapis.com/x.webp' },
+        { id: 'made-for-uk', tile: 'purple', icon: 'banana', iconUrl: 'javascript:alert(1)' },
+      ],
+    });
     const tile = r.reasons.find((x) => x.id === 'no-tracking');
     assert.equal(tile.title, 'No ads');
-    assert.equal(tile.tint, 'moss');
-    assert.equal(tile.icon, 'shield');
+    assert.equal(tile.tint, 'moss'); // the card colour is not editable
+    assert.equal(tile.tile, 'blue');
+    assert.equal(tile.icon, 'star');
+    assert.equal(tile.iconUrl, 'https://firebasestorage.googleapis.com/x.webp');
+    const uk = r.reasons.find((x) => x.id === 'made-for-uk');
+    assert.equal(uk.tile, 'amber'); // an unknown colour falls back to the default
+    assert.equal(uk.icon, 'map');
+    assert.equal(uk.iconUrl, undefined);
     assert.equal(r.reasons.length, 4);
+  });
+
+  test('the look-inside section: text, captions and the switch, each with its own default', () => {
+    const d = defaultCompare();
+    assert.equal(resolveCompare({}).showLook, true);
+    assert.equal(resolveCompare({ showLook: false }).showLook, false);
+    assert.equal(resolveCompare({ showLook: 'no' }).showLook, true);
+    const r = resolveCompare({ whyTitle: 'Why us', lookTitle: 'Inside', lookIntro: '', lookCaptions: { hartley: 'Hartley on {date}', familywall: '   ' } });
+    assert.equal(r.whyTitle, 'Why us');
+    assert.equal(r.lookTitle, 'Inside');
+    assert.equal(r.lookIntro, ''); // the line may be cleared on purpose
+    assert.equal(r.lookCaptions.hartley, 'Hartley on {date}');
+    assert.equal(r.lookCaptions.familywall, d.lookCaptions.familywall);
+    assert.equal(r.lookCaptions.cuppi, d.lookCaptions.cuppi);
+  });
+
+  test('the matrix, price and sources headings and lines each have a default and take what is saved', () => {
+    const d = defaultCompare();
+    assert.equal(d.featuresTitle, 'Feature by feature');
+    const r = resolveCompare({ featuresTitle: 'Side by side', featuresIntro: '', priceTitle: '  ', priceIntro: 'Monthly.', sourcesTitle: 'Our sources' });
+    assert.equal(r.featuresTitle, 'Side by side');
+    assert.equal(r.featuresIntro, ''); // a line may be cleared on purpose
+    assert.equal(r.priceTitle, d.priceTitle); // a heading may not
+    assert.equal(r.priceIntro, 'Monthly.');
+    assert.equal(r.sourcesTitle, 'Our sources');
+  });
+
+  test('the privacy section: heading, line and card labels each have a default and take what is saved', () => {
+    const d = defaultCompare();
+    assert.equal(d.privacyTitle, 'Privacy hygiene');
+    assert.equal(d.privacyLabels.tracking, 'Used to track you');
+    const r = resolveCompare({ privacyTitle: 'Data, plainly', privacyIntro: '', privacyLabels: { tracking: 'Tracks you', linked: '  ', nothing: 'No data' } });
+    assert.equal(r.privacyTitle, 'Data, plainly');
+    assert.equal(r.privacyIntro, ''); // a line may be cleared on purpose
+    assert.equal(r.privacyLabels.tracking, 'Tracks you');
+    assert.equal(r.privacyLabels.nothing, 'No data');
+    assert.equal(r.privacyLabels.linked, d.privacyLabels.linked); // a blank label falls back
+    assert.equal(r.privacyLabels.notLinked, d.privacyLabels.notLinked);
   });
 
   test('rows are cleaned: no name drops the row, duplicate keys are made unique, odd cells become "to confirm"', () => {
@@ -72,8 +121,20 @@ describe('resolveCompare', () => {
   test('screenshots keep at most three, and only real ones', () => {
     const many = [shot(1), shot(2), shot(3), shot(4)];
     assert.equal(readShots(many).length, COMPARE_LIMITS.shots);
-    assert.deepEqual(readShots([{ src: 'javascript:x', width: 1, height: 1, alt: 'x' }, { src: '/a.webp', width: 0, height: 5, alt: 'x' }, null, 5]), []);
+    assert.deepEqual(readShots([{ src: 'javascript:x', width: 1, height: 1, alt: 'x' }, null, 5, { width: 3, height: 3 }]), []);
     assert.equal(readShots('no').length, 0);
+  });
+
+  test('a screenshot saved with no usable size is kept at the usual shape, not dropped', () => {
+    // This is how screenshots vanished after a refresh: they were saved with a size of 0 by 0 and then thrown away on reading.
+    const kept = readShots([{ src: 'https://firebasestorage.googleapis.com/a.webp', width: 0, height: 0, alt: 'Cuppi Home on iPhone' }, { src: '/b.webp', alt: 'B' }, { src: '/c.webp', width: 'wide', height: -4, alt: 'C' }]);
+    assert.equal(kept.length, 3);
+    for (const s of kept) assert.deepEqual([s.width, s.height], [UNKNOWN_SHOT_SIZE.width, UNKNOWN_SHOT_SIZE.height]);
+    assert.equal(kept[0].alt, 'Cuppi Home on iPhone');
+    // A real size is kept as it is.
+    assert.deepEqual(readShots([{ src: '/d.webp', width: 1206.4, height: 2622, alt: 'D' }]).map((s) => [s.width, s.height]), [[1206, 2622]]);
+    // And it comes through resolveCompare, so the page and the admin both show it.
+    assert.equal(resolveCompare({ shots: { cuppi: [{ src: '/a.webp', width: 0, height: 0, alt: 'A' }] } }).shots.cuppi.length, 1);
   });
 
   test('a snapshot needs a row key, appears once, and carries its details', () => {
@@ -129,6 +190,18 @@ describe('validateCompare', () => {
     assert.ok(problems((d) => (d.shots.cuppi = [{ ...shot(), alt: '' }])).some((p) => /description/.test(p)));
     assert.ok(problems((d) => d.snapshots.push(emptySnapshot('ghost'))).some((p) => /no longer in the matrix/.test(p)));
     assert.deepEqual(problems((d) => d.snapshots.push(emptySnapshot('pets'))), []);
+  });
+
+  test('the headings and captions must not be empty', () => {
+    assert.ok(problems((d) => (d.whyTitle = ' ')).some((p) => /needs a heading/.test(p)));
+    assert.ok(problems((d) => (d.lookTitle = '')).some((p) => /needs a heading/.test(p)));
+    assert.ok(problems((d) => (d.featuresTitle = ' ')).some((p) => /matrix needs a heading/.test(p)));
+    assert.ok(problems((d) => (d.priceTitle = '')).some((p) => /price section needs a heading/.test(p)));
+    assert.ok(problems((d) => (d.sourcesTitle = '')).some((p) => /sources section needs a heading/.test(p)));
+    assert.ok(problems((d) => (d.privacyTitle = '')).some((p) => /privacy section needs a heading/.test(p)));
+    assert.ok(problems((d) => (d.privacyLabels.linked = ' ')).some((p) => /label on the privacy cards/.test(p)));
+    assert.ok(problems((d) => (d.lookCaptions.hartley = '')).some((p) => /caption/.test(p)));
+    assert.deepEqual(problems((d) => (d.lookIntro = '')), []);
   });
 
   test('a price must be a number from 0', () => {

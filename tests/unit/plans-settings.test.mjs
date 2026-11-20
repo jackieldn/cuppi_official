@@ -75,6 +75,18 @@ describe('resolvePlans', () => {
     assert.equal(resolvePlans({ prices: { monthly: 'x'.repeat(100) } }, FEATURES).prices.monthly.length, PLANS_LIMITS.price);
   });
 
+  test('the notes under the prices: "1 month free" under monthly and "1+2 months free" under yearly, each can be changed or cleared', () => {
+    const d = defaultPrices();
+    assert.equal(d.monthlyNote, '1 month free');
+    assert.equal(d.annualNote, '1+2 months free');
+    assert.equal(resolvePlans({}, FEATURES).prices.monthlyNote, '1 month free');
+    assert.equal(resolvePlans({ prices: { monthlyNote: '  2 months free  ' } }, FEATURES).prices.monthlyNote, '2 months free');
+    assert.equal(resolvePlans({ prices: { monthlyNote: '', annualNote: '' } }, FEATURES).prices.monthlyNote, '');
+    assert.equal(resolvePlans({ prices: { monthlyNote: 5 } }, FEATURES).prices.monthlyNote, '1 month free');
+    // It is saved with the prices.
+    assert.equal(storedPlans(resolvePlans({ prices: { monthlyNote: 'Try it free' } }, FEATURES)).prices.monthlyNote, 'Try it free');
+  });
+
   test('never holds more tables than the page allows', () => {
     const many = Array.from({ length: 40 }, (_, i) => ({ title: `T${i}`, rows: rows('a') }));
     assert.equal(resolvePlans({ sections: many }, FEATURES).sections.length, PLANS_LIMITS.sections);

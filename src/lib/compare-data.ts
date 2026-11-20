@@ -11,6 +11,8 @@
 // The default facts were gathered on 19 Nov 2026 from each app's UK App Store page, website, privacy policy and terms,
 // from Companies House, and from the team's own testing. See docs/competitor-research-hartley-familywall.md.
 
+import type { TileColour } from './features-types.ts';
+
 export type AppId = 'cuppi' | 'hartley' | 'familywall';
 export const APP_IDS: AppId[] = ['cuppi', 'hartley', 'familywall'];
 export const RIVALS: AppId[] = ['hartley', 'familywall'];
@@ -102,7 +104,23 @@ export type DataPanel = {
 /** What a rival costs a month in pounds, and how it pays its way. Cuppi's price comes from the Plans settings. */
 export type RivalPrice = { monthly: number; funding: string; sources: string[] };
 
-export type Reason = { id: string; title: string; text: string; tint: 'clay' | 'moss' | 'sky' | 'honey'; icon: 'home' | 'shield' | 'phone' | 'map' };
+/** The line icons a Why Cuppi tile can wear when it has no picture of its own. */
+export const REASON_ICONS = ['home', 'shield', 'phone', 'map', 'cake', 'bin', 'paw', 'receipt', 'wallet', 'users', 'star', 'sparkles'] as const;
+export type ReasonIcon = (typeof REASON_ICONS)[number];
+
+/**
+ * One of the Why Cuppi tiles. Its card colour is fixed (`tint`); its icon is edited like a feature's: a squircle in one of the app's
+ * tile colours, wearing a picture (a transparent glyph, `iconUrl`) or, without one, a white line icon.
+ */
+export type Reason = {
+  id: string;
+  title: string;
+  text: string;
+  tint: 'clay' | 'moss' | 'sky' | 'honey';
+  tile: TileColour;
+  icon: ReasonIcon;
+  iconUrl?: string;
+};
 
 /** A picture on the site's storage, with its real size so the page can lay it out before it loads. */
 export type Shot = { src: string; width: number; height: number; alt: string };
@@ -123,11 +141,24 @@ export type SnapApp = {
 /** The proof for one row of the matrix: a few screenshots per app. */
 export type Snapshot = { rowId: string; note?: string; apps: Record<AppId, SnapApp> };
 
+export type PrivacyLabels = { tracking: string; identifiers: string; linked: string; notLinked: string; nothing: string };
+
 export type CompareContent = {
   /** ISO date the facts were last checked against their sources. */
   checkedOn: string;
+  whyTitle: string;
   whyIntro: string;
   reasons: Reason[];
+  /** The headings and lines over the matrix, the prices and the sources. */
+  featuresTitle: string;
+  featuresIntro: string;
+  priceTitle: string;
+  priceIntro: string;
+  sourcesTitle: string;
+  /** The privacy section: its heading and line, and the labels on each card (used to track you, linked, not linked, and "Nothing"). */
+  privacyTitle: string;
+  privacyIntro: string;
+  privacyLabels: PrivacyLabels;
   groups: FactGroup[];
   /** One honest line under the matrix: what Cuppi does not do. */
   notYet: string;
@@ -138,6 +169,11 @@ export type CompareContent = {
   /** What the free trial gives, as Cuppi offers it. */
   trial: string;
   sources: Source[];
+  /** The "A look inside" section: whether it shows, its heading and line, and each app's caption ({date} becomes the check date). */
+  showLook: boolean;
+  lookTitle: string;
+  lookIntro: string;
+  lookCaptions: Record<AppId, string>;
   /** Up to three screenshots per app, shown in phone frames on the comparison page. */
   shots: Record<AppId, Shot[]>;
   /** The short method note at the top of the snapshots page. */
@@ -154,14 +190,23 @@ export function defaultCompare(): CompareContent {
   const source = (id: string, label: string, url: string | undefined): Source => ({ id, label, ...(url ? { url } : {}), checkedOn });
   return {
     checkedOn,
+    whyTitle: 'Why Cuppi',
     whyIntro:
       'Cuppi is made by an independent developer studio, and we take real pride in what we build. We do things our own way, and we stand up, fiercely, against the big-tech way of doing them.',
     reasons: [
-      { id: 'whole-home', title: 'The whole home', text: 'Celebrations, chores, pets, shopping, budget, car and bins in one app.', tint: 'clay', icon: 'home' },
-      { id: 'no-tracking', title: 'No ads, no tracking', text: 'Your home is not our business.', tint: 'moss', icon: 'shield' },
-      { id: 'made-for-iphone', title: 'Made for iPhone', text: 'Designed with care, with the latest features in mind.', tint: 'sky', icon: 'phone' },
-      { id: 'made-for-uk', title: 'Made for the UK', text: 'From supermarkets to bin days, we built Cuppi for Britain.', tint: 'honey', icon: 'map' },
+      { id: 'whole-home', title: 'The whole home', text: 'Celebrations, chores, pets, shopping, budget, car and bins in one app.', tint: 'clay', tile: 'pink', icon: 'home' },
+      { id: 'no-tracking', title: 'No ads, no tracking', text: 'Your home is not our business.', tint: 'moss', tile: 'green', icon: 'shield' },
+      { id: 'made-for-iphone', title: 'Made for iPhone', text: 'Designed with care, with the latest features in mind.', tint: 'sky', tile: 'blue', icon: 'phone' },
+      { id: 'made-for-uk', title: 'Made for the UK', text: 'From supermarkets to bin days, we built Cuppi for Britain.', tint: 'honey', tile: 'amber', icon: 'map' },
     ],
+    featuresTitle: 'Feature by feature',
+    featuresIntro: 'What Cuppi does, and what the others say they do.',
+    priceTitle: 'What it costs',
+    priceIntro: 'A month of each, and how each one pays its way.',
+    sourcesTitle: 'Where this comes from',
+    privacyTitle: 'Privacy hygiene',
+    privacyIntro: 'What each app’s App Store label says it may use to track you, type by type, and what its own policy names.',
+    privacyLabels: { tracking: 'Used to track you', identifiers: 'Advertising identifiers named in its policy', linked: 'Linked to you', notLinked: 'Not linked to you', nothing: 'Nothing' },
     groups: [
       {
         id: 'home',
@@ -325,6 +370,10 @@ export function defaultCompare(): CompareContent {
       source('fw-terms', 'FamilyWall terms of use', 'https://www.familywall.com/terms.html'),
       source(TEAM_TEST, 'Tested by the Cuppi team in the app', SNAPSHOTS_PATH),
     ],
+    showLook: true,
+    lookTitle: 'A look inside',
+    lookIntro: 'The same few taps, in each app.',
+    lookCaptions: { cuppi: 'Cuppi Home on iPhone', hartley: 'Hartley, captured {date}', familywall: 'FamilyWall, captured {date}' },
     shots: { cuppi: [], hartley: [], familywall: [] },
     snapshotsIntro:
       'Each snapshot is a screenshot taken by the Cuppi team in the app itself, shown with the version, phone and date where we recorded them. Apps change as they update, so these show what we saw on the day.',
@@ -389,6 +438,10 @@ export function proofGaps(content: CompareContent): ProofGap[] {
   }
   return gaps;
 }
+
+/** An app's caption under "A look inside", with {date} turned into the day the facts were checked. */
+export const captionFor = (content: Pick<CompareContent, 'lookCaptions' | 'checkedOn'>, app: AppId): string =>
+  content.lookCaptions[app].replaceAll('{date}', dateLabel(content.checkedOn));
 
 /** A source's address as a link: whether it leaves the site. */
 export const isExternalUrl = (url: string): boolean => /^https?:\/\//.test(url);

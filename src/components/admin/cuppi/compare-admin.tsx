@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { useDoc, useFirestore, useStorage } from '@/firebase';
@@ -75,6 +75,17 @@ export function CompareEditor({
   const dirty = JSON.stringify(content) !== JSON.stringify(saved);
   const gaps = proofGaps(content).length;
 
+  // Leaving or refreshing with changes that were never saved would lose them (an upload only goes into the draft until Save), so ask first.
+  useEffect(() => {
+    if (!dirty) return;
+    const ask = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', ask);
+    return () => window.removeEventListener('beforeunload', ask);
+  }, [dirty]);
+
   const save = async () => {
     const problems = validateCompare(content);
     if (problems.length > 0) {
@@ -127,7 +138,7 @@ export function CompareEditor({
           </TabsList>
           <div className="mt-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-2">
             <TabsContent value="page" className="mt-0">
-              <PageTab content={content} onChange={setContent} />
+              <PageTab content={content} onChange={setContent} update={setContent} upload={onUpload} />
             </TabsContent>
             <TabsContent value="matrix" className="mt-0">
               <MatrixEditor groups={content.groups} sources={content.sources} onChange={(groups) => setContent({ ...content, groups })} />
@@ -142,10 +153,10 @@ export function CompareEditor({
               <SourcesTab content={content} onChange={(sources) => setContent({ ...content, sources })} onRemove={(id) => setContent(withoutSource(content, id))} />
             </TabsContent>
             <TabsContent value="screenshots" className="mt-0">
-              <ScreenshotsTab content={content} onChange={setContent} upload={onUpload} />
+              <ScreenshotsTab content={content} onChange={setContent} update={setContent} upload={onUpload} />
             </TabsContent>
             <TabsContent value="snapshots" className="mt-0">
-              <SnapshotsTab content={content} onChange={setContent} upload={onUpload} />
+              <SnapshotsTab content={content} onChange={setContent} update={setContent} upload={onUpload} />
             </TabsContent>
           </div>
         </Tabs>
@@ -165,7 +176,7 @@ export function CompareEditor({
           >
             Start again from the built-in facts
           </Button>
-          {dirty && <span className="text-sm text-muted-foreground">Unsaved changes</span>}
+          {dirty && <span className="text-sm font-medium text-amber-700 dark:text-amber-400">Unsaved changes: press Save to publish them</span>}
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ExternalLink, Home, MapPin, ShieldCheck, Smartphone } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Reveal } from '@/components/ui/reveal';
 import type { PlansPrices } from '@/lib/plans-settings';
@@ -17,23 +17,19 @@ import {
 } from '@/lib/compare-data';
 import { TINTS } from '../blocks/tints';
 import { SourceRefs, type Cite } from './source-refs';
+import { ReasonTile } from './reason-tile';
 import { TiltCard } from './tilt-card';
 
-const ICONS: Record<Reason['icon'], typeof Home> = { home: Home, shield: ShieldCheck, phone: Smartphone, map: MapPin };
-
-/** Four short reasons, in the site's tints. */
+/** Four short reasons, in the site's tints, each with its glass squircle icon. */
 export function WhyCuppi({ reasons }: { reasons: Reason[] }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {reasons.map((r) => {
         const t = TINTS[r.tint];
-        const Icon = ICONS[r.icon];
         return (
           <Reveal key={r.id} stagger={80}>
             <TiltCard className={cn('rounded-[2rem] p-6', t.surface, t.text)}>
-              <span className={cn('grid h-11 w-11 place-items-center rounded-2xl', t.chip)}>
-                <Icon className="h-5 w-5" aria-hidden />
-              </span>
+              <ReasonTile tile={r.tile} icon={r.icon} iconUrl={r.iconUrl} className="h-14 w-14" />
               <h3 className="mt-4 font-headline text-2xl font-normal leading-tight">{r.title}</h3>
               <p className={cn('mt-1.5 leading-snug', t.muted)}>{r.text}</p>
             </TiltCard>
@@ -74,11 +70,9 @@ export function DataSection({ content, cite }: { content: CompareContent; cite: 
   return (
     <section aria-labelledby="data-title" className="relative overflow-hidden rounded-[2.5rem] bg-cuppi-lake px-5 py-10 text-cuppi-cream sm:px-10 sm:py-14">
       <h2 id="data-title" className="text-center font-headline text-3xl font-normal leading-tight tracking-tight sm:text-4xl">
-        Privacy hygiene
+        {content.privacyTitle}
       </h2>
-      <p className="mx-auto mt-3 max-w-2xl text-center text-lg leading-relaxed text-cuppi-cream/75">
-        What each app’s App Store label says it may use to track you, type by type, and what its own policy names.
-      </p>
+      {content.privacyIntro && <p className="mx-auto mt-3 max-w-2xl text-center text-lg leading-relaxed text-cuppi-cream/75">{content.privacyIntro}</p>}
       <div className="mt-8 grid gap-3 md:grid-cols-3">
         {APP_IDS.map((app: AppId) => {
           const p = content.panels[app];
@@ -91,20 +85,20 @@ export function DataSection({ content, cite }: { content: CompareContent; cite: 
                   {APP_NAMES[app]}
                   {app !== 'cuppi' && <SourceRefs ids={p.sources} cite={cite} onDark />}
                 </h3>
-                <h4 className={cn('mt-5', LABEL, app === 'cuppi' ? 'text-cuppi-espresso' : 'text-cuppi-cream')}>Used to track you</h4>
+                <h4 className={cn('mt-5', LABEL, app === 'cuppi' ? 'text-cuppi-espresso' : 'text-cuppi-cream')}>{content.privacyLabels.tracking}</h4>
                 {p.tracking.length === 0 ? (
-                  <p className="mt-2 self-start rounded-full bg-cuppi-moss-deep px-3 py-1 text-sm font-semibold text-cuppi-cream">Nothing</p>
+                  <p className="mt-2 self-start rounded-full bg-cuppi-moss-deep px-3 py-1 text-sm font-semibold text-cuppi-cream">{content.privacyLabels.nothing}</p>
                 ) : (
                   <Chips items={p.tracking} />
                 )}
                 {p.identifiers.length > 0 && (
                   <>
-                    <h4 className={cn('mt-5', LABEL, 'text-cuppi-cream')}>Advertising identifiers named in its policy</h4>
+                    <h4 className={cn('mt-5', LABEL, 'text-cuppi-cream')}>{content.privacyLabels.identifiers}</h4>
                     <p className="mt-1 text-sm leading-snug">{p.identifiers.join('. ')}</p>
                   </>
                 )}
-                <Plain label="Linked to you" items={p.linked} onLight={app === 'cuppi'} />
-                <Plain label="Not linked to you" items={p.notLinked} onLight={app === 'cuppi'} />
+                <Plain label={content.privacyLabels.linked} items={p.linked} onLight={app === 'cuppi'} />
+                <Plain label={content.privacyLabels.notLinked} items={p.notLinked} onLight={app === 'cuppi'} />
                 {/* The explainer under the divider is pushed to the foot of the card, so the three line up whatever is above them. */}
                 {p.note && (
                   <div className="mt-auto pt-4">
@@ -156,14 +150,14 @@ export function PriceSection({ content, prices, cite }: { content: CompareConten
           label="Cuppi Pro"
           price={prices.monthly}
           width={pct(cuppi)}
-          className="bg-cuppi-honey"
+          className="bg-cuppi-moss"
           note={`Generous free tier, optional upgrade${prices.annualNote ? `, ${prices.annualNote.toLowerCase()} on the yearly plan` : ''}. ${content.trial}`}
         />
         <Bar
           label="FamilyWall Premium"
           price={formatPounds(familywall.monthly)}
           width={pct(familywall.monthly)}
-          className="bg-cuppi-moss"
+          className="bg-cuppi-honey"
           note={familywall.funding}
           refs={<SourceRefs ids={familywall.sources} cite={cite} />}
         />
