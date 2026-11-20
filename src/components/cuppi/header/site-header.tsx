@@ -137,7 +137,7 @@ export function SiteHeader({ groups, tools, links: configured, download }: { gro
   };
 
   return (
-    <header className="sticky top-0 z-50 px-3 pt-3 sm:px-6" ref={rootRef}>
+    <header data-nosnippet className="sticky top-0 z-50 px-3 pt-3 sm:px-6" ref={rootRef}>
       <div className="relative mx-auto max-w-6xl" ref={frameRef}>
         <nav
           aria-label="Main"

@@ -6,7 +6,8 @@ import { ActionButton } from '../action-button';
 export function DownloadStrip() {
   return (
     <Reveal className="px-3 pb-6 pt-4 sm:px-6">
-      <section className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-cuppi-lake px-7 py-16 text-center text-cuppi-cream sm:py-20">
+      {/* data-nosnippet: the same sentence closes every page, so search results would quote it instead of the page's own text. */}
+      <section data-nosnippet className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-cuppi-lake px-7 py-16 text-center text-cuppi-cream sm:py-20">
         <h2 className="relative mx-auto max-w-2xl font-headline font-normal text-3xl leading-tight tracking-tight sm:text-5xl">
           Save it once. Get reminded gently, forever.
         </h2>

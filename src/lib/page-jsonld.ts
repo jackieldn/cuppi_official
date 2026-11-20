@@ -99,6 +99,7 @@ function organisation(origin: string): Json {
     name: 'Cuppi',
     legalName: 'JackiePoot Creations Ltd',
     url: origin,
+    logo: `${origin}/icons/CuppiHome-logo-nov2026.min.svg`,
     address: { '@type': 'PostalAddress', streetAddress: '124 City Road', addressLocality: 'London', postalCode: 'EC1V 2NX', addressCountry: 'GB' },
   };
 }
@@ -109,7 +110,7 @@ export function buildHomeJsonLd(origin: string): Json {
     '@context': 'https://schema.org',
     '@graph': [
       organisation(origin),
-      { '@type': 'WebSite', '@id': `${origin}/#website`, url: origin, name: 'Cuppi', description: SITE_DESCRIPTION, inLanguage: 'en-GB', publisher: { '@id': `${origin}/#organisation` } },
+      { '@type': 'WebSite', '@id': `${origin}/#website`, url: origin, name: 'Cuppi', alternateName: 'Cuppi Home', description: SITE_DESCRIPTION, inLanguage: 'en-GB', publisher: { '@id': `${origin}/#organisation` } },
       {
         '@type': 'SoftwareApplication',
         '@id': `${origin}/#app`,

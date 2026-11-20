@@ -47,7 +47,7 @@ export async function CuppiFooter() {
   const [features, tools] = await Promise.all([getPageFeatures(), getTools().then(liveTools)]);
 
   return (
-    <footer className="mt-10 px-3 pb-3 sm:px-6 sm:pb-6">
+    <footer data-nosnippet className="mt-10 px-3 pb-3 sm:px-6 sm:pb-6">
       <div className="mx-auto max-w-6xl rounded-[2.5rem] bg-cuppi-paper-deep px-7 py-12 sm:px-12">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1.25fr_1fr_1fr]">
           {/* The grid stretches this column to the height of the tallest one, so the badge sits at the bottom, level with the last link. */}

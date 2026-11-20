@@ -25,6 +25,8 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  // No lastModified on the pages without a real date of their own: stamping them with "now" says everything changed on every
+  // request, and search engines learn to ignore the dates. Posts, FAQ topics and the Stamp Duty page carry real ones.
   const staticRoutes = [
     '/',
     '/features',
@@ -40,7 +42,6 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
   const sectionOf: Record<string, Parameters<typeof isLive>[1]> = { '/': 'home', '/features': 'features', '/blog': 'blog', '/support': 'support' };
   const staticUrls = staticRoutes.filter(route => !sectionOf[route] || isLive(status, sectionOf[route])).map(route => ({
     url: `${baseUrl}${route}`,
-    lastModified: new Date(),
     changeFrequency: 'weekly' as 'weekly',
     priority: route === '/' ? 1.0 : 0.5,
   }));
@@ -67,7 +68,6 @@ async function cuppiSitemap(): Promise<MetadataRoute.Sitemap> {
   const { getPageFeatures } = await import('@/lib/features');
   const featureUrls = (await getPageFeatures()).map(f => ({
     url: `${baseUrl}/features/${f.slug}`,
-    lastModified: new Date(),
     changeFrequency: 'monthly' as 'monthly',
     priority: 0.7,
   }));

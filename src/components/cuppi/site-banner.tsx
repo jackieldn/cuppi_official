@@ -27,7 +27,7 @@ export function SiteBanner({ banner }: { banner: Banner }) {
   );
   const shape = cn('flex items-center justify-center gap-3 rounded-[1.75rem] px-5 py-2.5', t.surface, t.text);
   return (
-    <aside aria-label="Announcement" className="cuppi-fade-up px-3 pt-2 sm:px-6">
+    <aside data-nosnippet aria-label="Announcement" className="cuppi-fade-up px-3 pt-2 sm:px-6">
       <div className="mx-auto max-w-6xl">
         {banner.href ? (
           <Link
