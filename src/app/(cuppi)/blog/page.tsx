@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FadeImage } from '@/components/cuppi/fade-image';
 import { ArrowRight, ChevronDown } from 'lucide-react';
@@ -10,6 +11,12 @@ import { CuppiHeader } from '@/components/cuppi/header';
 import { SpotlightPattern } from '@/components/cuppi/spotlight-pattern';
 
 export const revalidate = 60; // Re-fetch posts every 60 seconds
+
+export const metadata: Metadata = {
+  title: 'The Cosy Corner',
+  description: 'News, updates and the thinking behind Cuppi, the calm and private household app.',
+  alternates: { canonical: '/blog' },
+};
 
 // Only the articles being shown are fetched: $end is how many we want, plus one, so we know whether there are more.
 const COSY_CORNER_QUERY = `*[_type == "cosyCorner"] | order(_createdAt desc) [0...$end] {

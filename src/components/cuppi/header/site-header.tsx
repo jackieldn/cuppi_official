@@ -30,6 +30,12 @@ export function SiteHeader({ groups, tools, links: configured, download }: { gro
   // Where each panel sits. Each has its own, because the panels are different widths: one shared value, worked out for a narrow
   // panel opened from a button far to the right, would push the wide one (hidden, but still laid out) past the edge of the page.
   const [panelLeft, setPanelLeft] = useState<Record<MenuKey, number>>({ features: 0, yours: 0, tools: 0 });
+  // The menu panels (and the phone sheet, which repeats them) hold most of the header's markup: every feature and tool, each with an
+  // icon. They are only ever seen after a hover or a tap, and the footer already links every feature and tool, so they are left out
+  // of the server HTML and mounted as soon as the page hydrates. That keeps a page's first ~50 KB (what a crawler or an AI fetch
+  // tool reads first) for the page itself. They still mount once, before anyone opens them, so the icons are downloaded in time.
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState<MenuKey | null>(null);
   const [pill, setPill] = useState<{ x: number; w: number } | null>(null);
@@ -239,7 +245,7 @@ export function SiteHeader({ groups, tools, links: configured, download }: { gro
               onMouseEnter={() => shown && openMenu(m.key)}
               onMouseLeave={closeSoon}
             >
-              <div className="rounded-[2rem] border border-cuppi-line bg-cuppi-card p-4 shadow-[0_24px_60px_-24px_rgb(var(--c-shadow)/0.45)]">
+              {ready && <div className="rounded-[2rem] border border-cuppi-line bg-cuppi-card p-4 shadow-[0_24px_60px_-24px_rgb(var(--c-shadow)/0.45)]">
                 <div className={cn('grid gap-4', m.key === 'features' && 'grid-cols-3')}>
                   {byGroup(m.groups).map(({ group, items }, gi) => (
                     <div key={group} className={shown ? 'cuppi-fade-up' : undefined} style={{ '--d': `${gi * 50}ms` } as React.CSSProperties}>
@@ -262,7 +268,7 @@ export function SiteHeader({ groups, tools, links: configured, download }: { gro
                     </Link>
                   </div>
                 )}
-              </div>
+              </div>}
             </div>
           );
         })}
@@ -276,7 +282,7 @@ export function SiteHeader({ groups, tools, links: configured, download }: { gro
           onMouseEnter={() => open === 'tools' && openMenu('tools')}
           onMouseLeave={closeSoon}
         >
-          <div className="rounded-[2rem] border border-cuppi-line bg-cuppi-card p-4 shadow-[0_24px_60px_-24px_rgb(var(--c-shadow)/0.45)]">
+          {ready && <div className="rounded-[2rem] border border-cuppi-line bg-cuppi-card p-4 shadow-[0_24px_60px_-24px_rgb(var(--c-shadow)/0.45)]">
             <ul className={cn('space-y-0.5', open === 'tools' && 'cuppi-fade-up')}>
               {tools.map((t) => (
                 <li key={t.slug}>
@@ -290,13 +296,13 @@ export function SiteHeader({ groups, tools, links: configured, download }: { gro
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden />
               </Link>
             </div>
-          </div>
+          </div>}
         </div>
 
         {/* Mobile sheet: also always mounted (hidden with display:none when closed), and so is every section's list (collapsed
             sections are `hidden`), so opening the sheet or a section never starts an icon downloading again. */}
         <div className={cn('absolute left-0 right-0 top-full z-50 mt-2 lg:hidden', mobileOpen ? 'cuppi-pop' : 'hidden')}>
-            <div className="max-h-[75vh] overflow-y-auto rounded-[2rem] border border-cuppi-line bg-cuppi-card p-3 shadow-[0_24px_60px_-24px_rgb(var(--c-shadow)/0.45)]">
+            {ready && <div className="max-h-[75vh] overflow-y-auto rounded-[2rem] border border-cuppi-line bg-cuppi-card p-3 shadow-[0_24px_60px_-24px_rgb(var(--c-shadow)/0.45)]">
               {links.map((l) => {
                 if (l.panel === 'tools') {
                   return (
@@ -382,7 +388,7 @@ export function SiteHeader({ groups, tools, links: configured, download }: { gro
                   </div>
                 );
               })}
-            </div>
+            </div>}
         </div>
       </div>
     </header>

@@ -4,13 +4,17 @@ import { CuppiHeader } from '@/components/cuppi/header';
 import { DownloadStrip } from '@/components/cuppi/blocks/download-strip';
 import { PageHero } from '@/components/cuppi/page-hero';
 import { PlansView } from '@/components/cuppi/plans/plans-view';
+import { JsonLd } from '@/components/faq/json-ld';
 import { getFeatures, getPlans } from '@/lib/features';
+import { buildPlansJsonLd } from '@/lib/page-jsonld';
 
 export const revalidate = 60;
 
+const DESCRIPTION = 'What Cuppi Free and Cuppi Pro each include, feature by feature, and what Pro costs.';
+
 export const metadata: Metadata = {
   title: 'Plans',
-  description: 'What Cuppi Free and Cuppi Pro each include, feature by feature, and what Pro costs.',
+  description: DESCRIPTION,
   alternates: { canonical: '/plans' },
 };
 
@@ -19,6 +23,7 @@ export default async function PlansPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <JsonLd data={buildPlansJsonLd('https://cuppi.co.uk', settings.prices, DESCRIPTION)} />
       <CuppiHeader />
       <main className="flex-grow">
         <PageHero

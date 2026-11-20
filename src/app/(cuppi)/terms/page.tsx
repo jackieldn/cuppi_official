@@ -3,8 +3,15 @@ import { PortableText } from '@/components/portable-text';
 import { LegalDocumentLayout } from '@/components/legal/legal-document-layout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: 'Terms and Conditions',
+  description: 'The terms for using Cuppi and its website.',
+  alternates: { canonical: '/terms' },
+};
 
 type LegalDoc = {
   title: string;

@@ -17,6 +17,7 @@ const MAX_QUERY_LENGTH = 100;
 // Search results are for people, not search engines: pages with ?q= are not indexed.
 export const metadata: Metadata = {
   title: 'Search the FAQ',
+  alternates: { canonical: '/faq/search' },
   robots: { index: false, follow: true },
 };
 
