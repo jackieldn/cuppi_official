@@ -1,8 +1,8 @@
 import { Check, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { APP_IDS, APP_NAMES, FACT_GROUPS, NOT_YET, isHighlighted, type Cell } from '@/lib/compare-data';
+import { APP_IDS, APP_NAMES, isHighlighted, type Cell, type CompareContent } from '@/lib/compare-data';
 import { TINTS } from '../blocks/tints';
-import { SourceRefs } from './source-refs';
+import { SourceRefs, type Cite } from './source-refs';
 
 const honey = TINTS.honey;
 
@@ -61,7 +61,7 @@ function CellView({ cell, refs }: { cell: Cell; refs: React.ReactNode }) {
  * The feature comparison: Cuppi's column first and tinted, then the others, in groups. Each row says what Cuppi does in a
  * line under its name. Every claim about another app carries the small number of its source.
  */
-export function CompareMatrix({ numbers }: { numbers: Map<string, number> }) {
+export function CompareMatrix({ content, cite }: { content: CompareContent; cite: Cite }) {
   return (
     <div className="overflow-hidden rounded-[1.75rem] border border-cuppi-line bg-cuppi-card">
       <table className="w-full table-fixed border-collapse text-left">
@@ -82,7 +82,7 @@ export function CompareMatrix({ numbers }: { numbers: Map<string, number> }) {
             ))}
           </tr>
         </thead>
-        {FACT_GROUPS.map((group) => (
+        {content.groups.map((group) => (
           <tbody key={group.id}>
             <tr>
               <th colSpan={4} scope="colgroup" className="border-t border-cuppi-line bg-cuppi-paper-deep px-3 py-2.5 font-headline text-base font-normal sm:px-6 sm:text-lg">
@@ -104,7 +104,7 @@ export function CompareMatrix({ numbers }: { numbers: Map<string, number> }) {
                       isHighlighted(row.cells[app]) ? cn(honey.surface, honey.text, 'font-medium') : 'text-cuppi-ink-soft',
                     )}
                   >
-                    <CellView cell={row.cells[app]} refs={app !== 'cuppi' ? <SourceRefs ids={row.sources[app]} numbers={numbers} /> : null} />
+                    <CellView cell={row.cells[app]} refs={app !== 'cuppi' ? <SourceRefs ids={row.sources[app]} cite={cite} /> : null} />
                   </td>
                 ))}
               </tr>
@@ -112,7 +112,7 @@ export function CompareMatrix({ numbers }: { numbers: Map<string, number> }) {
           </tbody>
         ))}
       </table>
-      <p className="border-t border-cuppi-line px-4 py-3.5 text-sm text-cuppi-ink-soft sm:px-6">{NOT_YET}</p>
+      {content.notYet && <p className="border-t border-cuppi-line px-4 py-3.5 text-sm text-cuppi-ink-soft sm:px-6">{content.notYet}</p>}
     </div>
   );
 }

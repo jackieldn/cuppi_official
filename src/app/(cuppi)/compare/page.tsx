@@ -4,7 +4,8 @@ import { CuppiHeader } from '@/components/cuppi/header';
 import { DownloadStrip } from '@/components/cuppi/blocks/download-strip';
 import { PageHero } from '@/components/cuppi/page-hero';
 import { CompareView } from '@/components/cuppi/compare/compare-view';
-import { CHECKED_ON_LABEL } from '@/lib/compare-data';
+import { dateLabel } from '@/lib/compare-data';
+import { getCompare } from '@/lib/compare';
 import { getPlans } from '@/lib/features';
 
 export const revalidate = 60;
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ComparePage() {
-  const { prices } = await getPlans();
+  const [{ prices }, content] = await Promise.all([getPlans(), getCompare()]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
@@ -35,7 +36,7 @@ export default async function ComparePage() {
           intro="Three home apps, one job: make household life easier. Here is how Cuppi’s features compare."
           pattern={{ name: 'springGarden', focus: '50% 50%', shape: 'ellipse' }}
           top={
-            <span className="inline-block rounded-full bg-cuppi-honey px-3.5 py-1 text-sm font-semibold text-cuppi-espresso">Checked {CHECKED_ON_LABEL}</span>
+            <span className="inline-block rounded-full bg-cuppi-honey px-3.5 py-1 text-sm font-semibold text-cuppi-espresso">Checked {dateLabel(content.checkedOn)}</span>
           }
         >
           <nav aria-label="On this page" className="flex flex-wrap justify-center gap-2">
@@ -51,7 +52,7 @@ export default async function ComparePage() {
             ))}
           </nav>
         </PageHero>
-        <CompareView prices={prices} />
+        <CompareView content={content} prices={prices} />
         <div className="pt-6">
           <DownloadStrip />
         </div>

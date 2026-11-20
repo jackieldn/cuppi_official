@@ -1076,3 +1076,77 @@ html.theme-changing *::after {
   .cuppi-glow::before,
   .cuppi-glow::after { animation: none; }
 }
+
+/*
+  The "A look inside" cards on /compare (compare-shots.tsx). Each card is a stack of full-size layers whose shape is a clip-path of the
+  card's rectangle (--x, --y, --w, --h, set inline from the stage's width and height), and its phones and caption are moved by transform.
+  Nothing is laid out as it opens, so nothing is pixel-snapped part-way: edges glide instead of shaking as the movement slows.
+  Where the browser can round a length (round()), the rectangle is snapped to whole pixels at rest so a hairline is crisp.
+*/
+.cmp-card {
+  --rx: var(--x);
+  --ry: var(--y);
+  --rw: var(--w);
+  --rh: var(--h);
+  --cmp-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+@supports (width: round(1px, 1px)) {
+  .cmp-card {
+    --rx: round(var(--x), 1px);
+    --ry: round(var(--y), 1px);
+    --rw: round(var(--w), 1px);
+    --rh: round(var(--h), 1px);
+  }
+}
+.cmp-layer {
+  position: absolute;
+  inset: 0;
+  transition: clip-path 600ms var(--cmp-ease);
+}
+.cmp-border,
+.cmp-shape {
+  clip-path: inset(var(--ry) calc(100cqw - var(--rx) - var(--rw)) calc(27rem - var(--ry) - var(--rh)) var(--rx) round 2rem);
+}
+.cmp-fill {
+  clip-path: inset(calc(var(--ry) + 1px) calc(100cqw - var(--rx) - var(--rw) + 1px) calc(27rem - var(--ry) - var(--rh) + 1px) calc(var(--rx) + 1px) round calc(2rem - 1px));
+}
+/* The window the phones show through starts at the card's own top edge, just inside its hairline (and takes its rounded top corners), so a phone that has panned up is
+   cut off at the card's edge and not at a line below it, which would leave an empty strip. Its bottom stops above the caption. */
+.cmp-window {
+  clip-path: inset(calc(var(--ry) + 1px) calc(100cqw - var(--rx) - var(--rw) + 1px) calc(27rem - var(--ry) - var(--rh) + 5.25rem) calc(var(--rx) + 1px) round calc(2rem - 1px) calc(2rem - 1px) 0 0);
+}
+/* The bottom edge of that window fades into the card's colour while the card is open and the phones are cropped there: a band of
+   gradient moved into place by transform, so it glides with the card like everything else. */
+.cmp-fade-clip {
+  clip-path: inset(0 calc(100cqw - var(--rx) - var(--rw)) 0 var(--rx));
+  pointer-events: none;
+}
+.cmp-fade {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 3.5rem;
+  transform: translate3d(0, calc(var(--ry) + var(--rh) - 5.25rem - 3.5rem), 0);
+  transition: transform 600ms var(--cmp-ease), opacity 600ms var(--cmp-ease);
+}
+.cmp-phones {
+  width: var(--rowW);
+  transform-origin: 0 0;
+  transform: translate3d(calc(var(--rx) + (var(--rw) - var(--rowW) * var(--s)) / 2), calc(var(--ry) + 1.5rem), 0) scale(var(--s));
+  transition: transform 600ms var(--cmp-ease);
+  backface-visibility: hidden;
+}
+.cmp-caption {
+  width: 14.5rem;
+  height: 3rem;
+  transform-origin: 50% 100%;
+  transform: translate3d(calc(var(--rx) + (var(--rw) - 14.5rem) / 2), calc(var(--ry) + var(--rh) - 1.25rem - 3rem), 0) scale(var(--cs, 1));
+  transition: transform 600ms var(--cmp-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cmp-layer,
+  .cmp-fade,
+  .cmp-phones,
+  .cmp-caption { transition: none; }
+}

@@ -1,6 +1,6 @@
 // The phone mockups in /public/phone-frames, and the maths to put a screenshot in them.
 //
-// Each mockup is a transparent render of an iPhone whose screen is a see-through
+// Each mockup is a transparent WebP render of an iPhone whose screen is a see-through
 // hole. The screenshot is placed BEHIND the frame, so the frame's own black bezel
 // does the masking. The tilted render shows the screen in perspective, so the flat
 // screenshot is warped onto the screen's four corners with a CSS matrix3d.
@@ -15,13 +15,13 @@ export type MockupKind = 'front' | 'tilt';
 
 export const MOCKUPS: Record<MockupKind, { src: string; width: number; height: number; screen: Quad }> = {
   front: {
-    src: '/phone-frames/iphone-front-mockup.png',
+    src: '/phone-frames/iphone-front-mockup.webp',
     width: 1046,
     height: 2162,
     screen: { tl: [45, 40.5], tr: [1000, 40.5], br: [1000, 2122], bl: [45, 2122] },
   },
   tilt: {
-    src: '/phone-frames/iphone-45d-mockup.png',
+    src: '/phone-frames/iphone-45d-mockup.webp',
     width: 842,
     height: 2205,
     screen: { tl: [88, 96.6], tr: [823, 32.1], br: [823, 2038.6], bl: [88, 2193.8] },
